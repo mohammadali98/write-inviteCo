@@ -1,91 +1,75 @@
 package main
 
 import (
+	"context"
 	"html/template"
-	"net/http"
-	"strconv"
-	"strings"
+	"log"
+
+	cardrepository "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/repository"
+	cardreader "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/reader"
+	cardwriter "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/writer"
+	"writeandinviteco/inviteandco/card/cardpresentation"
+	"writeandinviteco/inviteandco/config"
+	customerrepository "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/repository"
+	customerreader "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/reader"
+	customerwriter "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/writer"
+	"writeandinviteco/inviteandco/customer/customerpresentation"
+	orderrepository "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/repository"
+	orderreader "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/reader"
+	orderwriter "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/writer"
+	"writeandinviteco/inviteandco/order/orderpresentation"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Card struct {
-	ID    int
-	Name  string
-	Price int
-	Image string
-}
-
-var cards = []Card{
-	{ID: 1, Name: "Elegant Floral Invite", Price: 50, Image: "/static/sample.jpg"},
-	{ID: 2, Name: "Classic Gold Border", Price: 65, Image: "/static/sample.jpg"},
-	{ID: 3, Name: "Minimal White Theme", Price: 40, Image: "/static/sample.jpg"},
-}
-
 func main() {
-	router := gin.Default()
+	cfg := config.Load()
 
-	// Register custom template functions before loading templates
+	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(context.Background()); err != nil {
+		log.Fatalf("database unreachable: %v", err)
+	}
+
+	// sqlc queries
+	cardReader := cardreader.New(db)
+	cardWriter := cardwriter.New(db)
+	customerReader := customerreader.New(db)
+	customerWriter := customerwriter.New(db)
+	orderReader := orderreader.New(db)
+	orderWriter := orderwriter.New(db)
+
+	// repositories
+	cardRepo := cardrepository.NewCardRepository(cardReader, cardWriter)
+	customerRepo := customerrepository.NewCustomerRepository(customerReader, customerWriter)
+	orderRepo := orderrepository.NewOrderRepository(orderReader, orderWriter)
+
+	// handlers
+	cardHandler := cardpresentation.NewCardHandler(cardRepo)
+	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
+	orderHandler := orderpresentation.NewOrderHandler(orderRepo, customerRepo)
+
+	// router
+	router := gin.Default()
 	router.SetFuncMap(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 	})
-
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/static", "./static")
 
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "home.html", gin.H{
-			"cards": cards,
-		})
-	})
+	// routes
+	router.GET("/", cardHandler.ListCards)
+	router.GET("/about", customerHandler.AboutPage)
+	router.GET("/card/:id", cardHandler.CardDetail)
+	router.POST("/order", orderHandler.CreateOrder)
 
-	router.GET("/about", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "about.html", nil)
-	})
-
-	router.GET("/card/:id", func(c *gin.Context) {
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			c.String(http.StatusBadRequest, "Invalid card id")
-			return
-		}
-
-		card, found := findCardByID(id)
-		if !found {
-			c.String(http.StatusNotFound, "Card not found")
-			return
-		}
-
-		c.HTML(http.StatusOK, "card.html", gin.H{
-			"card": card,
-		})
-	})
-
-	router.POST("/order", func(c *gin.Context) {
-		name := strings.TrimSpace(c.PostForm("name"))
-		quantityRaw := strings.TrimSpace(c.PostForm("quantity"))
-		quantity, err := strconv.Atoi(quantityRaw)
-		if name == "" || err != nil || quantity < 1 {
-			c.String(http.StatusBadRequest, "Please provide a valid name and quantity.")
-			return
-		}
-
-		c.String(
-			http.StatusOK,
-			"Thank you, %s! Your order for %d invitation card(s) has been received.",
-			name,
-			quantity,
-		)
-	})
-
-	router.Run(":8080")
-}
-
-func findCardByID(id int) (Card, bool) {
-	for _, card := range cards {
-		if card.ID == id {
-			return card, true
-		}
+	log.Printf("Server starting on :%s", cfg.Port)
+	if err := router.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("server error: %v", err)
 	}
-	return Card{}, false
 }

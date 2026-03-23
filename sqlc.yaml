@@ -1,0 +1,107 @@
+version: "2"
+sql:
+  - name: "card-reader"
+    engine: "postgresql"
+    queries: "card/cardinfrastructure/postgres/reader/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go: &go-default
+        out: "card/cardinfrastructure/postgres/reader"
+        package: "cardreader"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false
+  - name: "card-writer"
+    engine: "postgresql"
+    queries: "card/cardinfrastructure/postgres/writer/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        <<: *go-default
+        out: "card/cardinfrastructure/postgres/writer"
+        package: "cardwriter"
+  - name: "customer-reader"
+    engine: "postgresql"
+    queries: "customer/customerinfrastructure/postgres/reader/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go: &go-default
+        out: "customer/customerinfrastructure/postgres/reader"
+        package: "customerreader"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false
+  - name: "customer-writer"
+    engine: "postgresql"
+    queries: "customer/customerinfrastructure/postgres/writer/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        <<: *go-default
+        out: "customer/customerinfrastructure/postgres/writer"
+        package: "customerwriter"
+  - name: "order-reader"
+    engine: "postgresql"
+    queries: "order/orderinfrastructure/postgres/reader/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go: &go-default
+        out: "order/orderinfrastructure/postgres/reader"
+        package: "orderreader"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false
+  - name: "order-writer"
+    engine: "postgresql"
+    queries: "order/orderinfrastructure/postgres/writer/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        <<: *go-default
+        out: "order/orderinfrastructure/postgres/writer"
+        package: "orderwriter"

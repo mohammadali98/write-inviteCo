@@ -56,6 +56,9 @@
                 <p class="price">$ {{ .card.Price }}</p>
 
                 <form class="order-form" action="/order" method="post">
+                    <input type="hidden" name="card_id" value="{{ .card.ID }}">
+                    <input type="hidden" name="price" value="{{ .card.Price }}">
+
                     <label for="name">Your Name</label>
                     <input id="name" name="name" type="text" placeholder="Enter your name" required>
 
