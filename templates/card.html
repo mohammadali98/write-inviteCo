@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .card.Name }} — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+        <a class="nav-link" href="/">Lookbook</a>
+        <a class="nav-link" href="/">Shop</a>
+        <a class="nav-link" href="/">Collections</a>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/">Contact</a>
+        <div class="header-icons">
+            <button class="header-icon" aria-label="Search">⌕</button>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/">Lookbook</a>
+        <a href="/">Shop All</a>
+        <a href="/">Collections</a>
+        <a href="/">About</a>
+        <a href="/">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+    <div class="container">
+        <a class="back-link" href="/">← Back to all cards</a>
+
+        <section class="card-detail animate-in">
+            <img src="{{ .card.Image }}" alt="{{ .card.Name }}">
+            <div class="detail-content">
+                <h1>{{ .card.Name }}</h1>
+                <p class="price">$ {{ .card.Price }}</p>
+
+                <form class="order-form" action="/order" method="post">
+                    <label for="name">Your Name</label>
+                    <input id="name" name="name" type="text" placeholder="Enter your name" required>
+
+                    <label for="quantity">Quantity</label>
+                    <input id="quantity" name="quantity" type="number" value="1" min="1" required>
+
+                    <button type="submit">Place Order</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>hello@writeandinviteco.com</p>
+                <p>+92 300 000 0000</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

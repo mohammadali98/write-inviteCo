@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write&InviteCo — Wedding Invitations</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ===== HEADER / NAVBAR ===== -->
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+        <a class="nav-link" href="/">Lookbook</a>
+        <a class="nav-link" href="/">Shop</a>
+        <a class="nav-link" href="/">Collections</a>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/">Contact</a>
+        <div class="header-icons">
+            <button class="header-icon" aria-label="Search">⌕</button>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR (MOBILE) ===== -->
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/">Lookbook</a>
+        <a href="/">Shop All</a>
+        <a href="/">Collections</a>
+        <a href="/">About</a>
+        <a href="/">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+    <!-- HERO / ABOUT SECTION -->
+    <section class="hero-about">
+        <div class="hero-images animate-in">
+            <img class="hero-img hero-img-1"
+                 src="https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?w=600&q=80"
+                 alt="Wedding invitation suite">
+            <img class="hero-img hero-img-2"
+                 src="https://images.unsplash.com/photo-1549488344-cbb6c34cf08b?w=500&q=80"
+                 alt="Calligraphy detail">
+            <img class="hero-img hero-img-3"
+                 src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=500&q=80"
+                 alt="Crafting process">
+        </div>
+
+        <div class="hero-text">
+            <p class="section-label animate-in delay-1">About Us</p>
+            <h1 class="animate-in delay-2">Crafted with Love</h1>
+
+            <p class="animate-in delay-3">
+                We strive to capture the fleeting magic of your most cherished moments.
+                Every invitation we create tells a personal story — one that resonates
+                with warmth, elegance, and the beauty of new beginnings.
+            </p>
+            <p class="animate-in delay-4">
+                Inspired by nature, fine art, and timeless romance, our designs blend
+                classic craftsmanship with modern sensibility. From hand-pressed florals
+                to gilded calligraphy, each piece is made to be treasured.
+            </p>
+
+            <a class="pill-btn animate-in delay-5" href="/">
+                Go to shop <span class="arrow">→</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- FEATURED COLLECTION -->
+    <section class="section-featured">
+        <div class="section-title-row animate-in delay-3">
+            <h2>Our Collection</h2>
+            <a class="view-all" href="/">View all →</a>
+        </div>
+
+        <div class="card-grid">
+            {{ range $i, $c := .cards }}
+            <article class="card-item animate-in delay-{{ add $i 3 }}">
+                <div class="card-img-wrap">
+                    <img src="{{ $c.Image }}" alt="{{ $c.Name }}">
+                </div>
+                <div class="card-body">
+                    <h2>{{ $c.Name }}</h2>
+                    <p class="price">$ {{ $c.Price }}</p>
+                    <a class="btn" href="/card/{{ $c.ID }}">View Details →</a>
+                </div>
+            </article>
+            {{ end }}
+        </div>
+    </section>
+
+    <!-- INSTAGRAM / GALLERY SECTION -->
+    <section class="section-gallery">
+        <h2 class="animate-in">We are on Instagram</h2>
+        <p class="gallery-subtitle animate-in delay-1">@writeandinviteco</p>
+
+        <div class="gallery-grid">
+            <div class="gallery-item animate-in delay-2">
+                <img src="https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?w=400&q=80"
+                     alt="Wedding invitation suite">
+            </div>
+            <div class="gallery-item animate-in delay-3">
+                <img src="https://images.unsplash.com/photo-1549488344-cbb6c34cf08b?w=400&q=80"
+                     alt="Calligraphy detail">
+            </div>
+            <div class="gallery-item animate-in delay-4">
+                <img src="https://images.unsplash.com/photo-1595407660626-db35dcd16609?w=400&q=80"
+                     alt="Floral invitation">
+            </div>
+            <div class="gallery-item animate-in delay-5">
+                <img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&q=80"
+                     alt="Crafting process">
+            </div>
+        </div>
+
+        <a class="pill-btn" href="https://instagram.com" target="_blank" rel="noopener">
+            Go to Instagram <span class="arrow">→</span>
+        </a>
+    </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <div class="footer-inner">
+
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+                <a href="/">RSVP Cards</a>
+                <a href="/">Thank You Cards</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+                <a href="/">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>hello@writeandinviteco.com</p>
+                <p>+92 300 000 0000</p>
+                <div class="footer-social">
+                    <a href="#">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

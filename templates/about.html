@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/about.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+        <a class="nav-link" href="/">Lookbook</a>
+        <a class="nav-link" href="/">Shop</a>
+        <a class="nav-link" href="/">Collections</a>
+    </div>
+    <a class="brand" href="/">Write&InviteCo</a>
+    <div class="header-right">
+        <a class="nav-link active-link" href="/about">About</a>
+        <a class="nav-link" href="/">Contact</a>
+        <div class="header-icons">
+            <button class="header-icon" aria-label="Search">⌕</button>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/">Lookbook</a>
+        <a href="/">Shop All</a>
+        <a href="/">Collections</a>
+        <a href="/about">About</a>
+        <a href="/">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+    <!-- ========== SECTION 1: ABOUT US HERO ========== -->
+    <section class="about-hero">
+        <div class="about-hero-inner">
+            <div class="about-hero-text animate-in">
+                <h1>About Us</h1>
+                <p>
+                    Write&InviteCo was founded in 2020 by <strong>Aimen Fatima</strong> with a simple
+                    dream — to craft wedding invitations that feel as special as the love they celebrate.
+                    What began as a small passion project has grown into a trusted name for couples
+                    seeking beauty, elegance, and a personal touch in every detail.
+                </p>
+            </div>
+            <div class="about-hero-images">
+                <div class="about-img-group">
+                    <img class="about-img-1 animate-in delay-1"
+                         src="https://images.unsplash.com/photo-1595407660626-db35dcd16609?w=500&q=80"
+                         alt="Floral wedding stationery">
+                    <img class="about-img-2 animate-in delay-2"
+                         src="https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?w=500&q=80"
+                         alt="Wedding invitation suite">
+                    <div class="accent-shape accent-shape-1"></div>
+                    <div class="accent-shape accent-shape-2"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SECTION 2: WHO WE ARE ========== -->
+    <section class="about-who">
+        <div class="about-who-inner">
+            <div class="about-who-img animate-in">
+                <img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&q=80"
+                     alt="Our crafting process">
+                <div class="who-deco-line"></div>
+            </div>
+            <div class="about-who-text animate-in delay-2">
+                <h2>Who We Are</h2>
+                <p>
+                    We are a team of designers, calligraphers, and dreamers based in Lahore, Pakistan.
+                    Led by our founder Aimen Fatima, every piece we create is infused with care and intention.
+                    We believe that a wedding invitation is the very first glimpse your guests have
+                    into your celebration — and it should take their breath away.
+                </p>
+                <p>
+                    Since 2020, we've had the honour of designing invitations for hundreds of couples,
+                    each one unique and personal. From hand-lettered calligraphy to gilded foil accents,
+                    our work blends traditional artistry with modern elegance, ensuring every card
+                    becomes a keepsake worth treasuring.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SECTION 3: WHAT WE DO ========== -->
+    <section class="about-services">
+        <div class="about-services-inner">
+            <h2 class="animate-in">What We Do</h2>
+            <div class="services-divider animate-in delay-1"></div>
+
+            <div class="services-grid">
+                <div class="service-card animate-in delay-2">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="10" y="8" width="44" height="48" rx="4"/>
+                            <path d="M20 20h24M20 28h24M20 36h16"/>
+                            <path d="M32 48l-4-4h8l-4 4z" fill="currentColor" stroke="none"/>
+                        </svg>
+                    </div>
+                    <h3>Custom Invitations</h3>
+                    <p>Bespoke wedding cards designed from scratch to match your theme, colours, and love story perfectly.</p>
+                </div>
+
+                <div class="service-card animate-in delay-3">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M32 12C20 12 14 22 14 30c0 12 18 22 18 22s18-10 18-22c0-8-6-18-18-18z"/>
+                            <circle cx="32" cy="28" r="6"/>
+                        </svg>
+                    </div>
+                    <h3>Calligraphy & Lettering</h3>
+                    <p>Hand-written names, verses, and envelope addressing that add an irreplaceable personal warmth.</p>
+                </div>
+
+                <div class="service-card animate-in delay-4">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="8" y="14" width="48" height="36" rx="4"/>
+                            <path d="M8 24h48"/>
+                            <circle cx="20" cy="38" r="4"/>
+                            <path d="M30 42h18M30 36h12"/>
+                        </svg>
+                    </div>
+                    <h3>Full Stationery Suites</h3>
+                    <p>Complete packages — save the dates, RSVP cards, menus, programs, and thank you notes, all beautifully cohesive.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SECTION 4: GET IN TOUCH / VISIT ========== -->
+    <section class="about-visit">
+        <div class="about-visit-inner">
+            <div class="visit-text-block animate-in">
+                <h2>Let's Create Together</h2>
+                <div class="visit-card">
+                    <p>
+                        Whether you have a clear vision or need help finding one, we'd love to hear from you.
+                        Every project begins with a conversation — tell us about your day, your dreams,
+                        and let us bring them to life on paper.
+                    </p>
+                    <a class="pill-btn" href="/">
+                        Book a Consultation <span class="arrow">→</span>
+                    </a>
+                </div>
+            </div>
+            <div class="visit-img animate-in delay-2">
+                <img src="https://images.unsplash.com/photo-1549488344-cbb6c34cf08b?w=600&q=80"
+                     alt="Calligraphy detail">
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SECTION 5: BOTTOM CONTACT CARDS ========== -->
+    <section class="about-contact-row">
+        <div class="about-contact-inner">
+            <div class="contact-mini animate-in delay-1">
+                <div class="contact-mini-icon">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M24 4C14.6 4 7 11 7 19.6c0 12.2 17 24.4 17 24.4s17-12.2 17-24.4C41 11 33.4 4 24 4z"/>
+                        <circle cx="24" cy="19" r="5"/>
+                    </svg>
+                </div>
+                <h3>Come Visit</h3>
+                <p>Lahore, Punjab, Pakistan<br>By appointment only</p>
+            </div>
+            <div class="contact-mini animate-in delay-2">
+                <div class="contact-mini-icon">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="6" y="10" width="36" height="28" rx="4"/>
+                        <path d="M6 14l18 13 18-13"/>
+                    </svg>
+                </div>
+                <h3>Get in Touch</h3>
+                <p>hello@writeandinviteco.com<br>+92 300 000 0000</p>
+            </div>
+            <div class="contact-mini animate-in delay-3">
+                <div class="contact-mini-icon">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="24" cy="24" r="18"/>
+                        <path d="M24 12v12l8 5"/>
+                    </svg>
+                </div>
+                <h3>Working Hours</h3>
+                <p>Mon – Sat: 11am – 7pm<br>Sunday: Closed</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+                <a href="/">RSVP Cards</a>
+                <a href="/">Thank You Cards</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+                <a href="/">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>hello@writeandinviteco.com</p>
+                <p>+92 300 000 0000</p>
+                <div class="footer-social">
+                    <a href="#">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

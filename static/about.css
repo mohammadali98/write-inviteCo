@@ -1,0 +1,435 @@
+/* ===== ABOUT PAGE — Write&InviteCo ===== */
+
+/* ===== ACTIVE NAV LINK ===== */
+.active-link {
+    color: var(--brand) !important;
+}
+
+.active-link::after {
+    width: 100% !important;
+}
+
+/* ========================================
+   SECTION 1: ABOUT US HERO
+   ======================================== */
+.about-hero {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 70px 40px 50px;
+}
+
+.about-hero-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: start;
+}
+
+.about-hero-text h1 {
+    font-family: var(--font-display);
+    font-size: 4.2rem;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.05;
+    margin: 0 0 28px;
+    color: var(--text);
+}
+
+.about-hero-text p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-light);
+    max-width: 420px;
+}
+
+.about-hero-text strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.about-hero-images {
+    position: relative;
+}
+
+.about-img-group {
+    position: relative;
+    height: 380px;
+}
+
+.about-img-1 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 58%;
+    height: 70%;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    z-index: 2;
+}
+
+.about-img-2 {
+    position: absolute;
+    top: 10%;
+    right: 0;
+    width: 50%;
+    height: 55%;
+    object-fit: cover;
+    border-radius: 50% 16px 50% 16px;
+    box-shadow: var(--shadow-card);
+    z-index: 1;
+}
+
+/* Decorative accent shapes like in the reference */
+.accent-shape {
+    position: absolute;
+    border-radius: 12px;
+    z-index: 0;
+}
+
+.accent-shape-1 {
+    width: 80px;
+    height: 120px;
+    background: var(--accent-blush);
+    opacity: 0.5;
+    top: -15px;
+    right: 10%;
+    border-radius: 8px;
+    transform: rotate(-3deg);
+}
+
+.accent-shape-2 {
+    width: 100px;
+    height: 80px;
+    background: var(--brand-warm);
+    opacity: 0.18;
+    bottom: 10px;
+    right: -10px;
+    border-radius: 12px;
+}
+
+/* Decorative doodle circles */
+.about-hero-images::after {
+    content: '○ ○';
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    font-size: 2rem;
+    color: var(--border);
+    letter-spacing: 6px;
+    opacity: 0.6;
+    z-index: 3;
+}
+
+/* ========================================
+   SECTION 2: WHO WE ARE
+   ======================================== */
+.about-who {
+    max-width: 1100px;
+    margin: 30px auto 0;
+    padding: 0 40px;
+}
+
+.about-who-inner {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 50px;
+    align-items: center;
+}
+
+.about-who-img {
+    position: relative;
+}
+
+.about-who-img img {
+    width: 100%;
+    height: 360px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+}
+
+.who-deco-line {
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--brand-warm);
+    border-radius: 2px;
+}
+
+.about-who-text h2 {
+    font-family: var(--font-display);
+    font-size: 2.6rem;
+    font-weight: 400;
+    margin: 0 0 20px;
+}
+
+.about-who-text p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-light);
+    margin: 0 0 16px;
+    max-width: 460px;
+}
+
+/* ========================================
+   SECTION 3: WHAT WE DO
+   ======================================== */
+.about-services {
+    max-width: 1100px;
+    margin: 80px auto 0;
+    padding: 0 40px;
+    text-align: center;
+}
+
+.about-services h2 {
+    font-family: var(--font-display);
+    font-size: 2.6rem;
+    font-weight: 400;
+    margin: 0;
+}
+
+.services-divider {
+    width: 80px;
+    height: 1px;
+    background: var(--border);
+    margin: 18px auto 40px;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.service-card {
+    background: var(--accent-cream);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 36px 24px 30px;
+    text-align: center;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(90, 60, 20, 0.08);
+}
+
+.service-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 18px;
+    color: var(--brand-warm);
+}
+
+.service-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.service-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--brand);
+    margin: 0 0 10px;
+}
+
+.service-card p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* ========================================
+   SECTION 4: LET'S CREATE / VISIT
+   ======================================== */
+.about-visit {
+    max-width: 1100px;
+    margin: 80px auto 0;
+    padding: 0 40px;
+}
+
+.about-visit-inner {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+.visit-text-block h2 {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 400;
+    font-style: italic;
+    margin: 0 0 24px;
+}
+
+.visit-card {
+    background: var(--accent-cream);
+    border-radius: 16px;
+    padding: 30px 28px;
+    position: relative;
+}
+
+.visit-card p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-light);
+    margin: 0 0 22px;
+    max-width: 400px;
+}
+
+.visit-img img {
+    width: 100%;
+    height: 340px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+}
+
+/* ========================================
+   SECTION 5: BOTTOM CONTACT ROW
+   ======================================== */
+.about-contact-row {
+    max-width: 1100px;
+    margin: 80px auto 0;
+    padding: 0 40px;
+}
+
+.about-contact-inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    text-align: center;
+}
+
+.contact-mini {
+    padding: 28px 20px;
+}
+
+.contact-mini-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    color: var(--brand-warm);
+}
+
+.contact-mini-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.contact-mini h3 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--brand);
+    margin: 0 0 8px;
+}
+
+.contact-mini p {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 900px) {
+    .about-hero-inner {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .about-hero-text h1 {
+        font-size: 3rem;
+    }
+
+    .about-img-group {
+        height: 300px;
+    }
+
+    .about-who-inner {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .about-visit-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .about-contact-inner {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .about-hero {
+        padding: 40px 18px 30px;
+    }
+
+    .about-hero-text h1 {
+        font-size: 2.4rem;
+    }
+
+    .about-img-group {
+        height: 240px;
+    }
+
+    .about-who {
+        padding: 0 18px;
+    }
+
+    .about-who-img img {
+        height: 240px;
+    }
+
+    .about-who-text h2 {
+        font-size: 2rem;
+    }
+
+    .about-services {
+        padding: 0 18px;
+    }
+
+    .about-services h2 {
+        font-size: 2rem;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .about-visit {
+        padding: 0 18px;
+    }
+
+    .visit-text-block h2 {
+        font-size: 2rem;
+    }
+
+    .visit-img img {
+        height: 240px;
+    }
+
+    .about-contact-row {
+        padding: 0 18px;
+    }
+
+    .about-contact-inner {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
