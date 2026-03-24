@@ -1,6 +1,7 @@
 package orderpresentation
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,9 @@ func NewOrderHandler(orderRepo orderdomain.OrderRepo, customerRepo customerdomai
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
+	log.Printf("Form values: name=%s, quantity=%s, card_id=%s, price=%s",
+		c.PostForm("name"), c.PostForm("quantity"), c.PostForm("card_id"), c.PostForm("price"))
+
 	name := strings.TrimSpace(c.PostForm("name"))
 	quantityRaw := strings.TrimSpace(c.PostForm("quantity"))
 	cardIDRaw := strings.TrimSpace(c.PostForm("card_id"))
