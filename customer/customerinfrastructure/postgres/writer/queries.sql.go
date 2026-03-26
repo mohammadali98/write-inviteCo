@@ -7,28 +7,55 @@ package customerwriter
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createCustomer = `-- name: CreateCustomer :one
-INSERT INTO customers (name, email, phone)
-VALUES ($1, $2, $3)
-RETURNING id, name, email, phone, created_at, updated_at
+INSERT INTO customers (name, email, phone, address, city, postal_code)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, name, email, phone, address, city, postal_code, created_at, updated_at
 `
 
 type CreateCustomerParams struct {
-	Name  string
-	Email *string
-	Phone *string
+	Name       string
+	Email      *string
+	Phone      *string
+	Address    *string
+	City       *string
+	PostalCode *string
 }
 
-func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
-	row := q.db.QueryRow(ctx, createCustomer, arg.Name, arg.Email, arg.Phone)
-	var i Customer
+type CreateCustomerRow struct {
+	ID         int64
+	Name       string
+	Email      *string
+	Phone      *string
+	Address    *string
+	City       *string
+	PostalCode *string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (CreateCustomerRow, error) {
+	row := q.db.QueryRow(ctx, createCustomer,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+		arg.Address,
+		arg.City,
+		arg.PostalCode,
+	)
+	var i CreateCustomerRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.Address,
+		&i.City,
+		&i.PostalCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

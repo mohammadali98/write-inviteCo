@@ -58,6 +58,48 @@ func (h *CardHandler) ListCardsByCategory(c *gin.Context) {
 	})
 }
 
+func (h *CardHandler) SearchCards(c *gin.Context) {
+	query := c.Query("q")
+	if query == "" {
+		c.HTML(http.StatusOK, "search.html", gin.H{
+			"query": "",
+			"cards": []*carddomain.Card{},
+			"count": 0,
+		})
+		return
+	}
+
+	cards, err := h.repo.SearchCards(c.Request.Context(), query)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Search failed")
+		return
+	}
+
+	c.HTML(http.StatusOK, "search.html", gin.H{
+		"query": query,
+		"cards": cards,
+		"count": len(cards),
+	})
+}
+
+func (h *CardHandler) Checkout(c *gin.Context) {
+	cardID := c.Query("card_id")
+	cardName := c.Query("card_name")
+	cardImage := c.Query("card_image")
+	quantity := c.Query("quantity")
+	price := c.Query("price")
+	currency := c.Query("currency")
+
+	c.HTML(http.StatusOK, "checkout.html", gin.H{
+		"cardID":    cardID,
+		"cardName":  cardName,
+		"cardImage": cardImage,
+		"quantity":  quantity,
+		"price":     price,
+		"currency":  currency,
+	})
+}
+
 func (h *CardHandler) CardDetail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

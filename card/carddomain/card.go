@@ -42,5 +42,6 @@ type CardReader interface {
 	GetAllCards(ctx context.Context) ([]*Card, error)
 	GetCardByID(ctx context.Context, id int64) (*Card, error)
 	GetCardsByCategory(ctx context.Context, category string) ([]*Card, error)
+	SearchCards(ctx context.Context, query string) ([]*Card, error)
 	GetCardImagesByCardID(ctx context.Context, cardID int64) ([]*CardImage, error)
 }

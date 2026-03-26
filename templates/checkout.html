@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkout-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 40px 60px;
+        }
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 40px;
+            align-items: start;
+        }
+        .order-summary {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
+            position: sticky;
+            top: 100px;
+        }
+        .order-summary img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 16px;
+        }
+        .order-summary h3 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin: 0 0 8px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: #6b5e54;
+            border-bottom: 1px solid #ece4db;
+        }
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2a2420;
+        }
+        .checkout-form h2 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 400;
+            margin: 0 0 24px;
+        }
+        .checkout-form .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .checkout-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .checkout-form .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .checkout-form label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            color: #6b5e54;
+        }
+        .checkout-form input,
+        .checkout-form textarea {
+            width: 100%;
+            border: 1px solid #e0d6cc;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            font-family: 'Jost', sans-serif;
+            background: #f5f0eb;
+            transition: border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+        .checkout-form input:focus,
+        .checkout-form textarea:focus {
+            outline: none;
+            border-color: #c4953a;
+            box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
+        }
+        .checkout-form textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .payment-methods {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #ece4db;
+        }
+        .payment-methods h3 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin: 0 0 14px;
+        }
+        .payment-icons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .payment-badge {
+            padding: 8px 16px;
+            border: 1px solid #e0d6cc;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #6b5e54;
+            background: #ffffff;
+            letter-spacing: 0.5px;
+        }
+        .payment-note {
+            font-size: 0.82rem;
+            color: #9a8d82;
+            margin-top: 8px;
+        }
+        .checkout-submit {
+            margin-top: 24px;
+            width: 100%;
+            border: none;
+            border-radius: 50px;
+            background: #8b6914;
+            color: #fff;
+            padding: 16px 28px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.35s ease, transform 0.35s ease;
+        }
+        .checkout-submit:hover {
+            background: #5c4510;
+            transform: translateY(-1px);
+        }
+        @media (max-width: 760px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+            }
+            .checkout-form .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .checkout-page {
+                padding: 20px 18px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="checkout-page animate-in">
+        <div class="checkout-grid">
+            <aside class="order-summary">
+                <img src="{{ .cardImage }}" alt="{{ .cardName }}">
+                <h3>{{ .cardName }}</h3>
+
+                <div class="summary-row">
+                    <span>Quantity</span>
+                    <span id="summary-quantity">{{ if .quantity }}{{ .quantity }}{{ else }}1{{ end }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Price / item</span>
+                    <span id="summary-price">{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }} {{ if .price }}{{ .price }}{{ else }}0{{ end }}</span>
+                </div>
+                <div class="summary-total">
+                    <span>Total</span>
+                    <span id="summary-total">{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }} {{ if .price }}{{ .price }}{{ else }}0{{ end }}</span>
+                </div>
+            </aside>
+
+            <section class="checkout-form">
+                <h2>Customer Information</h2>
+                <form action="/order" method="post">
+                    <input type="hidden" name="card_id" value="{{ .cardID }}">
+                    <input id="checkout-price" type="hidden" name="price" value="{{ if .price }}{{ .price }}{{ else }}0{{ end }}">
+                    <input id="checkout-quantity" type="hidden" name="quantity" value="{{ if .quantity }}{{ .quantity }}{{ else }}1{{ end }}">
+                    <input id="checkout-currency" type="hidden" name="currency" value="{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }}">
+                    <input type="hidden" name="card_name" value="{{ .cardName }}">
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="name">Full Name</label>
+                            <input id="name" name="name" type="text" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input id="phone" name="phone" type="tel" required>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input id="city" name="city" type="text" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="postal_code">Postal Code</label>
+                            <input id="postal_code" name="postal_code" type="text" required>
+                        </div>
+                    </div>
+
+                    <div class="payment-methods">
+                        <h3>Payment Method</h3>
+                        <div class="payment-icons">
+                            <div class="payment-badge">PayFast</div>
+                            <div class="payment-badge">JazzCash</div>
+                            <div class="payment-badge">EasyPaisa</div>
+                            <div class="payment-badge">Visa</div>
+                            <div class="payment-badge">MasterCard</div>
+                        </div>
+                        <p class="payment-note">Payment gateway coming soon. Orders are currently confirmed via WhatsApp.</p>
+                    </div>
+
+                    <button class="checkout-submit" type="submit">Place Order</button>
+                </form>
+            </section>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+                <a href="/">RSVP Cards</a>
+                <a href="/">Thank You Cards</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+                <a href="/">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+                <div class="footer-social">
+                    <a href="https://www.instagram.com/writeandinvite.co" target="_blank" rel="noopener">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+
+    (function renderSummaryTotals() {
+        const quantityField = document.getElementById("checkout-quantity");
+        const priceField = document.getElementById("checkout-price");
+        const currencyField = document.getElementById("checkout-currency");
+
+        const quantity = parseInt(quantityField.value, 10) || 1;
+        const price = parseInt(priceField.value, 10) || 0;
+        const currency = (currencyField.value || "PKR").toUpperCase();
+        const total = quantity * price;
+
+        quantityField.value = String(quantity);
+        priceField.value = String(price);
+        currencyField.value = currency;
+
+        document.getElementById("summary-quantity").textContent = String(quantity);
+        document.getElementById("summary-price").textContent = `${currency} ${price}`;
+        document.getElementById("summary-total").textContent = `${currency} ${total}`;
+    })();
+</script>
+
+</body>
+</html>

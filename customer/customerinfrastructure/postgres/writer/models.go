@@ -3,16 +3,3 @@
 //   sqlc v1.30.0
 
 package customerwriter
-
-import (
-	"github.com/jackc/pgx/v5/pgtype"
-)
-
-type Customer struct {
-	ID        int64
-	Name      string
-	Email     *string
-	Phone     *string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-}

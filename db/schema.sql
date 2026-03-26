@@ -1,4 +1,4 @@
-\restrict p4bFx8iLMKXv3Bo02ouIYSIHLqb4CebvJBFQPCg4QXAiVspOutEPC2SwAZKZmSL
+\restrict d42RFGH6u3SjWywbCcKqvLvc8PqN4TGlYMsGL7d5vzgFQ08OhrurpuYzO9CfDe3
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -96,7 +96,10 @@ CREATE TABLE public.customers (
     email text,
     phone text,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    address text,
+    city text,
+    postal_code text
 );
 
 
@@ -302,7 +305,7 @@ ALTER TABLE ONLY public.orders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict p4bFx8iLMKXv3Bo02ouIYSIHLqb4CebvJBFQPCg4QXAiVspOutEPC2SwAZKZmSL
+\unrestrict d42RFGH6u3SjWywbCcKqvLvc8PqN4TGlYMsGL7d5vzgFQ08OhrurpuYzO9CfDe3
 
 
 --
@@ -314,4 +317,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260323013541'),
     ('20260323013542'),
     ('20260326000001'),
-    ('20260326000002');
+    ('20260326000002'),
+    ('20260326000003');

@@ -26,31 +26,40 @@ func (r *CustomerRepository) GetCustomerByID(ctx context.Context, id int64) (*cu
 		return nil, err
 	}
 	return &customerdomain.Customer{
-		ID:        row.ID,
-		Name:      row.Name,
-		Email:     row.Email,
-		Phone:     row.Phone,
-		CreatedAt: toTimePtr(row.CreatedAt),
-		UpdatedAt: toTimePtr(row.UpdatedAt),
+		ID:         row.ID,
+		Name:       row.Name,
+		Email:      row.Email,
+		Phone:      row.Phone,
+		Address:    row.Address,
+		City:       row.City,
+		PostalCode: row.PostalCode,
+		CreatedAt:  toTimePtr(row.CreatedAt),
+		UpdatedAt:  toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
-func (r *CustomerRepository) CreateCustomer(ctx context.Context, name string, email *string, phone *string) (*customerdomain.Customer, error) {
+func (r *CustomerRepository) CreateCustomer(ctx context.Context, name string, email *string, phone *string, address *string, city *string, postalCode *string) (*customerdomain.Customer, error) {
 	row, err := r.writer.CreateCustomer(ctx, customerwriter.CreateCustomerParams{
-		Name:  name,
-		Email: email,
-		Phone: phone,
+		Name:       name,
+		Email:      email,
+		Phone:      phone,
+		Address:    address,
+		City:       city,
+		PostalCode: postalCode,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &customerdomain.Customer{
-		ID:        row.ID,
-		Name:      row.Name,
-		Email:     row.Email,
-		Phone:     row.Phone,
-		CreatedAt: toTimePtr(row.CreatedAt),
-		UpdatedAt: toTimePtr(row.UpdatedAt),
+		ID:         row.ID,
+		Name:       row.Name,
+		Email:      row.Email,
+		Phone:      row.Phone,
+		Address:    row.Address,
+		City:       row.City,
+		PostalCode: row.PostalCode,
+		CreatedAt:  toTimePtr(row.CreatedAt),
+		UpdatedAt:  toTimePtr(row.UpdatedAt),
 	}, nil
 }
 

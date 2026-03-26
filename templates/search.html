@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .categoryName }} — Write&InviteCo</title>
+    <title>Search — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .menu-btn {
@@ -11,11 +11,105 @@
             align-items: center;
             justify-content: center;
         }
+
+        .search-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 40px 60px;
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .search-header h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2.6rem;
+            font-weight: 400;
+            margin: 0 0 20px;
+        }
+
+        .search-input-wrap {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input-wrap input {
+            width: 100%;
+            border: 1px solid #e0d6cc;
+            border-radius: 50px;
+            padding: 14px 24px;
+            font-size: 0.95rem;
+            font-family: 'Jost', sans-serif;
+            background: #ffffff;
+            transition: border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .search-input-wrap input:focus {
+            outline: none;
+            border-color: #c4953a;
+            box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
+        }
+
+        .search-input-wrap button {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: #8b6914;
+            color: #fff;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.82rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.35s ease;
+        }
+
+        .search-input-wrap button:hover {
+            background: #5c4510;
+        }
+
+        .search-results-info {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6b5e54;
+            margin-bottom: 28px;
+        }
+
+        .search-no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9a8d82;
+            font-size: 1rem;
+        }
+
+        .search-no-results h2 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: #2a2420;
+            margin: 0 0 12px;
+        }
+
+        @media (max-width: 760px) {
+            .search-page {
+                padding: 20px 18px 40px;
+            }
+
+            .search-header h1 {
+                font-size: 2rem;
+            }
+        }
     </style>
 </head>
 <body>
 
-<!-- ===== HEADER / NAVBAR ===== -->
 <header class="top-header">
     <div class="header-left">
         <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
@@ -34,7 +128,6 @@
     </div>
 </header>
 
-<!-- ===== SIDEBAR (MOBILE) ===== -->
 <aside id="sidebar" class="sidebar">
     <h3>Menu</h3>
     <nav>
@@ -49,13 +142,22 @@
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
-<!-- ===== MAIN ===== -->
 <main class="main-content">
-    <section class="section-featured">
-        <div class="page-header animate-in">
-            <h1>{{ .categoryName }}</h1>
-            <p>Explore handcrafted designs from our {{ .categoryName }} collection.</p>
+    <section class="search-page">
+        <div class="search-header animate-in">
+            {{ if .query }}
+            <h1>Search Results</h1>
+            {{ else }}
+            <h1>Search Our Collection</h1>
+            {{ end }}
+            <form action="/search" method="get" class="search-input-wrap">
+                <input type="text" name="q" value="{{ .query }}" placeholder="Search cards, bid boxes, and more">
+                <button type="submit">Search</button>
+            </form>
         </div>
+
+        {{ if .query }}
+        <p class="search-results-info animate-in delay-1">{{ .count }} results for '{{ .query }}'</p>
 
         {{ if .cards }}
         <div class="card-grid">
@@ -73,21 +175,25 @@
             {{ end }}
         </div>
         {{ else }}
-        <div class="page-header animate-in delay-2">
-            <p>Coming soon — check back shortly!</p>
+        <div class="search-no-results animate-in delay-2">
+            <h2>No Products Found</h2>
+            <p>No products found for '{{ .query }}'. Try a different search term.</p>
+        </div>
+        {{ end }}
+        {{ else }}
+        <div class="search-no-results animate-in delay-1">
+            <h2>Search Our Collection</h2>
+            <p>Find wedding cards, bid boxes, and more by typing a keyword above.</p>
         </div>
         {{ end }}
     </section>
 </main>
 
-<!-- ===== FOOTER ===== -->
 <footer class="site-footer">
     <div class="footer-inner">
-
         <div class="footer-brand">
             <a href="/">Write&InviteCo</a>
         </div>
-
         <div class="footer-columns">
             <div class="footer-col">
                 <h4>Shop</h4>
@@ -116,13 +222,11 @@
                 </div>
             </div>
         </div>
-
         <div class="footer-bottom">
             <span>© 2026 Write&InviteCo. All rights reserved.</span>
             <a href="/">Terms of Use</a>
             <a href="/">Privacy Policy</a>
         </div>
-
     </div>
 </footer>
 

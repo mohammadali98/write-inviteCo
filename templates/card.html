@@ -71,9 +71,9 @@
 
     <div class="header-right">
         <a class="nav-link" href="/about">About</a>
-        <a class="nav-link" href="/">Contact</a>
+        <a class="nav-link" href="/contact">Contact</a>
         <div class="header-icons">
-            <button class="header-icon" aria-label="Search">⌕</button>
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
             <button class="header-icon" aria-label="Favorites">♥</button>
             <button class="header-icon" aria-label="Cart">⊡</button>
         </div>
@@ -90,7 +90,7 @@
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
         <a href="/about">About</a>
-        <a href="/">Contact</a>
+        <a href="/contact">Contact</a>
     </nav>
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
@@ -117,20 +117,17 @@
                 <p>{{ .card.Description }}</p>
                 {{ end }}
 
-                <form class="order-form" action="/order" method="post">
+                <form class="order-form" action="/checkout" method="get">
                     <input type="hidden" name="card_id" value="{{ .card.ID }}">
+                    <input type="hidden" name="price" value="{{ .card.PricePKR }}">
                     <input type="hidden" name="card_name" value="{{ .card.Name }}">
-                    <input type="hidden" name="price_pkr" value="{{ .card.PricePKR }}">
-                    <input type="hidden" name="price_nok" value="{{ .card.PriceNOK }}">
+                    <input type="hidden" name="card_image" value="{{ .card.Image }}">
                     <input type="hidden" name="currency" value="PKR">
-
-                    <label for="name">Your Name</label>
-                    <input id="name" name="name" type="text" placeholder="Enter your name" required>
 
                     <label for="quantity">Quantity</label>
                     <input id="quantity" name="quantity" type="number" value="1" min="1" required>
 
-                    <button type="submit">Place Order</button>
+                    <button type="submit">Proceed to Checkout →</button>
                 </form>
             </div>
         </section>

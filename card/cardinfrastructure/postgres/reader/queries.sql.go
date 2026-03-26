@@ -175,3 +175,52 @@ func (q *Queries) GetCardsByCategory(ctx context.Context, category string) ([]Ge
 	}
 	return items, nil
 }
+
+const searchCards = `-- name: SearchCards :many
+SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+FROM cards
+WHERE name ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%'
+ORDER BY created_at DESC
+`
+
+type SearchCardsRow struct {
+	ID          int64
+	Name        string
+	Description *string
+	PricePkr    int64
+	PriceNok    int64
+	Image       string
+	Category    string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) SearchCards(ctx context.Context, dollar_1 *string) ([]SearchCardsRow, error) {
+	rows, err := q.db.Query(ctx, searchCards, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchCardsRow
+	for rows.Next() {
+		var i SearchCardsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.PricePkr,
+			&i.PriceNok,
+			&i.Image,
+			&i.Category,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

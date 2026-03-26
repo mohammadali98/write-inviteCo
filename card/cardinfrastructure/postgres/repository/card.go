@@ -82,6 +82,28 @@ func (r *CardRepository) GetCardsByCategory(ctx context.Context, category string
 	return cards, nil
 }
 
+func (r *CardRepository) SearchCards(ctx context.Context, query string) ([]*carddomain.Card, error) {
+	rows, err := r.reader.SearchCards(ctx, &query)
+	if err != nil {
+		return nil, err
+	}
+	cards := make([]*carddomain.Card, len(rows))
+	for i, row := range rows {
+		cards[i] = &carddomain.Card{
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
+			PricePKR:    row.PricePkr,
+			PriceNOK:    row.PriceNok,
+			Image:       row.Image,
+			Category:    row.Category,
+			CreatedAt:   toTimePtr(row.CreatedAt),
+			UpdatedAt:   toTimePtr(row.UpdatedAt),
+		}
+	}
+	return cards, nil
+}
+
 func (r *CardRepository) GetCardImagesByCardID(ctx context.Context, cardID int64) ([]*carddomain.CardImage, error) {
 	rows, err := r.reader.GetCardImagesByCardID(ctx, cardID)
 	if err != nil {

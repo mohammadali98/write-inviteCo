@@ -65,7 +65,10 @@ func main() {
 	// routes
 	router.GET("/", cardHandler.ListCards)
 	router.GET("/about", customerHandler.AboutPage)
+	router.GET("/contact", customerHandler.ContactPage)
+	router.GET("/search", cardHandler.SearchCards)
 	router.GET("/card/:id", cardHandler.CardDetail)
+	router.GET("/checkout", cardHandler.Checkout)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
 

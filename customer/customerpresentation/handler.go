@@ -19,3 +19,7 @@ func NewCustomerHandler(repo customerdomain.CustomerRepo) *CustomerHandler {
 func (h *CustomerHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", nil)
 }
+
+func (h *CustomerHandler) ContactPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "contact.html", nil)
+}

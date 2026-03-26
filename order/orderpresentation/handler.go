@@ -25,22 +25,30 @@ func NewOrderHandler(orderRepo orderdomain.OrderRepo, customerRepo customerdomai
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
-	log.Printf("Form values: name=%s, quantity=%s, card_id=%s, card_name=%s, price_pkr=%s, price_nok=%s, currency=%s",
+	log.Printf("Form values: name=%s, quantity=%s, card_id=%s, card_name=%s, price=%s, currency=%s, email=%s, phone=%s, address=%s, city=%s, postal_code=%s",
 		c.PostForm("name"),
 		c.PostForm("quantity"),
 		c.PostForm("card_id"),
 		c.PostForm("card_name"),
-		c.PostForm("price_pkr"),
-		c.PostForm("price_nok"),
+		c.PostForm("price"),
 		c.PostForm("currency"),
+		c.PostForm("email"),
+		c.PostForm("phone"),
+		c.PostForm("address"),
+		c.PostForm("city"),
+		c.PostForm("postal_code"),
 	)
 
 	name := strings.TrimSpace(c.PostForm("name"))
+	email := strings.TrimSpace(c.PostForm("email"))
+	phone := strings.TrimSpace(c.PostForm("phone"))
+	address := strings.TrimSpace(c.PostForm("address"))
+	city := strings.TrimSpace(c.PostForm("city"))
+	postalCode := strings.TrimSpace(c.PostForm("postal_code"))
 	quantityRaw := strings.TrimSpace(c.PostForm("quantity"))
 	cardIDRaw := strings.TrimSpace(c.PostForm("card_id"))
 	cardName := strings.TrimSpace(c.PostForm("card_name"))
-	pricePKRRaw := strings.TrimSpace(c.PostForm("price_pkr"))
-	priceNOKRaw := strings.TrimSpace(c.PostForm("price_nok"))
+	priceRaw := strings.TrimSpace(c.PostForm("price"))
 	currency := strings.ToUpper(strings.TrimSpace(c.PostForm("currency")))
 	if currency == "" {
 		currency = "PKR"
@@ -50,8 +58,8 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	quantityInt, err := strconv.Atoi(quantityRaw)
-	if name == "" || err != nil || quantityInt < 1 {
-		c.String(http.StatusBadRequest, "Please provide a valid name and quantity.")
+	if name == "" || email == "" || phone == "" || address == "" || city == "" || postalCode == "" || err != nil || quantityInt < 1 {
+		c.String(http.StatusBadRequest, "Please provide valid checkout details.")
 		return
 	}
 
@@ -61,21 +69,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	var priceInt int
-	switch currency {
-	case "NOK":
-		priceInt, err = strconv.Atoi(priceNOKRaw)
-		if err != nil {
-			c.String(http.StatusBadRequest, "Invalid NOK price.")
-			return
-		}
-	default:
-		currency = "PKR"
-		priceInt, err = strconv.Atoi(pricePKRRaw)
-		if err != nil {
-			c.String(http.StatusBadRequest, "Invalid PKR price.")
-			return
-		}
+	priceInt, err := strconv.Atoi(priceRaw)
+	if err != nil || priceInt < 0 {
+		c.String(http.StatusBadRequest, "Invalid price.")
+		return
 	}
 
 	quantity := int64(quantityInt)
@@ -85,7 +82,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	customer, err := h.customerRepo.CreateCustomer(ctx, name, nil, nil)
+	customer, err := h.customerRepo.CreateCustomer(ctx, name, &email, &phone, &address, &city, &postalCode)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to create customer.")
 		return

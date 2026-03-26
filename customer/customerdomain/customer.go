@@ -6,12 +6,15 @@ import (
 )
 
 type Customer struct {
-	ID        int64
-	Name      string
-	Email     *string
-	Phone     *string
-	CreatedAt *time.Time
-	UpdatedAt *time.Time
+	ID         int64
+	Name       string
+	Email      *string
+	Phone      *string
+	Address    *string
+	City       *string
+	PostalCode *string
+	CreatedAt  *time.Time
+	UpdatedAt  *time.Time
 }
 
 type CustomerRepo interface {
@@ -20,7 +23,7 @@ type CustomerRepo interface {
 }
 
 type CustomerWriter interface {
-	CreateCustomer(ctx context.Context, name string, email *string, phone *string) (*Customer, error)
+	CreateCustomer(ctx context.Context, name string, email *string, phone *string, address *string, city *string, postalCode *string) (*Customer, error)
 }
 
 type CustomerReader interface {

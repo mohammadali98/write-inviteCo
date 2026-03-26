@@ -7,22 +7,39 @@ package customerreader
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getCustomerByID = `-- name: GetCustomerByID :one
-SELECT id, name, email, phone, created_at, updated_at
+SELECT id, name, email, phone, address, city, postal_code, created_at, updated_at
 FROM customers
 WHERE id = $1
 `
 
-func (q *Queries) GetCustomerByID(ctx context.Context, id int64) (Customer, error) {
+type GetCustomerByIDRow struct {
+	ID         int64
+	Name       string
+	Email      *string
+	Phone      *string
+	Address    *string
+	City       *string
+	PostalCode *string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetCustomerByID(ctx context.Context, id int64) (GetCustomerByIDRow, error) {
 	row := q.db.QueryRow(ctx, getCustomerByID, id)
-	var i Customer
+	var i GetCustomerByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
+		&i.Address,
+		&i.City,
+		&i.PostalCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
