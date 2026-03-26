@@ -20,6 +20,43 @@
             box-shadow: var(--shadow-card);
             display: block;
         }
+
+        .card-img-wrap {
+            position: relative;
+        }
+
+        .fav-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 38px;
+            height: 38px;
+            border: none;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b5e54;
+            transition: all 0.3s ease;
+            z-index: 5;
+        }
+
+        .fav-btn:hover {
+            background: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .fav-btn.active {
+            color: #e25555;
+        }
+
+        .fav-btn.active svg {
+            fill: #e25555;
+            stroke: #e25555;
+        }
     </style>
 </head>
 <body>
@@ -37,7 +74,7 @@
         <a class="nav-link" href="/contact">Contact</a>
         <div class="header-icons">
             <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
-            <button class="header-icon" aria-label="Favorites">♥</button>
+            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
             <button class="header-icon" aria-label="Cart">⊡</button>
         </div>
     </div>
@@ -102,6 +139,11 @@
             <article class="card-item animate-in delay-{{ add $i 3 }}">
                 <div class="card-img-wrap">
                     <img src="{{ $c.Image }}" alt="{{ $c.Name }}">
+                    <button class="fav-btn" data-id="{{ $c.ID }}" onclick="toggleFav(this)" aria-label="Add to favorites">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                    </button>
                 </div>
                 <div class="card-body">
                     <h2>{{ $c.Name }}</h2>
@@ -191,10 +233,43 @@
 </footer>
 
 <script>
+    function getFavs() {
+        try { return JSON.parse(localStorage.getItem('favs') || '[]'); } catch(e) { return []; }
+    }
+
+    function saveFavs(favs) {
+        localStorage.setItem('favs', JSON.stringify(favs));
+    }
+
+    function toggleFav(btn) {
+        var id = btn.getAttribute('data-id');
+        var favs = getFavs();
+        var idx = favs.indexOf(id);
+        if (idx > -1) {
+            favs.splice(idx, 1);
+            btn.classList.remove('active');
+        } else {
+            favs.push(id);
+            btn.classList.add('active');
+        }
+        saveFavs(favs);
+    }
+
+    function initFavs() {
+        var favs = getFavs();
+        document.querySelectorAll('.fav-btn').forEach(function(btn) {
+            if (favs.indexOf(btn.getAttribute('data-id')) > -1) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
     function toggleMenu() {
         document.getElementById("sidebar").classList.toggle("active");
         document.getElementById("overlay").classList.toggle("active");
     }
+
+    document.addEventListener('DOMContentLoaded', initFavs);
 </script>
 
 </body>
