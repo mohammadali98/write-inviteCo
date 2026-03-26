@@ -3,18 +3,3 @@
 //   sqlc v1.30.0
 
 package orderreader
-
-import (
-	"github.com/jackc/pgx/v5/pgtype"
-)
-
-type Order struct {
-	ID         int64
-	CustomerID *int64
-	CardID     *int64
-	Quantity   int64
-	TotalPrice int64
-	Status     *string
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-}

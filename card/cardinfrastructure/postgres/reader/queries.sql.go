@@ -7,29 +7,45 @@ package cardreader
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getAllCards = `-- name: GetAllCards :many
-SELECT id, name, description, price, image, created_at, updated_at
+SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
 FROM cards
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetAllCards(ctx context.Context) ([]Card, error) {
+type GetAllCardsRow struct {
+	ID          int64
+	Name        string
+	Description *string
+	PricePkr    int64
+	PriceNok    int64
+	Image       string
+	Category    string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) GetAllCards(ctx context.Context) ([]GetAllCardsRow, error) {
 	rows, err := q.db.Query(ctx, getAllCards)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Card
+	var items []GetAllCardsRow
 	for rows.Next() {
-		var i Card
+		var i GetAllCardsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.Price,
+			&i.PricePkr,
+			&i.PriceNok,
 			&i.Image,
+			&i.Category,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -44,22 +60,118 @@ func (q *Queries) GetAllCards(ctx context.Context) ([]Card, error) {
 }
 
 const getCardByID = `-- name: GetCardByID :one
-SELECT id, name, description, price, image, created_at, updated_at
+SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
 FROM cards
 WHERE id = $1
 `
 
-func (q *Queries) GetCardByID(ctx context.Context, id int64) (Card, error) {
+type GetCardByIDRow struct {
+	ID          int64
+	Name        string
+	Description *string
+	PricePkr    int64
+	PriceNok    int64
+	Image       string
+	Category    string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) GetCardByID(ctx context.Context, id int64) (GetCardByIDRow, error) {
 	row := q.db.QueryRow(ctx, getCardByID, id)
-	var i Card
+	var i GetCardByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.Price,
+		&i.PricePkr,
+		&i.PriceNok,
 		&i.Image,
+		&i.Category,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getCardImagesByCardID = `-- name: GetCardImagesByCardID :many
+SELECT id, card_id, image, sort_order, created_at
+FROM card_images
+WHERE card_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetCardImagesByCardID(ctx context.Context, cardID int64) ([]CardImage, error) {
+	rows, err := q.db.Query(ctx, getCardImagesByCardID, cardID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CardImage
+	for rows.Next() {
+		var i CardImage
+		if err := rows.Scan(
+			&i.ID,
+			&i.CardID,
+			&i.Image,
+			&i.SortOrder,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCardsByCategory = `-- name: GetCardsByCategory :many
+SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+FROM cards
+WHERE category = $1
+ORDER BY created_at DESC
+`
+
+type GetCardsByCategoryRow struct {
+	ID          int64
+	Name        string
+	Description *string
+	PricePkr    int64
+	PriceNok    int64
+	Image       string
+	Category    string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) GetCardsByCategory(ctx context.Context, category string) ([]GetCardsByCategoryRow, error) {
+	rows, err := q.db.Query(ctx, getCardsByCategory, category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCardsByCategoryRow
+	for rows.Next() {
+		var i GetCardsByCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.PricePkr,
+			&i.PriceNok,
+			&i.Image,
+			&i.Category,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -32,6 +32,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id int64) (*orderdom
 		Quantity:   row.Quantity,
 		TotalPrice: row.TotalPrice,
 		Status:     toOrderStatus(row.Status),
+		Currency:   row.Currency,
 		CreatedAt:  toTimePtr(row.CreatedAt),
 		UpdatedAt:  toTimePtr(row.UpdatedAt),
 	}, nil
@@ -51,6 +52,7 @@ func (r *OrderRepository) GetOrdersByCustomerID(ctx context.Context, customerID 
 			Quantity:   row.Quantity,
 			TotalPrice: row.TotalPrice,
 			Status:     toOrderStatus(row.Status),
+			Currency:   row.Currency,
 			CreatedAt:  toTimePtr(row.CreatedAt),
 			UpdatedAt:  toTimePtr(row.UpdatedAt),
 		}
@@ -58,7 +60,7 @@ func (r *OrderRepository) GetOrdersByCustomerID(ctx context.Context, customerID 
 	return orders, nil
 }
 
-func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status orderdomain.OrderStatus) (*orderdomain.Order, error) {
+func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status orderdomain.OrderStatus, currency string) (*orderdomain.Order, error) {
 	s := string(status)
 	row, err := r.writer.CreateOrder(ctx, orderwriter.CreateOrderParams{
 		CustomerID: &customerID,
@@ -66,6 +68,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 		Quantity:   quantity,
 		TotalPrice: totalPrice,
 		Status:     &s,
+		Currency:   currency,
 	})
 	if err != nil {
 		return nil, err
@@ -77,6 +80,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 		Quantity:   row.Quantity,
 		TotalPrice: row.TotalPrice,
 		Status:     toOrderStatus(row.Status),
+		Currency:   row.Currency,
 		CreatedAt:  toTimePtr(row.CreatedAt),
 		UpdatedAt:  toTimePtr(row.UpdatedAt),
 	}, nil

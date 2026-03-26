@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirmation-wrap {
+            min-height: calc(100vh - 240px);
+            display: grid;
+            place-items: center;
+            padding: 24px 0 40px;
+        }
+
+        .confirmation-panel {
+            width: min(680px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            box-shadow: var(--shadow-soft);
+            padding: 34px 30px;
+            text-align: center;
+        }
+
+        .confirmation-brand {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .confirmation-panel h1 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 400;
+            margin: 16px 0 12px;
+            color: var(--brand);
+        }
+
+        .confirmation-message {
+            margin: 0 auto 22px;
+            color: var(--text-light);
+            line-height: 1.7;
+            max-width: 520px;
+            font-size: 0.95rem;
+        }
+
+        .confirmation-details {
+            margin: 0 auto 24px;
+            width: min(420px, 100%);
+            background: var(--bg-warm);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 18px;
+            text-align: left;
+            display: grid;
+            gap: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            font-size: 0.92rem;
+            color: var(--text);
+        }
+
+        .detail-row span:last-child {
+            font-weight: 500;
+            color: var(--brand-dark);
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/">Contact</a>
+        <div class="header-icons">
+            <button class="header-icon" aria-label="Search">⌕</button>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="container confirmation-wrap">
+        <section class="confirmation-panel animate-in">
+            <p class="confirmation-brand">Write&InviteCo</p>
+            <h1>Thank You!</h1>
+            <p class="confirmation-message">
+                Thank you, {{ .customerName }}! Your order for {{ .quantity }} item(s) has been received.
+            </p>
+
+            <div class="confirmation-details">
+                <div class="detail-row">
+                    <span>Card</span>
+                    <span>{{ .cardName }}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Quantity</span>
+                    <span>{{ .quantity }}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Total</span>
+                    <span>{{ .currency }} {{ .totalPrice }}</span>
+                </div>
+            </div>
+
+            <a class="pill-btn" href="/collections/wedding-cards">
+                Continue Shopping <span class="arrow">→</span>
+            </a>
+        </section>
+    </div>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+                <a href="/">RSVP Cards</a>
+                <a href="/">Thank You Cards</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+                <a href="/">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>hello@writeandinviteco.com</p>
+                <p>+92 300 000 0000</p>
+                <div class="footer-social">
+                    <a href="https://www.instagram.com/writeandinvite.co" target="_blank" rel="noopener">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

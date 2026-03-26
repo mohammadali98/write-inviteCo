@@ -8,12 +8,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Card struct {
-	ID          int64
-	Name        string
-	Description *string
-	Price       int64
-	Image       string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+type CardImage struct {
+	ID        int64
+	CardID    int64
+	Image     string
+	SortOrder int32
+	CreatedAt pgtype.Timestamptz
 }

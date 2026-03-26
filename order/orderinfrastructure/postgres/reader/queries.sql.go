@@ -7,17 +7,31 @@ package orderreader
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, customer_id, card_id, quantity, total_price, status, created_at, updated_at
+SELECT id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at
 FROM orders
 WHERE id = $1
 `
 
-func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
+type GetOrderByIDRow struct {
+	ID         int64
+	CustomerID *int64
+	CardID     *int64
+	Quantity   int64
+	TotalPrice int64
+	Status     *string
+	Currency   string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, error) {
 	row := q.db.QueryRow(ctx, getOrderByID, id)
-	var i Order
+	var i GetOrderByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
@@ -25,6 +39,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
 		&i.Quantity,
 		&i.TotalPrice,
 		&i.Status,
+		&i.Currency,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -32,21 +47,33 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (Order, error) {
 }
 
 const getOrdersByCustomerID = `-- name: GetOrdersByCustomerID :many
-SELECT id, customer_id, card_id, quantity, total_price, status, created_at, updated_at
+SELECT id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at
 FROM orders
 WHERE customer_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetOrdersByCustomerID(ctx context.Context, customerID *int64) ([]Order, error) {
+type GetOrdersByCustomerIDRow struct {
+	ID         int64
+	CustomerID *int64
+	CardID     *int64
+	Quantity   int64
+	TotalPrice int64
+	Status     *string
+	Currency   string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetOrdersByCustomerID(ctx context.Context, customerID *int64) ([]GetOrdersByCustomerIDRow, error) {
 	rows, err := q.db.Query(ctx, getOrdersByCustomerID, customerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Order
+	var items []GetOrdersByCustomerIDRow
 	for rows.Next() {
-		var i Order
+		var i GetOrdersByCustomerIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
@@ -54,6 +81,7 @@ func (q *Queries) GetOrdersByCustomerID(ctx context.Context, customerID *int64) 
 			&i.Quantity,
 			&i.TotalPrice,
 			&i.Status,
+			&i.Currency,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

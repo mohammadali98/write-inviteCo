@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .categoryName }} — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER / NAVBAR ===== -->
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/">Contact</a>
+        <div class="header-icons">
+            <button class="header-icon" aria-label="Search">⌕</button>
+            <button class="header-icon" aria-label="Favorites">♥</button>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR (MOBILE) ===== -->
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+    <section class="section-featured">
+        <div class="page-header animate-in">
+            <h1>{{ .categoryName }}</h1>
+            <p>Explore handcrafted designs from our {{ .categoryName }} collection.</p>
+        </div>
+
+        {{ if .cards }}
+        <div class="card-grid">
+            {{ range $i, $c := .cards }}
+            <article class="card-item animate-in delay-{{ add $i 2 }}">
+                <div class="card-img-wrap">
+                    <img src="{{ $c.Image }}" alt="{{ $c.Name }}">
+                </div>
+                <div class="card-body">
+                    <h2>{{ $c.Name }}</h2>
+                    <p class="price">PKR {{ $c.PricePKR }}</p>
+                    <a class="btn" href="/card/{{ $c.ID }}">View Details →</a>
+                </div>
+            </article>
+            {{ end }}
+        </div>
+        {{ else }}
+        <div class="page-header animate-in delay-2">
+            <p>Coming soon — check back shortly!</p>
+        </div>
+        {{ end }}
+    </section>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <div class="footer-inner">
+
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+                <a href="/">RSVP Cards</a>
+                <a href="/">Thank You Cards</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+                <a href="/">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+                <div class="footer-social">
+                    <a href="https://www.instagram.com/writeandinvite.co" target="_blank" rel="noopener">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Pinterest</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

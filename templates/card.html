@@ -5,6 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .card.Name }} — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gallery-main {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        .gallery-thumbs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .gallery-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .gallery-thumb:hover {
+            border-color: #c4953a;
+        }
+
+        @media (max-width: 760px) {
+            .gallery-main {
+                height: 280px;
+            }
+
+            .gallery-thumb {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -12,9 +65,6 @@
 <header class="top-header">
     <div class="header-left">
         <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
-        <a class="nav-link" href="/">Lookbook</a>
-        <a class="nav-link" href="/">Shop</a>
-        <a class="nav-link" href="/">Collections</a>
     </div>
 
     <a class="brand" href="/">Write&InviteCo</a>
@@ -35,10 +85,11 @@
     <h3>Menu</h3>
     <nav>
         <a href="/">Home</a>
-        <a href="/">Lookbook</a>
-        <a href="/">Shop All</a>
-        <a href="/">Collections</a>
-        <a href="/">About</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
         <a href="/">Contact</a>
     </nav>
 </aside>
@@ -47,17 +98,31 @@
 <!-- ===== MAIN ===== -->
 <main class="main-content">
     <div class="container">
-        <a class="back-link" href="/">← Back to all cards</a>
+        <a class="back-link" href="/collections/wedding-cards">← Back to collection</a>
 
         <section class="card-detail animate-in">
-            <img src="{{ .card.Image }}" alt="{{ .card.Name }}">
+            <div class="card-gallery">
+                <img id="main-image" class="gallery-main" src="{{ .card.Image }}" alt="{{ .card.Name }}">
+                <div class="gallery-thumbs">
+                    {{ range .images }}
+                    <img class="gallery-thumb" src="{{ .Image }}" alt="Detail view"
+                         onclick="document.getElementById('main-image').src=this.src">
+                    {{ end }}
+                </div>
+            </div>
             <div class="detail-content">
                 <h1>{{ .card.Name }}</h1>
-                <p class="price">$ {{ .card.Price }}</p>
+                <p class="price">PKR {{ .card.PricePKR }}</p>
+                {{ if .card.Description }}
+                <p>{{ .card.Description }}</p>
+                {{ end }}
 
                 <form class="order-form" action="/order" method="post">
                     <input type="hidden" name="card_id" value="{{ .card.ID }}">
-                    <input type="hidden" name="price" value="{{ .card.Price }}">
+                    <input type="hidden" name="card_name" value="{{ .card.Name }}">
+                    <input type="hidden" name="price_pkr" value="{{ .card.PricePKR }}">
+                    <input type="hidden" name="price_nok" value="{{ .card.PriceNOK }}">
+                    <input type="hidden" name="currency" value="PKR">
 
                     <label for="name">Your Name</label>
                     <input id="name" name="name" type="text" placeholder="Enter your name" required>
@@ -94,8 +159,8 @@
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>
-                <p>hello@writeandinviteco.com</p>
-                <p>+92 300 000 0000</p>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
             </div>
         </div>
         <div class="footer-bottom">

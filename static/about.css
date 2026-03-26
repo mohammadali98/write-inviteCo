@@ -219,9 +219,16 @@
     box-shadow: 0 12px 36px rgba(90, 60, 20, 0.08);
 }
 
+.service-card { background: #ffffff; box-shadow: 0 4px 20px rgba(90, 60, 20, 0.06); }
+.service-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(90, 60, 20, 0.12); }
+.service-card-gold { border-top: 4px solid #c4953a; }
+.service-card-rose { border-top: 4px solid #d4a68c; }
+.service-card-green { border-top: 4px solid #7a9a6d; }
+.service-icon { width: 72px; height: 72px; }
+
 .service-icon {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
     margin: 0 auto 18px;
     color: var(--brand-warm);
 }

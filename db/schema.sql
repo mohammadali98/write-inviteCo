@@ -1,4 +1,4 @@
-\restrict 7XDhXqLKRa57AMlb7VTyooD9XNrGWfmhVHZPz15hk0je2EPu1oamUl7Br5Pdn4m
+\restrict p4bFx8iLMKXv3Bo02ouIYSIHLqb4CebvJBFQPCg4QXAiVspOutEPC2SwAZKZmSL
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -19,6 +19,38 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: card_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.card_images (
+    id bigint NOT NULL,
+    card_id bigint NOT NULL,
+    image text NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: card_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.card_images_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: card_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.card_images_id_seq OWNED BY public.card_images.id;
+
+
+--
 -- Name: cards; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -26,10 +58,12 @@ CREATE TABLE public.cards (
     id bigint NOT NULL,
     name text NOT NULL,
     description text,
-    price bigint NOT NULL,
     image text NOT NULL,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    category text DEFAULT 'wedding-cards'::text NOT NULL,
+    price_pkr bigint DEFAULT 0 NOT NULL,
+    price_nok bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -97,7 +131,8 @@ CREATE TABLE public.orders (
     total_price bigint NOT NULL,
     status text DEFAULT 'pending'::text,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    currency text DEFAULT 'PKR'::text NOT NULL
 );
 
 
@@ -130,6 +165,13 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: card_images id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_images ALTER COLUMN id SET DEFAULT nextval('public.card_images_id_seq'::regclass);
+
+
+--
 -- Name: cards id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -148,6 +190,14 @@ ALTER TABLE ONLY public.customers ALTER COLUMN id SET DEFAULT nextval('public.cu
 --
 
 ALTER TABLE ONLY public.orders ALTER COLUMN id SET DEFAULT nextval('public.orders_id_seq'::regclass);
+
+
+--
+-- Name: card_images card_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_images
+    ADD CONSTRAINT card_images_pkey PRIMARY KEY (id);
 
 
 --
@@ -183,6 +233,20 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: idx_card_images_card_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_card_images_card_id ON public.card_images USING btree (card_id);
+
+
+--
+-- Name: idx_cards_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cards_category ON public.cards USING btree (category);
+
+
+--
 -- Name: idx_customers_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -211,6 +275,14 @@ CREATE INDEX idx_orders_status ON public.orders USING btree (status);
 
 
 --
+-- Name: card_images card_images_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_images
+    ADD CONSTRAINT card_images_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.cards(id) ON DELETE CASCADE;
+
+
+--
 -- Name: orders orders_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -230,7 +302,7 @@ ALTER TABLE ONLY public.orders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7XDhXqLKRa57AMlb7VTyooD9XNrGWfmhVHZPz15hk0je2EPu1oamUl7Br5Pdn4m
+\unrestrict p4bFx8iLMKXv3Bo02ouIYSIHLqb4CebvJBFQPCg4QXAiVspOutEPC2SwAZKZmSL
 
 
 --
@@ -240,4 +312,6 @@ ALTER TABLE ONLY public.orders
 INSERT INTO public.schema_migrations (version) VALUES
     ('20260323013540'),
     ('20260323013541'),
-    ('20260323013542');
+    ('20260323013542'),
+    ('20260326000001'),
+    ('20260326000002');

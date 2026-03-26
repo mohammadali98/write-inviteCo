@@ -66,6 +66,7 @@ func main() {
 	router.GET("/", cardHandler.ListCards)
 	router.GET("/about", customerHandler.AboutPage)
 	router.GET("/card/:id", cardHandler.CardDetail)
+	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
 
 	log.Printf("Server starting on :%s", cfg.Port)

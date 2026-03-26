@@ -7,37 +7,82 @@ package cardwriter
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createCard = `-- name: CreateCard :one
-INSERT INTO cards (name, description, price, image)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, description, price, image, created_at, updated_at
+INSERT INTO cards (name, description, price_pkr, price_nok, image, category)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
 `
 
 type CreateCardParams struct {
 	Name        string
 	Description *string
-	Price       int64
+	PricePkr    int64
+	PriceNok    int64
 	Image       string
+	Category    string
 }
 
-func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, error) {
+type CreateCardRow struct {
+	ID          int64
+	Name        string
+	Description *string
+	PricePkr    int64
+	PriceNok    int64
+	Image       string
+	Category    string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateCardRow, error) {
 	row := q.db.QueryRow(ctx, createCard,
 		arg.Name,
 		arg.Description,
-		arg.Price,
+		arg.PricePkr,
+		arg.PriceNok,
 		arg.Image,
+		arg.Category,
 	)
-	var i Card
+	var i CreateCardRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.Price,
+		&i.PricePkr,
+		&i.PriceNok,
 		&i.Image,
+		&i.Category,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createCardImage = `-- name: CreateCardImage :one
+INSERT INTO card_images (card_id, image, sort_order)
+VALUES ($1, $2, $3)
+RETURNING id, card_id, image, sort_order, created_at
+`
+
+type CreateCardImageParams struct {
+	CardID    int64
+	Image     string
+	SortOrder int32
+}
+
+func (q *Queries) CreateCardImage(ctx context.Context, arg CreateCardImageParams) (CardImage, error) {
+	row := q.db.QueryRow(ctx, createCardImage, arg.CardID, arg.Image, arg.SortOrder)
+	var i CardImage
+	err := row.Scan(
+		&i.ID,
+		&i.CardID,
+		&i.Image,
+		&i.SortOrder,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -52,9 +97,19 @@ func (q *Queries) DeleteCard(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteCardImagesByCardID = `-- name: DeleteCardImagesByCardID :exec
+DELETE FROM card_images
+WHERE card_id = $1
+`
+
+func (q *Queries) DeleteCardImagesByCardID(ctx context.Context, cardID int64) error {
+	_, err := q.db.Exec(ctx, deleteCardImagesByCardID, cardID)
+	return err
+}
+
 const updateCard = `-- name: UpdateCard :exec
 UPDATE cards
-SET name = $2, description = $3, price = $4, image = $5, updated_at = CURRENT_TIMESTAMP
+SET name = $2, description = $3, price_pkr = $4, price_nok = $5, image = $6, category = $7, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 `
 
@@ -62,8 +117,10 @@ type UpdateCardParams struct {
 	ID          int64
 	Name        string
 	Description *string
-	Price       int64
+	PricePkr    int64
+	PriceNok    int64
 	Image       string
+	Category    string
 }
 
 func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) error {
@@ -71,8 +128,10 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) error {
 		arg.ID,
 		arg.Name,
 		arg.Description,
-		arg.Price,
+		arg.PricePkr,
+		arg.PriceNok,
 		arg.Image,
+		arg.Category,
 	)
 	return err
 }

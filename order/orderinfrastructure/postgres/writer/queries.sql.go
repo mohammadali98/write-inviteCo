@@ -7,12 +7,14 @@ package orderwriter
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (customer_id, card_id, quantity, total_price, status)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, customer_id, card_id, quantity, total_price, status, created_at, updated_at
+INSERT INTO orders (customer_id, card_id, quantity, total_price, status, currency)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at
 `
 
 type CreateOrderParams struct {
@@ -21,17 +23,31 @@ type CreateOrderParams struct {
 	Quantity   int64
 	TotalPrice int64
 	Status     *string
+	Currency   string
 }
 
-func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
+type CreateOrderRow struct {
+	ID         int64
+	CustomerID *int64
+	CardID     *int64
+	Quantity   int64
+	TotalPrice int64
+	Status     *string
+	Currency   string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (CreateOrderRow, error) {
 	row := q.db.QueryRow(ctx, createOrder,
 		arg.CustomerID,
 		arg.CardID,
 		arg.Quantity,
 		arg.TotalPrice,
 		arg.Status,
+		arg.Currency,
 	)
-	var i Order
+	var i CreateOrderRow
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
@@ -39,6 +55,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.Quantity,
 		&i.TotalPrice,
 		&i.Status,
+		&i.Currency,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

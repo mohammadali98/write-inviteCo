@@ -31,8 +31,10 @@ func (r *CardRepository) GetAllCards(ctx context.Context) ([]*carddomain.Card, e
 			ID:          row.ID,
 			Name:        row.Name,
 			Description: row.Description,
-			Price:       row.Price,
+			PricePKR:    row.PricePkr,
+			PriceNOK:    row.PriceNok,
 			Image:       row.Image,
+			Category:    row.Category,
 			CreatedAt:   toTimePtr(row.CreatedAt),
 			UpdatedAt:   toTimePtr(row.UpdatedAt),
 		}
@@ -49,19 +51,63 @@ func (r *CardRepository) GetCardByID(ctx context.Context, id int64) (*carddomain
 		ID:          row.ID,
 		Name:        row.Name,
 		Description: row.Description,
-		Price:       row.Price,
+		PricePKR:    row.PricePkr,
+		PriceNOK:    row.PriceNok,
 		Image:       row.Image,
+		Category:    row.Category,
 		CreatedAt:   toTimePtr(row.CreatedAt),
 		UpdatedAt:   toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
-func (r *CardRepository) CreateCard(ctx context.Context, name string, description *string, price int64, image string) (*carddomain.Card, error) {
+func (r *CardRepository) GetCardsByCategory(ctx context.Context, category string) ([]*carddomain.Card, error) {
+	rows, err := r.reader.GetCardsByCategory(ctx, category)
+	if err != nil {
+		return nil, err
+	}
+	cards := make([]*carddomain.Card, len(rows))
+	for i, row := range rows {
+		cards[i] = &carddomain.Card{
+			ID:          row.ID,
+			Name:        row.Name,
+			Description: row.Description,
+			PricePKR:    row.PricePkr,
+			PriceNOK:    row.PriceNok,
+			Image:       row.Image,
+			Category:    row.Category,
+			CreatedAt:   toTimePtr(row.CreatedAt),
+			UpdatedAt:   toTimePtr(row.UpdatedAt),
+		}
+	}
+	return cards, nil
+}
+
+func (r *CardRepository) GetCardImagesByCardID(ctx context.Context, cardID int64) ([]*carddomain.CardImage, error) {
+	rows, err := r.reader.GetCardImagesByCardID(ctx, cardID)
+	if err != nil {
+		return nil, err
+	}
+	images := make([]*carddomain.CardImage, len(rows))
+	for i, row := range rows {
+		images[i] = &carddomain.CardImage{
+			ID:        row.ID,
+			CardID:    row.CardID,
+			Image:     row.Image,
+			SortOrder: row.SortOrder,
+			CreatedAt: toTimePtr(row.CreatedAt),
+		}
+	}
+	return images, nil
+}
+
+func (r *CardRepository) CreateCard(ctx context.Context, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) (*carddomain.Card, error) {
 	row, err := r.writer.CreateCard(ctx, cardwriter.CreateCardParams{
 		Name:        name,
 		Description: description,
-		Price:       price,
+		PricePkr:    pricePKR,
+		PriceNok:    priceNOK,
 		Image:       image,
+		Category:    category,
 	})
 	if err != nil {
 		return nil, err
@@ -70,25 +116,51 @@ func (r *CardRepository) CreateCard(ctx context.Context, name string, descriptio
 		ID:          row.ID,
 		Name:        row.Name,
 		Description: row.Description,
-		Price:       row.Price,
+		PricePKR:    row.PricePkr,
+		PriceNOK:    row.PriceNok,
 		Image:       row.Image,
+		Category:    row.Category,
 		CreatedAt:   toTimePtr(row.CreatedAt),
 		UpdatedAt:   toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
-func (r *CardRepository) UpdateCard(ctx context.Context, id int64, name string, description *string, price int64, image string) error {
+func (r *CardRepository) UpdateCard(ctx context.Context, id int64, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) error {
 	return r.writer.UpdateCard(ctx, cardwriter.UpdateCardParams{
 		ID:          id,
 		Name:        name,
 		Description: description,
-		Price:       price,
+		PricePkr:    pricePKR,
+		PriceNok:    priceNOK,
 		Image:       image,
+		Category:    category,
 	})
 }
 
 func (r *CardRepository) DeleteCard(ctx context.Context, id int64) error {
 	return r.writer.DeleteCard(ctx, id)
+}
+
+func (r *CardRepository) CreateCardImage(ctx context.Context, cardID int64, image string, sortOrder int32) (*carddomain.CardImage, error) {
+	row, err := r.writer.CreateCardImage(ctx, cardwriter.CreateCardImageParams{
+		CardID:    cardID,
+		Image:     image,
+		SortOrder: sortOrder,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &carddomain.CardImage{
+		ID:        row.ID,
+		CardID:    row.CardID,
+		Image:     row.Image,
+		SortOrder: row.SortOrder,
+		CreatedAt: toTimePtr(row.CreatedAt),
+	}, nil
+}
+
+func (r *CardRepository) DeleteCardImagesByCardID(ctx context.Context, cardID int64) error {
+	return r.writer.DeleteCardImagesByCardID(ctx, cardID)
 }
 
 func toTimePtr(t pgtype.Timestamptz) *time.Time {

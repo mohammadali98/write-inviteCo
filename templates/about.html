@@ -6,6 +6,13 @@
     <title>About Us — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/about.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
 
@@ -13,9 +20,6 @@
 <header class="top-header">
     <div class="header-left">
         <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
-        <a class="nav-link" href="/">Lookbook</a>
-        <a class="nav-link" href="/">Shop</a>
-        <a class="nav-link" href="/">Collections</a>
     </div>
     <a class="brand" href="/">Write&InviteCo</a>
     <div class="header-right">
@@ -34,9 +38,10 @@
     <h3>Menu</h3>
     <nav>
         <a href="/">Home</a>
-        <a href="/">Lookbook</a>
-        <a href="/">Shop All</a>
-        <a href="/">Collections</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
         <a href="/about">About</a>
         <a href="/">Contact</a>
     </nav>
@@ -106,37 +111,25 @@
             <div class="services-divider animate-in delay-1"></div>
 
             <div class="services-grid">
-                <div class="service-card animate-in delay-2">
+                <div class="service-card service-card-gold animate-in delay-2">
                     <div class="service-icon">
-                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="10" y="8" width="44" height="48" rx="4"/>
-                            <path d="M20 20h24M20 28h24M20 36h16"/>
-                            <path d="M32 48l-4-4h8l-4 4z" fill="currentColor" stroke="none"/>
-                        </svg>
+                        <svg viewBox="0 0 64 64" fill="none"><rect x="12" y="18" width="40" height="28" rx="4" stroke="#c4953a" stroke-width="1.5" fill="#faf3e6"/><path d="M12 22l20 14 20-14" stroke="#c4953a" stroke-width="1.5" fill="none"/><circle cx="32" cy="34" r="5" fill="#c4953a" opacity="0.3"/></svg>
                     </div>
                     <h3>Custom Invitations</h3>
                     <p>Bespoke wedding cards designed from scratch to match your theme, colours, and love story perfectly.</p>
                 </div>
 
-                <div class="service-card animate-in delay-3">
+                <div class="service-card service-card-rose animate-in delay-3">
                     <div class="service-icon">
-                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M32 12C20 12 14 22 14 30c0 12 18 22 18 22s18-10 18-22c0-8-6-18-18-18z"/>
-                            <circle cx="32" cy="28" r="6"/>
-                        </svg>
+                        <svg viewBox="0 0 64 64" fill="none"><path d="M40 8L16 48" stroke="#d4a68c" stroke-width="2" stroke-linecap="round"/><path d="M16 48c0 4 2 8 6 8s4-4 4-4" stroke="#d4a68c" stroke-width="1.5" fill="none"/><path d="M38 10l6-2-2 6" fill="#d4a68c" opacity="0.4"/></svg>
                     </div>
                     <h3>Calligraphy & Lettering</h3>
                     <p>Hand-written names, verses, and envelope addressing that add an irreplaceable personal warmth.</p>
                 </div>
 
-                <div class="service-card animate-in delay-4">
+                <div class="service-card service-card-green animate-in delay-4">
                     <div class="service-icon">
-                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="8" y="14" width="48" height="36" rx="4"/>
-                            <path d="M8 24h48"/>
-                            <circle cx="20" cy="38" r="4"/>
-                            <path d="M30 42h18M30 36h12"/>
-                        </svg>
+                        <svg viewBox="0 0 64 64" fill="none"><rect x="16" y="14" width="32" height="38" rx="4" stroke="#7a9a6d" stroke-width="1.5" fill="#f0f5ec"/><rect x="20" y="10" width="32" height="38" rx="4" stroke="#7a9a6d" stroke-width="1.5" fill="#ffffff"/><line x1="26" y1="22" x2="46" y2="22" stroke="#7a9a6d" stroke-width="1" opacity="0.5"/><line x1="26" y1="28" x2="42" y2="28" stroke="#7a9a6d" stroke-width="1" opacity="0.5"/><line x1="26" y1="34" x2="38" y2="34" stroke="#7a9a6d" stroke-width="1" opacity="0.5"/></svg>
                     </div>
                     <h3>Full Stationery Suites</h3>
                     <p>Complete packages — save the dates, RSVP cards, menus, programs, and thank you notes, all beautifully cohesive.</p>
@@ -156,7 +149,7 @@
                         Every project begins with a conversation — tell us about your day, your dreams,
                         and let us bring them to life on paper.
                     </p>
-                    <a class="pill-btn" href="/">
+                    <a class="pill-btn" href="https://wa.me/923039238299?text=Hi%20Write%26InviteCo!%20I%27d%20like%20to%20book%20a%20consultation." target="_blank" rel="noopener">
                         Book a Consultation <span class="arrow">→</span>
                     </a>
                 </div>
@@ -189,7 +182,7 @@
                     </svg>
                 </div>
                 <h3>Get in Touch</h3>
-                <p>hello@writeandinviteco.com<br>+92 300 000 0000</p>
+                <p>writeandinvite.co@gmail.com<br>+92 303 9238299</p>
             </div>
             <div class="contact-mini animate-in delay-3">
                 <div class="contact-mini-icon">
@@ -231,8 +224,8 @@
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>
-                <p>hello@writeandinviteco.com</p>
-                <p>+92 300 000 0000</p>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
                 <div class="footer-social">
                     <a href="https://www.instagram.com/writeandinvite.co" target="_blank" rel="noopener">Instagram</a>
                     <a href="#">Facebook</a>

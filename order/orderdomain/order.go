@@ -21,6 +21,7 @@ type Order struct {
 	Quantity   int64
 	TotalPrice int64
 	Status     OrderStatus
+	Currency   string
 	CreatedAt  *time.Time
 	UpdatedAt  *time.Time
 }
@@ -31,7 +32,7 @@ type OrderRepo interface {
 }
 
 type OrderWriter interface {
-	CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status OrderStatus) (*Order, error)
+	CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status OrderStatus, currency string) (*Order, error)
 	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
 
