@@ -1,4 +1,4 @@
-\restrict J4dvhyLPxEiLl2rsK59hu4BDfQcQYM9arQwNUtk5L0spQJMhyNnOJF6Re4WMFb9
+\restrict hIVDuotQykb77Vs5q4zuySp2RSUaIlGKxgolJjznNOgnQHi1PTCrfKrOgqUMIpw
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -129,6 +129,70 @@ ALTER SEQUENCE public.customers_id_seq OWNED BY public.customers.id;
 
 
 --
+-- Name: order_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_details (
+    id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    bride_name text,
+    groom_name text,
+    bride_father_name text,
+    groom_father_name text,
+    event_type text,
+    event_date text,
+    event_time text,
+    venue_name text,
+    venue_address text,
+    rsvp_name text,
+    rsvp_phone text,
+    notes text,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    side text DEFAULT 'bride'::text,
+    mehndi_date date,
+    baraat_date date,
+    nikkah_date date,
+    walima_date date,
+    mehndi_dinner_time time without time zone,
+    baraat_dinner_time time without time zone,
+    nikkah_dinner_time time without time zone,
+    walima_dinner_time time without time zone,
+    mehndi_time_type text,
+    mehndi_time time without time zone,
+    baraat_time_type text,
+    baraat_time time without time zone,
+    baraat_arrival_time time without time zone,
+    rukhsati_time time without time zone,
+    nikkah_time_type text,
+    nikkah_time time without time zone,
+    walima_time_type text,
+    walima_time time without time zone,
+    reception_time time without time zone,
+    dinner_time time without time zone,
+    CONSTRAINT chk_order_details_side CHECK ((side = ANY (ARRAY['bride'::text, 'groom'::text])))
+);
+
+
+--
+-- Name: order_details_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.order_details_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: order_details_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.order_details_id_seq OWNED BY public.order_details.id;
+
+
+--
 -- Name: orders; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -195,6 +259,13 @@ ALTER TABLE ONLY public.customers ALTER COLUMN id SET DEFAULT nextval('public.cu
 
 
 --
+-- Name: order_details id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_details ALTER COLUMN id SET DEFAULT nextval('public.order_details_id_seq'::regclass);
+
+
+--
 -- Name: orders id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -223,6 +294,14 @@ ALTER TABLE ONLY public.cards
 
 ALTER TABLE ONLY public.customers
     ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_details order_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_details
+    ADD CONSTRAINT order_details_pkey PRIMARY KEY (id);
 
 
 --
@@ -263,6 +342,13 @@ CREATE INDEX idx_customers_email ON public.customers USING btree (email);
 
 
 --
+-- Name: idx_order_details_order_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_order_details_order_id ON public.order_details USING btree (order_id);
+
+
+--
 -- Name: idx_orders_card_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -292,6 +378,14 @@ ALTER TABLE ONLY public.card_images
 
 
 --
+-- Name: order_details order_details_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_details
+    ADD CONSTRAINT order_details_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+
+
+--
 -- Name: orders orders_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -311,7 +405,7 @@ ALTER TABLE ONLY public.orders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict J4dvhyLPxEiLl2rsK59hu4BDfQcQYM9arQwNUtk5L0spQJMhyNnOJF6Re4WMFb9
+\unrestrict hIVDuotQykb77Vs5q4zuySp2RSUaIlGKxgolJjznNOgnQHi1PTCrfKrOgqUMIpw
 
 
 --
@@ -325,4 +419,9 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260326000001'),
     ('20260326000002'),
     ('20260326000003'),
-    ('20260326000004');
+    ('20260326000004'),
+    ('20260326000005'),
+    ('20260326000006'),
+    ('20260326000007'),
+    ('20260326000008'),
+    ('20260405111718');

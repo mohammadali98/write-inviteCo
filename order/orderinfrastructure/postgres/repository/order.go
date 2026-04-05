@@ -86,6 +86,80 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 	}, nil
 }
 
+func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, side string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, baraatDate *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, nikkahDate *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, walimaDate *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, dinnerTime *string, venueName string, venueAddress string, rsvpName string, rsvpPhone string, notes *string) (*orderdomain.OrderDetail, error) {
+	row, err := r.writer.CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
+		OrderID:           orderID,
+		Side:              side,
+		BrideName:         brideName,
+		GroomName:         groomName,
+		BrideFatherName:   brideFatherName,
+		GroomFatherName:   groomFatherName,
+		MehndiDate:        stringOrEmpty(mehndiDate),
+		MehndiTimeType:    mehndiTimeType,
+		MehndiTime:        stringOrEmpty(mehndiTime),
+		MehndiDinnerTime:  stringOrEmpty(mehndiDinnerTime),
+		BaraatDate:        stringOrEmpty(baraatDate),
+		BaraatTimeType:    baraatTimeType,
+		BaraatTime:        stringOrEmpty(baraatTime),
+		BaraatDinnerTime:  stringOrEmpty(baraatDinnerTime),
+		BaraatArrivalTime: stringOrEmpty(baraatArrivalTime),
+		RukhsatiTime:      stringOrEmpty(rukhsatiTime),
+		NikkahDate:        stringOrEmpty(nikkahDate),
+		NikkahTimeType:    nikkahTimeType,
+		NikkahTime:        stringOrEmpty(nikkahTime),
+		NikkahDinnerTime:  stringOrEmpty(nikkahDinnerTime),
+		WalimaDate:        stringOrEmpty(walimaDate),
+		WalimaTimeType:    walimaTimeType,
+		WalimaTime:        stringOrEmpty(walimaTime),
+		WalimaDinnerTime:  stringOrEmpty(walimaDinnerTime),
+		ReceptionTime:     stringOrEmpty(receptionTime),
+		DinnerTime:        stringOrEmpty(dinnerTime),
+		VenueName:         venueName,
+		VenueAddress:      venueAddress,
+		RsvpName:          rsvpName,
+		RsvpPhone:         rsvpPhone,
+		Notes:             notes,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &orderdomain.OrderDetail{
+		ID:                row.ID,
+		OrderID:           row.OrderID,
+		Side:              row.Side,
+		BrideName:         row.BrideName,
+		GroomName:         row.GroomName,
+		BrideFatherName:   row.BrideFatherName,
+		GroomFatherName:   row.GroomFatherName,
+		MehndiDate:        emptyToNil(row.MehndiDate),
+		MehndiTimeType:    row.MehndiTimeType,
+		MehndiTime:        emptyToNil(row.MehndiTime),
+		MehndiDinnerTime:  emptyToNil(row.MehndiDinnerTime),
+		BaraatDate:        emptyToNil(row.BaraatDate),
+		BaraatTimeType:    row.BaraatTimeType,
+		BaraatTime:        emptyToNil(row.BaraatTime),
+		BaraatDinnerTime:  emptyToNil(row.BaraatDinnerTime),
+		BaraatArrivalTime: emptyToNil(row.BaraatArrivalTime),
+		RukhsatiTime:      emptyToNil(row.RukhsatiTime),
+		NikkahDate:        emptyToNil(row.NikkahDate),
+		NikkahTimeType:    row.NikkahTimeType,
+		NikkahTime:        emptyToNil(row.NikkahTime),
+		NikkahDinnerTime:  emptyToNil(row.NikkahDinnerTime),
+		WalimaDate:        emptyToNil(row.WalimaDate),
+		WalimaTimeType:    row.WalimaTimeType,
+		WalimaTime:        emptyToNil(row.WalimaTime),
+		WalimaDinnerTime:  emptyToNil(row.WalimaDinnerTime),
+		ReceptionTime:     emptyToNil(row.ReceptionTime),
+		DinnerTime:        emptyToNil(row.DinnerTime),
+		VenueName:         row.VenueName,
+		VenueAddress:      row.VenueAddress,
+		RsvpName:          row.RsvpName,
+		RsvpPhone:         row.RsvpPhone,
+		Notes:             row.Notes,
+		CreatedAt:         toTimePtr(row.CreatedAt),
+	}, nil
+}
+
 func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, id int64, status orderdomain.OrderStatus) error {
 	s := string(status)
 	return r.writer.UpdateOrderStatus(ctx, orderwriter.UpdateOrderStatusParams{
@@ -113,4 +187,19 @@ func toOrderStatus(s *string) orderdomain.OrderStatus {
 		return orderdomain.PendingOrderStatus
 	}
 	return orderdomain.OrderStatus(*s)
+}
+
+func stringOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func emptyToNil(value string) *string {
+	if value == "" {
+		return nil
+	}
+	v := value
+	return &v
 }

@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize Order — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .customize-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 40px 60px;
+        }
+
+        .customize-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 36px;
+            align-items: start;
+        }
+
+        .customize-summary {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
+            position: sticky;
+            top: 100px;
+        }
+
+        .customize-summary img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+
+        .customize-summary h3 {
+            margin: 0 0 10px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px solid #ece4db;
+            color: #6b5e54;
+            font-size: 0.9rem;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #2a2420;
+        }
+
+        .customize-form h1 {
+            margin: 0 0 8px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2.1rem;
+            font-weight: 400;
+        }
+
+        .customize-subtitle {
+            margin: 0 0 20px;
+            color: #7b6f65;
+            font-size: 0.9rem;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .section-card h3 {
+            margin: 0 0 12px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 0.84rem;
+            color: #6b5e54;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            border: 1px solid #e0d6cc;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-family: 'Jost', sans-serif;
+            background: #f5f0eb;
+            font-size: 0.94rem;
+        }
+
+        .form-group textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #c4953a;
+            box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
+        }
+
+        .side-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .side-btn {
+            border: 1px solid #d8cfc6;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #6b5e54;
+            padding: 10px 18px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .side-btn.active {
+            background: #8b6914;
+            border-color: #8b6914;
+            color: #ffffff;
+        }
+
+        .side-hidden {
+            display: none;
+        }
+
+        .time-type-toggle {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .time-type-option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b5e54;
+            font-size: 0.82rem;
+        }
+
+        .time-type-option input[type="radio"] {
+            width: auto;
+            accent-color: #8b6914;
+        }
+
+        .submit-btn {
+            width: 100%;
+            border: none;
+            border-radius: 50px;
+            background: #8b6914;
+            color: #fff;
+            padding: 16px 28px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.35s ease;
+        }
+
+        .submit-btn:hover {
+            background: #5c4510;
+        }
+
+        @media (max-width: 760px) {
+            .customize-page {
+                padding: 20px 18px 40px;
+            }
+
+            .customize-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="customize-page animate-in">
+        <div class="customize-grid">
+            <aside class="customize-summary">
+                <img src="{{ .summary.CardImage }}" alt="{{ .summary.CardName }}">
+                <h3>{{ .summary.CardName }}</h3>
+                <div class="summary-row"><span>Foil Finish</span><span>{{ .summary.FoilLabel }}</span></div>
+                <div class="summary-row"><span>Base Price / Card</span><span>{{ .summary.Currency }} {{ .summary.UnitPrice }}</span></div>
+                <div class="summary-row"><span>Included Inserts / Card</span><span>{{ .summary.IncludedInserts }}</span></div>
+                <div class="summary-row"><span>Requested Inserts / Card</span><span>{{ .summary.RequestedInserts }}</span></div>
+                <div class="summary-row"><span>Chargeable Extra Inserts</span><span>{{ .summary.ExtraInserts }}</span></div>
+                <div class="summary-row"><span>Per Card Total</span><span>{{ .summary.Currency }} {{ .summary.PerCardTotal }}</span></div>
+                <div class="summary-row"><span>Quantity</span><span>{{ .summary.Quantity }}</span></div>
+                <div class="summary-total"><span>Total</span><span>{{ .summary.Currency }} {{ .summary.TotalPrice }}</span></div>
+            </aside>
+
+            <section class="customize-form">
+                <h1>Customize Your Invitation</h1>
+                <p class="customize-subtitle">Add event details and we will personalize your design before production.</p>
+
+                <form action="/order" method="post">
+                    <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
+                    <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
+                    <input type="hidden" name="currency" value="{{ .summary.Currency }}">
+                    <input type="hidden" name="foil_option" value="{{ .summary.FoilOption }}">
+                    <input type="hidden" name="extra_inserts" value="{{ .summary.RequestedInserts }}">
+                    <input type="hidden" id="side-input" name="side" value="{{ .summary.Side }}">
+                    <input type="hidden" name="name" value="{{ .summary.Name }}">
+                    <input type="hidden" name="email" value="{{ .summary.Email }}">
+                    <input type="hidden" name="phone" value="{{ .summary.Phone }}">
+                    <input type="hidden" name="address" value="{{ .summary.Address }}">
+                    <input type="hidden" name="city" value="{{ .summary.City }}">
+                    <input type="hidden" name="postal_code" value="{{ .summary.PostalCode }}">
+
+                    <div class="section-card">
+                        <h3>Side Selection</h3>
+                        <div class="side-toggle">
+                            <button class="side-btn active" type="button" data-side="bride">Bride Side</button>
+                            <button class="side-btn" type="button" data-side="groom">Groom Side</button>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Bride & Groom</h3>
+                        <div class="form-grid">
+                            <div class="form-group bride-only">
+                                <label for="bride_name">Bride Name</label>
+                                <input id="bride_name" name="bride_name" type="text" required>
+                            </div>
+                            <div class="form-group groom-only side-hidden">
+                                <label for="groom_name">Groom Name</label>
+                                <input id="groom_name" name="groom_name" type="text">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Parents</h3>
+                        <div class="form-grid">
+                            <div class="form-group bride-only">
+                                <label for="bride_father_name">Bride's Father Name</label>
+                                <input id="bride_father_name" name="bride_father_name" type="text" required>
+                            </div>
+                            <div class="form-group groom-only side-hidden">
+                                <label for="groom_father_name">Groom's Father Name</label>
+                                <input id="groom_father_name" name="groom_father_name" type="text">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Mehndi</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="mehndi_date">Mehndi Date</label>
+                                <input id="mehndi_date" name="mehndi_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="mehndi_time">Mehndi Event Time</label>
+                                <input id="mehndi_time" name="mehndi_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label>Mehndi Time Type</label>
+                                <div class="time-type-toggle">
+                                    <label class="time-type-option">
+                                        <input type="radio" name="mehndi_time_type" value="evening">
+                                        <span>Evening</span>
+                                    </label>
+                                    <label class="time-type-option">
+                                        <input type="radio" name="mehndi_time_type" value="night">
+                                        <span>Night</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="mehndi_dinner_time">Mehndi Dinner Time</label>
+                                <input id="mehndi_dinner_time" name="mehndi_dinner_time" type="time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Baraat</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="baraat_date">Baraat Date</label>
+                                <input id="baraat_date" name="baraat_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="baraat_time">Baraat Event Time</label>
+                                <input id="baraat_time" name="baraat_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label>Baraat Time Type</label>
+                                <div class="time-type-toggle">
+                                    <label class="time-type-option">
+                                        <input type="radio" name="baraat_time_type" value="evening">
+                                        <span>Evening</span>
+                                    </label>
+                                    <label class="time-type-option">
+                                        <input type="radio" name="baraat_time_type" value="night">
+                                        <span>Night</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="baraat_dinner_time">Baraat Dinner Time</label>
+                                <input id="baraat_dinner_time" name="baraat_dinner_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label for="baraat_arrival_time">Baraat Arrival Time</label>
+                                <input id="baraat_arrival_time" name="baraat_arrival_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label for="rukhsati_time">Rukhsati Time</label>
+                                <input id="rukhsati_time" name="rukhsati_time" type="time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Nikkah</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="nikkah_date">Nikkah Date</label>
+                                <input id="nikkah_date" name="nikkah_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="nikkah_time">Nikkah Event Time</label>
+                                <input id="nikkah_time" name="nikkah_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label>Nikkah Time Type</label>
+                                <div class="time-type-toggle">
+                                    <label class="time-type-option">
+                                        <input type="radio" name="nikkah_time_type" value="evening">
+                                        <span>Evening</span>
+                                    </label>
+                                    <label class="time-type-option">
+                                        <input type="radio" name="nikkah_time_type" value="night">
+                                        <span>Night</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="nikkah_dinner_time">Nikkah Dinner Time</label>
+                                <input id="nikkah_dinner_time" name="nikkah_dinner_time" type="time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Walima</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="walima_date">Walima Date</label>
+                                <input id="walima_date" name="walima_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="walima_time">Walima Event Time</label>
+                                <input id="walima_time" name="walima_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label>Walima Time Type</label>
+                                <div class="time-type-toggle">
+                                    <label class="time-type-option">
+                                        <input type="radio" name="walima_time_type" value="evening">
+                                        <span>Evening</span>
+                                    </label>
+                                    <label class="time-type-option">
+                                        <input type="radio" name="walima_time_type" value="night">
+                                        <span>Night</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="walima_dinner_time">Walima Dinner Time</label>
+                                <input id="walima_dinner_time" name="walima_dinner_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label for="reception_time">Reception Time</label>
+                                <input id="reception_time" name="reception_time" type="time">
+                            </div>
+                            <div class="form-group">
+                                <label for="dinner_time">Dinner Time</label>
+                                <input id="dinner_time" name="dinner_time" type="time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Venue</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="venue_name">Venue Name</label>
+                                <input id="venue_name" name="venue_name" type="text" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="venue_address">Venue Address</label>
+                                <textarea id="venue_address" name="venue_address" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>RSVP</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="rsvp_name">RSVP Name</label>
+                                <input id="rsvp_name" name="rsvp_name" type="text" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="rsvp_phone">RSVP Phone</label>
+                                <input id="rsvp_phone" name="rsvp_phone" type="tel" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="notes">Notes (Optional)</label>
+                                <textarea id="notes" name="notes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" type="submit">Place Order</button>
+                </form>
+            </section>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+
+    function setSide(side) {
+        var brideGroups = document.querySelectorAll('.bride-only');
+        var groomGroups = document.querySelectorAll('.groom-only');
+        var sideInput = document.getElementById('side-input');
+        var brideName = document.getElementById('bride_name');
+        var brideFather = document.getElementById('bride_father_name');
+        var groomName = document.getElementById('groom_name');
+        var groomFather = document.getElementById('groom_father_name');
+
+        sideInput.value = side;
+
+        document.querySelectorAll('.side-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-side') === side);
+        });
+
+        brideGroups.forEach(function(group) {
+            group.classList.toggle('side-hidden', side !== 'bride');
+        });
+        groomGroups.forEach(function(group) {
+            group.classList.toggle('side-hidden', side !== 'groom');
+        });
+
+        brideName.required = side === 'bride';
+        brideFather.required = side === 'bride';
+        groomName.required = side === 'groom';
+        groomFather.required = side === 'groom';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setSide(document.getElementById('side-input').value || 'bride');
+        document.querySelectorAll('.side-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setSide(btn.getAttribute('data-side'));
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

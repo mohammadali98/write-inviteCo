@@ -278,17 +278,12 @@
 
             <section class="checkout-form">
                 <h2>Customer Information</h2>
-                <form action="/order" method="post">
+                <form action="/customize" method="get">
                     <input type="hidden" name="card_id" value="{{ .cardID }}">
                     <input type="hidden" name="quantity" value="{{ .quantity }}">
                     <input type="hidden" name="currency" value="{{ .currency }}">
-                    <input type="hidden" name="card_name" value="{{ .cardName }}">
                     <input type="hidden" name="foil_option" value="{{ .foilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .extraInserts }}">
-                    <input type="hidden" name="price_foil" value="{{ .priceFoil }}">
-                    <input type="hidden" name="price_nofoil" value="{{ .priceNofoil }}">
-                    <input type="hidden" name="insert_price" value="{{ .insertPrice }}">
-                    <input type="hidden" name="min_order" value="{{ .minOrder }}">
 
                     <div class="form-grid">
                         <div class="form-group full-width">
@@ -334,7 +329,7 @@
                         <p class="payment-note">Payment gateway coming soon. Orders are currently confirmed via WhatsApp.</p>
                     </div>
 
-                    <button class="checkout-submit" type="submit">Place Order</button>
+                    <button class="checkout-submit" type="submit">Continue to Personalization →</button>
                 </form>
             </section>
         </div>

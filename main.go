@@ -14,6 +14,7 @@ import (
 	customerrepository "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/repository"
 	customerwriter "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/customer/customerpresentation"
+	"writeandinviteco/inviteandco/order/orderapplication"
 	orderwriter "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/order/orderpresentation"
 
@@ -48,12 +49,13 @@ func main() {
 	// handlers
 	cardHandler := cardpresentation.NewCardHandler(cardRepo)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
-	orderHandler := orderpresentation.NewOrderHandler(
+	orderService := orderapplication.NewService(
 		db,
 		cardRepo,
 		customerWriter,
 		orderWriter,
 	)
+	orderHandler := orderpresentation.NewOrderHandler(orderService)
 
 	// router
 	router := gin.Default()
@@ -70,6 +72,7 @@ func main() {
 	router.GET("/search", cardHandler.SearchCards)
 	router.GET("/card/:id", cardHandler.CardDetail)
 	router.GET("/checkout", cardHandler.Checkout)
+	router.GET("/customize", orderHandler.CustomizePage)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
 

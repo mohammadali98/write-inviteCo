@@ -62,6 +62,252 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Creat
 	return i, err
 }
 
+const createOrderDetail = `-- name: CreateOrderDetail :one
+INSERT INTO order_details (
+    order_id,
+    side,
+    bride_name,
+    groom_name,
+    bride_father_name,
+    groom_father_name,
+    mehndi_date,
+    mehndi_time_type,
+    mehndi_time,
+    mehndi_dinner_time,
+    baraat_date,
+    baraat_time_type,
+    baraat_time,
+    baraat_dinner_time,
+    baraat_arrival_time,
+    rukhsati_time,
+    nikkah_date,
+    nikkah_time_type,
+    nikkah_time,
+    nikkah_dinner_time,
+    walima_date,
+    walima_time_type,
+    walima_time,
+    walima_dinner_time,
+    reception_time,
+    dinner_time,
+    venue_name,
+    venue_address,
+    rsvp_name,
+    rsvp_phone,
+    notes
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    NULLIF($7, '')::date,
+    $8,
+    NULLIF($9, '')::time,
+    NULLIF($10, '')::time,
+    NULLIF($11, '')::date,
+    $12,
+    NULLIF($13, '')::time,
+    NULLIF($14, '')::time,
+    NULLIF($15, '')::time,
+    NULLIF($16, '')::time,
+    NULLIF($17, '')::date,
+    $18,
+    NULLIF($19, '')::time,
+    NULLIF($20, '')::time,
+    NULLIF($21, '')::date,
+    $22,
+    NULLIF($23, '')::time,
+    NULLIF($24, '')::time,
+    NULLIF($25, '')::time,
+    NULLIF($26, '')::time,
+    $27,
+    $28,
+    $29,
+    $30,
+    $31
+)
+RETURNING
+    id,
+    order_id,
+    side,
+    bride_name,
+    groom_name,
+    bride_father_name,
+    groom_father_name,
+    COALESCE(mehndi_date::text, '')::text AS mehndi_date,
+    mehndi_time_type,
+    COALESCE(mehndi_time::text, '')::text AS mehndi_time,
+    COALESCE(mehndi_dinner_time::text, '')::text AS mehndi_dinner_time,
+    COALESCE(baraat_date::text, '')::text AS baraat_date,
+    baraat_time_type,
+    COALESCE(baraat_time::text, '')::text AS baraat_time,
+    COALESCE(baraat_dinner_time::text, '')::text AS baraat_dinner_time,
+    COALESCE(baraat_arrival_time::text, '')::text AS baraat_arrival_time,
+    COALESCE(rukhsati_time::text, '')::text AS rukhsati_time,
+    COALESCE(nikkah_date::text, '')::text AS nikkah_date,
+    nikkah_time_type,
+    COALESCE(nikkah_time::text, '')::text AS nikkah_time,
+    COALESCE(nikkah_dinner_time::text, '')::text AS nikkah_dinner_time,
+    COALESCE(walima_date::text, '')::text AS walima_date,
+    walima_time_type,
+    COALESCE(walima_time::text, '')::text AS walima_time,
+    COALESCE(walima_dinner_time::text, '')::text AS walima_dinner_time,
+    COALESCE(reception_time::text, '')::text AS reception_time,
+    COALESCE(dinner_time::text, '')::text AS dinner_time,
+    venue_name,
+    venue_address,
+    rsvp_name,
+    rsvp_phone,
+    notes,
+    created_at
+`
+
+type CreateOrderDetailParams struct {
+	OrderID           int64
+	Side              string
+	BrideName         *string
+	GroomName         *string
+	BrideFatherName   *string
+	GroomFatherName   *string
+	MehndiDate        interface{}
+	MehndiTimeType    *string
+	MehndiTime        interface{}
+	MehndiDinnerTime  interface{}
+	BaraatDate        interface{}
+	BaraatTimeType    *string
+	BaraatTime        interface{}
+	BaraatDinnerTime  interface{}
+	BaraatArrivalTime interface{}
+	RukhsatiTime      interface{}
+	NikkahDate        interface{}
+	NikkahTimeType    *string
+	NikkahTime        interface{}
+	NikkahDinnerTime  interface{}
+	WalimaDate        interface{}
+	WalimaTimeType    *string
+	WalimaTime        interface{}
+	WalimaDinnerTime  interface{}
+	ReceptionTime     interface{}
+	DinnerTime        interface{}
+	VenueName         string
+	VenueAddress      string
+	RsvpName          string
+	RsvpPhone         string
+	Notes             *string
+}
+
+type CreateOrderDetailRow struct {
+	ID                int64
+	OrderID           int64
+	Side              string
+	BrideName         *string
+	GroomName         *string
+	BrideFatherName   *string
+	GroomFatherName   *string
+	MehndiDate        string
+	MehndiTimeType    *string
+	MehndiTime        string
+	MehndiDinnerTime  string
+	BaraatDate        string
+	BaraatTimeType    *string
+	BaraatTime        string
+	BaraatDinnerTime  string
+	BaraatArrivalTime string
+	RukhsatiTime      string
+	NikkahDate        string
+	NikkahTimeType    *string
+	NikkahTime        string
+	NikkahDinnerTime  string
+	WalimaDate        string
+	WalimaTimeType    *string
+	WalimaTime        string
+	WalimaDinnerTime  string
+	ReceptionTime     string
+	DinnerTime        string
+	VenueName         string
+	VenueAddress      string
+	RsvpName          string
+	RsvpPhone         string
+	Notes             *string
+	CreatedAt         pgtype.Timestamptz
+}
+
+func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailParams) (CreateOrderDetailRow, error) {
+	row := q.db.QueryRow(ctx, createOrderDetail,
+		arg.OrderID,
+		arg.Side,
+		arg.BrideName,
+		arg.GroomName,
+		arg.BrideFatherName,
+		arg.GroomFatherName,
+		arg.MehndiDate,
+		arg.MehndiTimeType,
+		arg.MehndiTime,
+		arg.MehndiDinnerTime,
+		arg.BaraatDate,
+		arg.BaraatTimeType,
+		arg.BaraatTime,
+		arg.BaraatDinnerTime,
+		arg.BaraatArrivalTime,
+		arg.RukhsatiTime,
+		arg.NikkahDate,
+		arg.NikkahTimeType,
+		arg.NikkahTime,
+		arg.NikkahDinnerTime,
+		arg.WalimaDate,
+		arg.WalimaTimeType,
+		arg.WalimaTime,
+		arg.WalimaDinnerTime,
+		arg.ReceptionTime,
+		arg.DinnerTime,
+		arg.VenueName,
+		arg.VenueAddress,
+		arg.RsvpName,
+		arg.RsvpPhone,
+		arg.Notes,
+	)
+	var i CreateOrderDetailRow
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Side,
+		&i.BrideName,
+		&i.GroomName,
+		&i.BrideFatherName,
+		&i.GroomFatherName,
+		&i.MehndiDate,
+		&i.MehndiTimeType,
+		&i.MehndiTime,
+		&i.MehndiDinnerTime,
+		&i.BaraatDate,
+		&i.BaraatTimeType,
+		&i.BaraatTime,
+		&i.BaraatDinnerTime,
+		&i.BaraatArrivalTime,
+		&i.RukhsatiTime,
+		&i.NikkahDate,
+		&i.NikkahTimeType,
+		&i.NikkahTime,
+		&i.NikkahDinnerTime,
+		&i.WalimaDate,
+		&i.WalimaTimeType,
+		&i.WalimaTime,
+		&i.WalimaDinnerTime,
+		&i.ReceptionTime,
+		&i.DinnerTime,
+		&i.VenueName,
+		&i.VenueAddress,
+		&i.RsvpName,
+		&i.RsvpPhone,
+		&i.Notes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const updateOrderStatus = `-- name: UpdateOrderStatus :exec
 UPDATE orders
 SET status = $2, updated_at = CURRENT_TIMESTAMP
