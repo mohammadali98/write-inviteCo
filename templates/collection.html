@@ -108,7 +108,11 @@
                 </div>
                 <div class="card-body">
                     <h2>{{ $c.Name }}</h2>
-                    <p class="price">PKR {{ $c.PricePKR }}</p>
+                    {{ if eq $c.Name "Vibrant Dholki Booklet" }}
+                    <p class="price">PKR 1,500 each</p>
+                    {{ else }}
+                    <p class="price">From PKR {{ $c.PriceNofoilPKR }}</p>
+                    {{ end }}
                     <a class="btn" href="/card/{{ $c.ID }}">View Details →</a>
                 </div>
             </article>

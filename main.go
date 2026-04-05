@@ -14,8 +14,6 @@ import (
 	customerrepository "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/repository"
 	customerwriter "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/customer/customerpresentation"
-	orderreader "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/reader"
-	orderrepository "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/repository"
 	orderwriter "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/order/orderpresentation"
 
@@ -41,18 +39,21 @@ func main() {
 	cardWriter := cardwriter.New(db)
 	customerReader := customerreader.New(db)
 	customerWriter := customerwriter.New(db)
-	orderReader := orderreader.New(db)
 	orderWriter := orderwriter.New(db)
 
 	// repositories
 	cardRepo := cardrepository.NewCardRepository(cardReader, cardWriter)
 	customerRepo := customerrepository.NewCustomerRepository(customerReader, customerWriter)
-	orderRepo := orderrepository.NewOrderRepository(orderReader, orderWriter)
 
 	// handlers
 	cardHandler := cardpresentation.NewCardHandler(cardRepo)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
-	orderHandler := orderpresentation.NewOrderHandler(orderRepo, customerRepo)
+	orderHandler := orderpresentation.NewOrderHandler(
+		db,
+		cardRepo,
+		customerWriter,
+		orderWriter,
+	)
 
 	// router
 	router := gin.Default()

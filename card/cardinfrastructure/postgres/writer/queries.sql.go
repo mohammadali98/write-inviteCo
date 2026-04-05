@@ -12,38 +12,56 @@ import (
 )
 
 const createCard = `-- name: CreateCard :one
-INSERT INTO cards (name, description, price_pkr, price_nok, image, category)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+INSERT INTO cards (name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category, created_at, updated_at
 `
 
 type CreateCardParams struct {
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
 }
 
 type CreateCardRow struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateCardRow, error) {
 	row := q.db.QueryRow(ctx, createCard,
 		arg.Name,
 		arg.Description,
-		arg.PricePkr,
-		arg.PriceNok,
+		arg.PriceFoilPkr,
+		arg.PriceNofoilPkr,
+		arg.PriceFoilNok,
+		arg.PriceNofoilNok,
+		arg.InsertPricePkr,
+		arg.InsertPriceNok,
+		arg.MinOrder,
+		arg.IncludedInserts,
 		arg.Image,
 		arg.Category,
 	)
@@ -52,8 +70,14 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreateC
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.PricePkr,
-		&i.PriceNok,
+		&i.PriceFoilPkr,
+		&i.PriceNofoilPkr,
+		&i.PriceFoilNok,
+		&i.PriceNofoilNok,
+		&i.InsertPricePkr,
+		&i.InsertPriceNok,
+		&i.MinOrder,
+		&i.IncludedInserts,
 		&i.Image,
 		&i.Category,
 		&i.CreatedAt,
@@ -109,18 +133,36 @@ func (q *Queries) DeleteCardImagesByCardID(ctx context.Context, cardID int64) er
 
 const updateCard = `-- name: UpdateCard :exec
 UPDATE cards
-SET name = $2, description = $3, price_pkr = $4, price_nok = $5, image = $6, category = $7, updated_at = CURRENT_TIMESTAMP
+SET name = $2,
+    description = $3,
+    price_foil_pkr = $4,
+    price_nofoil_pkr = $5,
+    price_foil_nok = $6,
+    price_nofoil_nok = $7,
+    insert_price_pkr = $8,
+    insert_price_nok = $9,
+    min_order = $10,
+    included_inserts = $11,
+    image = $12,
+    category = $13,
+    updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 `
 
 type UpdateCardParams struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
 }
 
 func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) error {
@@ -128,8 +170,14 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) error {
 		arg.ID,
 		arg.Name,
 		arg.Description,
-		arg.PricePkr,
-		arg.PriceNok,
+		arg.PriceFoilPkr,
+		arg.PriceNofoilPkr,
+		arg.PriceFoilNok,
+		arg.PriceNofoilNok,
+		arg.InsertPricePkr,
+		arg.InsertPriceNok,
+		arg.MinOrder,
+		arg.IncludedInserts,
 		arg.Image,
 		arg.Category,
 	)

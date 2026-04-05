@@ -6,15 +6,21 @@ import (
 )
 
 type Card struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePKR    int64
-	PriceNOK    int64
-	Image       string
-	Category    string
-	CreatedAt   *time.Time
-	UpdatedAt   *time.Time
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPKR    int64
+	PriceNofoilPKR  int64
+	PriceFoilNOK    int64
+	PriceNofoilNOK  int64
+	InsertPricePKR  int64
+	InsertPriceNOK  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       *time.Time
+	UpdatedAt       *time.Time
 }
 
 type CardImage struct {
@@ -31,8 +37,8 @@ type CardRepo interface {
 }
 
 type CardWriter interface {
-	CreateCard(ctx context.Context, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) (*Card, error)
-	UpdateCard(ctx context.Context, id int64, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) error
+	CreateCard(ctx context.Context, name string, description *string, priceFoilPKR int64, priceNofoilPKR int64, priceFoilNOK int64, priceNofoilNOK int64, insertPricePKR int64, insertPriceNOK int64, minOrder int32, includedInserts int32, image string, category string) (*Card, error)
+	UpdateCard(ctx context.Context, id int64, name string, description *string, priceFoilPKR int64, priceNofoilPKR int64, priceFoilNOK int64, priceNofoilNOK int64, insertPricePKR int64, insertPriceNOK int64, minOrder int32, includedInserts int32, image string, category string) error
 	DeleteCard(ctx context.Context, id int64) error
 	CreateCardImage(ctx context.Context, cardID int64, image string, sortOrder int32) (*CardImage, error)
 	DeleteCardImagesByCardID(ctx context.Context, cardID int64) error

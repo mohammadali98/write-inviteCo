@@ -1,4 +1,4 @@
-\restrict d42RFGH6u3SjWywbCcKqvLvc8PqN4TGlYMsGL7d5vzgFQ08OhrurpuYzO9CfDe3
+\restrict J4dvhyLPxEiLl2rsK59hu4BDfQcQYM9arQwNUtk5L0spQJMhyNnOJF6Re4WMFb9
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -62,8 +62,14 @@ CREATE TABLE public.cards (
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     category text DEFAULT 'wedding-cards'::text NOT NULL,
-    price_pkr bigint DEFAULT 0 NOT NULL,
-    price_nok bigint DEFAULT 0 NOT NULL
+    price_foil_pkr bigint DEFAULT 0 NOT NULL,
+    price_nofoil_pkr bigint DEFAULT 0 NOT NULL,
+    price_foil_nok bigint DEFAULT 0 NOT NULL,
+    price_nofoil_nok bigint DEFAULT 0 NOT NULL,
+    insert_price_pkr bigint DEFAULT 0 NOT NULL,
+    insert_price_nok bigint DEFAULT 0 NOT NULL,
+    min_order integer DEFAULT 1 NOT NULL,
+    included_inserts integer DEFAULT 2 NOT NULL
 );
 
 
@@ -305,7 +311,7 @@ ALTER TABLE ONLY public.orders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict d42RFGH6u3SjWywbCcKqvLvc8PqN4TGlYMsGL7d5vzgFQ08OhrurpuYzO9CfDe3
+\unrestrict J4dvhyLPxEiLl2rsK59hu4BDfQcQYM9arQwNUtk5L0spQJMhyNnOJF6Re4WMFb9
 
 
 --
@@ -318,4 +324,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260323013542'),
     ('20260326000001'),
     ('20260326000002'),
-    ('20260326000003');
+    ('20260326000003'),
+    ('20260326000004');

@@ -17,12 +17,14 @@
             margin: 0 auto;
             padding: 30px 40px 60px;
         }
+
         .checkout-grid {
             display: grid;
             grid-template-columns: 1fr 1.5fr;
             gap: 40px;
             align-items: start;
         }
+
         .order-summary {
             background: #ffffff;
             border: 1px solid #ece4db;
@@ -32,6 +34,7 @@
             position: sticky;
             top: 100px;
         }
+
         .order-summary img {
             width: 100%;
             height: 200px;
@@ -39,20 +42,28 @@
             border-radius: 16px;
             margin-bottom: 16px;
         }
+
         .order-summary h3 {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 1.4rem;
             font-weight: 500;
-            margin: 0 0 8px;
+            margin: 0 0 10px;
         }
+
         .summary-row {
             display: flex;
             justify-content: space-between;
+            gap: 12px;
             padding: 8px 0;
             font-size: 0.9rem;
             color: #6b5e54;
             border-bottom: 1px solid #ece4db;
         }
+
+        .summary-row span:last-child {
+            text-align: right;
+        }
+
         .summary-total {
             display: flex;
             justify-content: space-between;
@@ -61,31 +72,37 @@
             font-weight: 500;
             color: #2a2420;
         }
+
         .checkout-form h2 {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 2rem;
             font-weight: 400;
             margin: 0 0 24px;
         }
+
         .checkout-form .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
         }
+
         .checkout-form .form-group {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
+
         .checkout-form .form-group.full-width {
             grid-column: 1 / -1;
         }
+
         .checkout-form label {
             font-weight: 500;
             font-size: 0.85rem;
             letter-spacing: 0.3px;
             color: #6b5e54;
         }
+
         .checkout-form input,
         .checkout-form textarea {
             width: 100%;
@@ -97,33 +114,39 @@
             background: #f5f0eb;
             transition: border-color 0.35s ease, box-shadow 0.35s ease;
         }
+
         .checkout-form input:focus,
         .checkout-form textarea:focus {
             outline: none;
             border-color: #c4953a;
             box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
         }
+
         .checkout-form textarea {
             resize: vertical;
             min-height: 80px;
         }
+
         .payment-methods {
             margin-top: 28px;
             padding-top: 20px;
             border-top: 1px solid #ece4db;
         }
+
         .payment-methods h3 {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 1.3rem;
             font-weight: 500;
             margin: 0 0 14px;
         }
+
         .payment-icons {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 10px;
         }
+
         .payment-badge {
             padding: 8px 16px;
             border: 1px solid #e0d6cc;
@@ -134,11 +157,13 @@
             background: #ffffff;
             letter-spacing: 0.5px;
         }
+
         .payment-note {
             font-size: 0.82rem;
             color: #9a8d82;
             margin-top: 8px;
         }
+
         .checkout-submit {
             margin-top: 24px;
             width: 100%;
@@ -155,17 +180,21 @@
             cursor: pointer;
             transition: background 0.35s ease, transform 0.35s ease;
         }
+
         .checkout-submit:hover {
             background: #5c4510;
             transform: translateY(-1px);
         }
+
         @media (max-width: 760px) {
             .checkout-grid {
                 grid-template-columns: 1fr;
             }
+
             .checkout-form .form-grid {
                 grid-template-columns: 1fr;
             }
+
             .checkout-page {
                 padding: 20px 18px 40px;
             }
@@ -214,16 +243,36 @@
                 <h3>{{ .cardName }}</h3>
 
                 <div class="summary-row">
-                    <span>Quantity</span>
-                    <span id="summary-quantity">{{ if .quantity }}{{ .quantity }}{{ else }}1{{ end }}</span>
+                    <span>Foil Finish</span>
+                    <span>{{ .foilLabel }}</span>
                 </div>
                 <div class="summary-row">
-                    <span>Price / item</span>
-                    <span id="summary-price">{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }} {{ if .price }}{{ .price }}{{ else }}0{{ end }}</span>
+                    <span>Base Price / Card</span>
+                    <span>{{ .currency }} {{ .unitPrice }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Included Inserts / Card</span>
+                    <span>{{ .includedInserts }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Extra Inserts / Card</span>
+                    <span>{{ .extraInserts }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Extra Insert Cost / Card</span>
+                    <span>{{ .currency }} {{ .extraInsertCostPerCard }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Per Card Total</span>
+                    <span>{{ .currency }} {{ .perCardTotal }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Quantity</span>
+                    <span>{{ .quantity }}</span>
                 </div>
                 <div class="summary-total">
                     <span>Total</span>
-                    <span id="summary-total">{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }} {{ if .price }}{{ .price }}{{ else }}0{{ end }}</span>
+                    <span>{{ .currency }} {{ .totalPrice }}</span>
                 </div>
             </aside>
 
@@ -231,10 +280,15 @@
                 <h2>Customer Information</h2>
                 <form action="/order" method="post">
                     <input type="hidden" name="card_id" value="{{ .cardID }}">
-                    <input id="checkout-price" type="hidden" name="price" value="{{ if .price }}{{ .price }}{{ else }}0{{ end }}">
-                    <input id="checkout-quantity" type="hidden" name="quantity" value="{{ if .quantity }}{{ .quantity }}{{ else }}1{{ end }}">
-                    <input id="checkout-currency" type="hidden" name="currency" value="{{ if .currency }}{{ .currency }}{{ else }}PKR{{ end }}">
+                    <input type="hidden" name="quantity" value="{{ .quantity }}">
+                    <input type="hidden" name="currency" value="{{ .currency }}">
                     <input type="hidden" name="card_name" value="{{ .cardName }}">
+                    <input type="hidden" name="foil_option" value="{{ .foilOption }}">
+                    <input type="hidden" name="extra_inserts" value="{{ .extraInserts }}">
+                    <input type="hidden" name="price_foil" value="{{ .priceFoil }}">
+                    <input type="hidden" name="price_nofoil" value="{{ .priceNofoil }}">
+                    <input type="hidden" name="insert_price" value="{{ .insertPrice }}">
+                    <input type="hidden" name="min_order" value="{{ .minOrder }}">
 
                     <div class="form-grid">
                         <div class="form-group full-width">
@@ -333,25 +387,6 @@
         document.getElementById("sidebar").classList.toggle("active");
         document.getElementById("overlay").classList.toggle("active");
     }
-
-    (function renderSummaryTotals() {
-        const quantityField = document.getElementById("checkout-quantity");
-        const priceField = document.getElementById("checkout-price");
-        const currencyField = document.getElementById("checkout-currency");
-
-        const quantity = parseInt(quantityField.value, 10) || 1;
-        const price = parseInt(priceField.value, 10) || 0;
-        const currency = (currencyField.value || "PKR").toUpperCase();
-        const total = quantity * price;
-
-        quantityField.value = String(quantity);
-        priceField.value = String(price);
-        currencyField.value = currency;
-
-        document.getElementById("summary-quantity").textContent = String(quantity);
-        document.getElementById("summary-price").textContent = `${currency} ${price}`;
-        document.getElementById("summary-total").textContent = `${currency} ${total}`;
-    })();
 </script>
 
 </body>

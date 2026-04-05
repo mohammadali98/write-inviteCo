@@ -28,15 +28,21 @@ func (r *CardRepository) GetAllCards(ctx context.Context) ([]*carddomain.Card, e
 	cards := make([]*carddomain.Card, len(rows))
 	for i, row := range rows {
 		cards[i] = &carddomain.Card{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			PricePKR:    row.PricePkr,
-			PriceNOK:    row.PriceNok,
-			Image:       row.Image,
-			Category:    row.Category,
-			CreatedAt:   toTimePtr(row.CreatedAt),
-			UpdatedAt:   toTimePtr(row.UpdatedAt),
+			ID:              row.ID,
+			Name:            row.Name,
+			Description:     row.Description,
+			PriceFoilPKR:    row.PriceFoilPkr,
+			PriceNofoilPKR:  row.PriceNofoilPkr,
+			PriceFoilNOK:    row.PriceFoilNok,
+			PriceNofoilNOK:  row.PriceNofoilNok,
+			InsertPricePKR:  row.InsertPricePkr,
+			InsertPriceNOK:  row.InsertPriceNok,
+			MinOrder:        row.MinOrder,
+			IncludedInserts: row.IncludedInserts,
+			Image:           row.Image,
+			Category:        row.Category,
+			CreatedAt:       toTimePtr(row.CreatedAt),
+			UpdatedAt:       toTimePtr(row.UpdatedAt),
 		}
 	}
 	return cards, nil
@@ -48,15 +54,21 @@ func (r *CardRepository) GetCardByID(ctx context.Context, id int64) (*carddomain
 		return nil, err
 	}
 	return &carddomain.Card{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		PricePKR:    row.PricePkr,
-		PriceNOK:    row.PriceNok,
-		Image:       row.Image,
-		Category:    row.Category,
-		CreatedAt:   toTimePtr(row.CreatedAt),
-		UpdatedAt:   toTimePtr(row.UpdatedAt),
+		ID:              row.ID,
+		Name:            row.Name,
+		Description:     row.Description,
+		PriceFoilPKR:    row.PriceFoilPkr,
+		PriceNofoilPKR:  row.PriceNofoilPkr,
+		PriceFoilNOK:    row.PriceFoilNok,
+		PriceNofoilNOK:  row.PriceNofoilNok,
+		InsertPricePKR:  row.InsertPricePkr,
+		InsertPriceNOK:  row.InsertPriceNok,
+		MinOrder:        row.MinOrder,
+		IncludedInserts: row.IncludedInserts,
+		Image:           row.Image,
+		Category:        row.Category,
+		CreatedAt:       toTimePtr(row.CreatedAt),
+		UpdatedAt:       toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
@@ -68,15 +80,21 @@ func (r *CardRepository) GetCardsByCategory(ctx context.Context, category string
 	cards := make([]*carddomain.Card, len(rows))
 	for i, row := range rows {
 		cards[i] = &carddomain.Card{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			PricePKR:    row.PricePkr,
-			PriceNOK:    row.PriceNok,
-			Image:       row.Image,
-			Category:    row.Category,
-			CreatedAt:   toTimePtr(row.CreatedAt),
-			UpdatedAt:   toTimePtr(row.UpdatedAt),
+			ID:              row.ID,
+			Name:            row.Name,
+			Description:     row.Description,
+			PriceFoilPKR:    row.PriceFoilPkr,
+			PriceNofoilPKR:  row.PriceNofoilPkr,
+			PriceFoilNOK:    row.PriceFoilNok,
+			PriceNofoilNOK:  row.PriceNofoilNok,
+			InsertPricePKR:  row.InsertPricePkr,
+			InsertPriceNOK:  row.InsertPriceNok,
+			MinOrder:        row.MinOrder,
+			IncludedInserts: row.IncludedInserts,
+			Image:           row.Image,
+			Category:        row.Category,
+			CreatedAt:       toTimePtr(row.CreatedAt),
+			UpdatedAt:       toTimePtr(row.UpdatedAt),
 		}
 	}
 	return cards, nil
@@ -90,15 +108,21 @@ func (r *CardRepository) SearchCards(ctx context.Context, query string) ([]*card
 	cards := make([]*carddomain.Card, len(rows))
 	for i, row := range rows {
 		cards[i] = &carddomain.Card{
-			ID:          row.ID,
-			Name:        row.Name,
-			Description: row.Description,
-			PricePKR:    row.PricePkr,
-			PriceNOK:    row.PriceNok,
-			Image:       row.Image,
-			Category:    row.Category,
-			CreatedAt:   toTimePtr(row.CreatedAt),
-			UpdatedAt:   toTimePtr(row.UpdatedAt),
+			ID:              row.ID,
+			Name:            row.Name,
+			Description:     row.Description,
+			PriceFoilPKR:    row.PriceFoilPkr,
+			PriceNofoilPKR:  row.PriceNofoilPkr,
+			PriceFoilNOK:    row.PriceFoilNok,
+			PriceNofoilNOK:  row.PriceNofoilNok,
+			InsertPricePKR:  row.InsertPricePkr,
+			InsertPriceNOK:  row.InsertPriceNok,
+			MinOrder:        row.MinOrder,
+			IncludedInserts: row.IncludedInserts,
+			Image:           row.Image,
+			Category:        row.Category,
+			CreatedAt:       toTimePtr(row.CreatedAt),
+			UpdatedAt:       toTimePtr(row.UpdatedAt),
 		}
 	}
 	return cards, nil
@@ -122,40 +146,58 @@ func (r *CardRepository) GetCardImagesByCardID(ctx context.Context, cardID int64
 	return images, nil
 }
 
-func (r *CardRepository) CreateCard(ctx context.Context, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) (*carddomain.Card, error) {
+func (r *CardRepository) CreateCard(ctx context.Context, name string, description *string, priceFoilPKR int64, priceNofoilPKR int64, priceFoilNOK int64, priceNofoilNOK int64, insertPricePKR int64, insertPriceNOK int64, minOrder int32, includedInserts int32, image string, category string) (*carddomain.Card, error) {
 	row, err := r.writer.CreateCard(ctx, cardwriter.CreateCardParams{
-		Name:        name,
-		Description: description,
-		PricePkr:    pricePKR,
-		PriceNok:    priceNOK,
-		Image:       image,
-		Category:    category,
+		Name:            name,
+		Description:     description,
+		PriceFoilPkr:    priceFoilPKR,
+		PriceNofoilPkr:  priceNofoilPKR,
+		PriceFoilNok:    priceFoilNOK,
+		PriceNofoilNok:  priceNofoilNOK,
+		InsertPricePkr:  insertPricePKR,
+		InsertPriceNok:  insertPriceNOK,
+		MinOrder:        minOrder,
+		IncludedInserts: includedInserts,
+		Image:           image,
+		Category:        category,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &carddomain.Card{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		PricePKR:    row.PricePkr,
-		PriceNOK:    row.PriceNok,
-		Image:       row.Image,
-		Category:    row.Category,
-		CreatedAt:   toTimePtr(row.CreatedAt),
-		UpdatedAt:   toTimePtr(row.UpdatedAt),
+		ID:              row.ID,
+		Name:            row.Name,
+		Description:     row.Description,
+		PriceFoilPKR:    row.PriceFoilPkr,
+		PriceNofoilPKR:  row.PriceNofoilPkr,
+		PriceFoilNOK:    row.PriceFoilNok,
+		PriceNofoilNOK:  row.PriceNofoilNok,
+		InsertPricePKR:  row.InsertPricePkr,
+		InsertPriceNOK:  row.InsertPriceNok,
+		MinOrder:        row.MinOrder,
+		IncludedInserts: row.IncludedInserts,
+		Image:           row.Image,
+		Category:        row.Category,
+		CreatedAt:       toTimePtr(row.CreatedAt),
+		UpdatedAt:       toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
-func (r *CardRepository) UpdateCard(ctx context.Context, id int64, name string, description *string, pricePKR int64, priceNOK int64, image string, category string) error {
+func (r *CardRepository) UpdateCard(ctx context.Context, id int64, name string, description *string, priceFoilPKR int64, priceNofoilPKR int64, priceFoilNOK int64, priceNofoilNOK int64, insertPricePKR int64, insertPriceNOK int64, minOrder int32, includedInserts int32, image string, category string) error {
 	return r.writer.UpdateCard(ctx, cardwriter.UpdateCardParams{
-		ID:          id,
-		Name:        name,
-		Description: description,
-		PricePkr:    pricePKR,
-		PriceNok:    priceNOK,
-		Image:       image,
-		Category:    category,
+		ID:              id,
+		Name:            name,
+		Description:     description,
+		PriceFoilPkr:    priceFoilPKR,
+		PriceNofoilPkr:  priceNofoilPKR,
+		PriceFoilNok:    priceFoilNOK,
+		PriceNofoilNok:  priceNofoilNOK,
+		InsertPricePkr:  insertPricePKR,
+		InsertPriceNok:  insertPriceNOK,
+		MinOrder:        minOrder,
+		IncludedInserts: includedInserts,
+		Image:           image,
+		Category:        category,
 	})
 }
 

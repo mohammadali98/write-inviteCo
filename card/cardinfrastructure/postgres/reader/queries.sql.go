@@ -12,21 +12,27 @@ import (
 )
 
 const getAllCards = `-- name: GetAllCards :many
-SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+SELECT id, name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category, created_at, updated_at
 FROM cards
 ORDER BY created_at DESC
 `
 
 type GetAllCardsRow struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) GetAllCards(ctx context.Context) ([]GetAllCardsRow, error) {
@@ -42,8 +48,14 @@ func (q *Queries) GetAllCards(ctx context.Context) ([]GetAllCardsRow, error) {
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.PricePkr,
-			&i.PriceNok,
+			&i.PriceFoilPkr,
+			&i.PriceNofoilPkr,
+			&i.PriceFoilNok,
+			&i.PriceNofoilNok,
+			&i.InsertPricePkr,
+			&i.InsertPriceNok,
+			&i.MinOrder,
+			&i.IncludedInserts,
 			&i.Image,
 			&i.Category,
 			&i.CreatedAt,
@@ -60,21 +72,27 @@ func (q *Queries) GetAllCards(ctx context.Context) ([]GetAllCardsRow, error) {
 }
 
 const getCardByID = `-- name: GetCardByID :one
-SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+SELECT id, name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category, created_at, updated_at
 FROM cards
 WHERE id = $1
 `
 
 type GetCardByIDRow struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) GetCardByID(ctx context.Context, id int64) (GetCardByIDRow, error) {
@@ -84,8 +102,14 @@ func (q *Queries) GetCardByID(ctx context.Context, id int64) (GetCardByIDRow, er
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.PricePkr,
-		&i.PriceNok,
+		&i.PriceFoilPkr,
+		&i.PriceNofoilPkr,
+		&i.PriceFoilNok,
+		&i.PriceNofoilNok,
+		&i.InsertPricePkr,
+		&i.InsertPriceNok,
+		&i.MinOrder,
+		&i.IncludedInserts,
 		&i.Image,
 		&i.Category,
 		&i.CreatedAt,
@@ -128,22 +152,28 @@ func (q *Queries) GetCardImagesByCardID(ctx context.Context, cardID int64) ([]Ca
 }
 
 const getCardsByCategory = `-- name: GetCardsByCategory :many
-SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+SELECT id, name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category, created_at, updated_at
 FROM cards
 WHERE category = $1
 ORDER BY created_at DESC
 `
 
 type GetCardsByCategoryRow struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) GetCardsByCategory(ctx context.Context, category string) ([]GetCardsByCategoryRow, error) {
@@ -159,8 +189,14 @@ func (q *Queries) GetCardsByCategory(ctx context.Context, category string) ([]Ge
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.PricePkr,
-			&i.PriceNok,
+			&i.PriceFoilPkr,
+			&i.PriceNofoilPkr,
+			&i.PriceFoilNok,
+			&i.PriceNofoilNok,
+			&i.InsertPricePkr,
+			&i.InsertPriceNok,
+			&i.MinOrder,
+			&i.IncludedInserts,
 			&i.Image,
 			&i.Category,
 			&i.CreatedAt,
@@ -177,22 +213,28 @@ func (q *Queries) GetCardsByCategory(ctx context.Context, category string) ([]Ge
 }
 
 const searchCards = `-- name: SearchCards :many
-SELECT id, name, description, price_pkr, price_nok, image, category, created_at, updated_at
+SELECT id, name, description, price_foil_pkr, price_nofoil_pkr, price_foil_nok, price_nofoil_nok, insert_price_pkr, insert_price_nok, min_order, included_inserts, image, category, created_at, updated_at
 FROM cards
 WHERE name ILIKE '%' || $1 || '%' OR description ILIKE '%' || $1 || '%'
 ORDER BY created_at DESC
 `
 
 type SearchCardsRow struct {
-	ID          int64
-	Name        string
-	Description *string
-	PricePkr    int64
-	PriceNok    int64
-	Image       string
-	Category    string
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID              int64
+	Name            string
+	Description     *string
+	PriceFoilPkr    int64
+	PriceNofoilPkr  int64
+	PriceFoilNok    int64
+	PriceNofoilNok  int64
+	InsertPricePkr  int64
+	InsertPriceNok  int64
+	MinOrder        int32
+	IncludedInserts int32
+	Image           string
+	Category        string
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) SearchCards(ctx context.Context, dollar_1 *string) ([]SearchCardsRow, error) {
@@ -208,8 +250,14 @@ func (q *Queries) SearchCards(ctx context.Context, dollar_1 *string) ([]SearchCa
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.PricePkr,
-			&i.PriceNok,
+			&i.PriceFoilPkr,
+			&i.PriceNofoilPkr,
+			&i.PriceFoilNok,
+			&i.PriceNofoilNok,
+			&i.InsertPricePkr,
+			&i.InsertPriceNok,
+			&i.MinOrder,
+			&i.IncludedInserts,
 			&i.Image,
 			&i.Category,
 			&i.CreatedAt,

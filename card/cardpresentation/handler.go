@@ -3,6 +3,7 @@ package cardpresentation
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"writeandinviteco/inviteandco/card/carddomain"
 
@@ -18,7 +19,7 @@ func NewCardHandler(repo carddomain.CardRepo) *CardHandler {
 }
 
 func (h *CardHandler) ListCards(c *gin.Context) {
-	cards, err := h.repo.GetAllCards(c.Request.Context())
+	cards, err := h.repo.GetCardsByCategory(c.Request.Context(), "wedding-cards")
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to load cards")
 		return
@@ -86,17 +87,72 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 	cardID := c.Query("card_id")
 	cardName := c.Query("card_name")
 	cardImage := c.Query("card_image")
-	quantity := c.Query("quantity")
-	price := c.Query("price")
-	currency := c.Query("currency")
+	quantity := parseInt64Default(c.Query("quantity"), 1)
+	priceFoil := parseInt64Default(c.Query("price_foil"), 0)
+	priceNofoil := parseInt64Default(c.Query("price_nofoil"), priceFoil)
+	insertPrice := parseInt64Default(c.Query("insert_price"), 0)
+	extraInserts := parseInt64Default(c.Query("extra_inserts"), 0)
+	minOrder := parseInt64Default(c.Query("min_order"), 1)
+	includedInserts := parseInt64Default(c.Query("included_inserts"), 2)
+	currency := strings.ToUpper(strings.TrimSpace(c.Query("currency")))
+	foilOption := strings.ToLower(strings.TrimSpace(c.Query("foil_option")))
+
+	if currency == "" {
+		currency = "PKR"
+	}
+	if foilOption != "nofoil" {
+		foilOption = "foil"
+	}
+	if minOrder < 1 {
+		minOrder = 1
+	}
+	if quantity < minOrder {
+		quantity = minOrder
+	}
+	if quantity < 1 {
+		quantity = 1
+	}
+	if extraInserts < 0 {
+		extraInserts = 0
+	}
+	if includedInserts < 0 {
+		includedInserts = 0
+	}
+	if priceNofoil == 0 {
+		priceNofoil = priceFoil
+	}
+
+	unitPrice := priceFoil
+	foilLabel := "With Foil"
+	if foilOption == "nofoil" {
+		unitPrice = priceNofoil
+		foilLabel = "Without Foil"
+	}
+	if priceFoil == priceNofoil {
+		foilLabel = "Flat Rate"
+	}
+	extraInsertCostPerCard := extraInserts * insertPrice
+	perCardTotal := unitPrice + extraInsertCostPerCard
+	total := perCardTotal * quantity
 
 	c.HTML(http.StatusOK, "checkout.html", gin.H{
-		"cardID":    cardID,
-		"cardName":  cardName,
-		"cardImage": cardImage,
-		"quantity":  quantity,
-		"price":     price,
-		"currency":  currency,
+		"cardID":                 cardID,
+		"cardName":               cardName,
+		"cardImage":              cardImage,
+		"quantity":               quantity,
+		"currency":               currency,
+		"priceFoil":              priceFoil,
+		"priceNofoil":            priceNofoil,
+		"insertPrice":            insertPrice,
+		"includedInserts":        includedInserts,
+		"extraInserts":           extraInserts,
+		"minOrder":               minOrder,
+		"foilOption":             foilOption,
+		"foilLabel":              foilLabel,
+		"unitPrice":              unitPrice,
+		"extraInsertCostPerCard": extraInsertCostPerCard,
+		"perCardTotal":           perCardTotal,
+		"totalPrice":             total,
 	})
 }
 
@@ -123,4 +179,12 @@ func (h *CardHandler) CardDetail(c *gin.Context) {
 		"card":   card,
 		"images": images,
 	})
+}
+
+func parseInt64Default(raw string, fallback int64) int64 {
+	parsed, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

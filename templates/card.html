@@ -47,6 +47,87 @@
             border-color: #c4953a;
         }
 
+        .foil-toggle {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .foil-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .foil-option input[type="radio"] {
+            display: none;
+        }
+
+        .foil-option .radio-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0d6cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .foil-option input[type="radio"]:checked + .radio-custom {
+            border-color: #8b6914;
+        }
+
+        .foil-option input[type="radio"]:checked + .radio-custom::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #8b6914;
+            border-radius: 50%;
+        }
+
+        .foil-option span {
+            font-size: 0.9rem;
+            color: #2a2420;
+        }
+
+        .foil-explanation {
+            margin: -4px 0 12px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #8e847b;
+        }
+
+        .insert-info {
+            font-size: 0.88rem;
+            color: #6b5e54;
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .price-calculator {
+            background: #f7eed8;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .price-calculator .subtotal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .min-order-note {
+            font-size: 0.82rem;
+            color: #9a8d82;
+            margin-top: 6px;
+        }
+
         @media (max-width: 760px) {
             .gallery-main {
                 height: 280px;
@@ -56,12 +137,16 @@
                 width: 60px;
                 height: 60px;
             }
+
+            .foil-toggle {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- ===== HEADER ===== -->
 <header class="top-header">
     <div class="header-left">
         <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
@@ -80,7 +165,6 @@
     </div>
 </header>
 
-<!-- ===== SIDEBAR ===== -->
 <aside id="sidebar" class="sidebar">
     <h3>Menu</h3>
     <nav>
@@ -95,7 +179,6 @@
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
-<!-- ===== MAIN ===== -->
 <main class="main-content">
     <div class="container">
         <a class="back-link" href="/collections/wedding-cards">← Back to collection</a>
@@ -110,22 +193,62 @@
                     {{ end }}
                 </div>
             </div>
+
             <div class="detail-content">
                 <h1>{{ .card.Name }}</h1>
-                <p class="price">PKR {{ .card.PricePKR }}</p>
+                <p class="price" id="unit-price-display">PKR {{ .card.PriceFoilPKR }} per card</p>
                 {{ if .card.Description }}
                 <p>{{ .card.Description }}</p>
                 {{ end }}
 
+                <div class="insert-info">
+                    {{ if gt .card.IncludedInserts 0 }}Includes {{ .card.IncludedInserts }} inserts per card.<br>{{ end }}
+                    {{ if gt .card.InsertPricePKR 0 }}Additional inserts: PKR {{ .card.InsertPricePKR }} each.{{ else }}No additional insert charges for this design.{{ end }}
+                </div>
+
                 <form class="order-form" action="/checkout" method="get">
                     <input type="hidden" name="card_id" value="{{ .card.ID }}">
-                    <input type="hidden" name="price" value="{{ .card.PricePKR }}">
                     <input type="hidden" name="card_name" value="{{ .card.Name }}">
                     <input type="hidden" name="card_image" value="{{ .card.Image }}">
                     <input type="hidden" name="currency" value="PKR">
+                    <input type="hidden" id="price-foil" name="price_foil" value="{{ .card.PriceFoilPKR }}">
+                    <input type="hidden" id="price-nofoil" name="price_nofoil" value="{{ .card.PriceNofoilPKR }}">
+                    <input type="hidden" id="insert-price" name="insert_price" value="{{ .card.InsertPricePKR }}">
+                    <input type="hidden" name="included_inserts" value="{{ .card.IncludedInserts }}">
+                    <input type="hidden" name="min_order" value="{{ .card.MinOrder }}">
+                    <input type="hidden" id="has-foil-choice" value="{{ if ne .card.PriceFoilPKR .card.PriceNofoilPKR }}1{{ else }}0{{ end }}">
+
+                    {{ if ne .card.PriceFoilPKR .card.PriceNofoilPKR }}
+                    <div class="foil-toggle">
+                        <label class="foil-option" for="foil-option-foil">
+                            <input id="foil-option-foil" type="radio" name="foil_option" value="foil" checked>
+                            <span class="radio-custom"></span>
+                            <span>With Foil</span>
+                        </label>
+                        <label class="foil-option" for="foil-option-nofoil">
+                            <input id="foil-option-nofoil" type="radio" name="foil_option" value="nofoil">
+                            <span class="radio-custom"></span>
+                            <span>Without Foil</span>
+                        </label>
+                    </div>
+                    <p id="foil-explanation" class="foil-explanation"></p>
+                    {{ else }}
+                    <input type="hidden" name="foil_option" value="foil">
+                    {{ end }}
+
+                    <label for="extra-inserts">Extra Inserts (per card)</label>
+                    <input id="extra-inserts" name="extra_inserts" type="number" value="0" min="0" required>
 
                     <label for="quantity">Quantity</label>
-                    <input id="quantity" name="quantity" type="number" value="1" min="1" required>
+                    <input id="quantity" name="quantity" type="number" value="{{ .card.MinOrder }}" min="{{ .card.MinOrder }}" required>
+                    <p class="min-order-note">Minimum order: {{ .card.MinOrder }} card(s)</p>
+
+                    <div class="price-calculator">
+                        <div class="subtotal-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal-display">PKR 0</span>
+                        </div>
+                    </div>
 
                     <button type="submit">Proceed to Checkout →</button>
                 </form>
@@ -134,7 +257,6 @@
     </div>
 </main>
 
-<!-- ===== FOOTER ===== -->
 <footer class="site-footer">
     <div class="footer-inner">
         <div class="footer-brand">
@@ -169,10 +291,53 @@
 </footer>
 
 <script>
+    function updatePrice() {
+        var foilEl = document.querySelector('input[name="foil_option"]:checked');
+        var foil = foilEl ? foilEl.value : 'foil';
+        var priceFoil = parseInt(document.getElementById('price-foil').value, 10) || 0;
+        var priceNofoil = parseInt(document.getElementById('price-nofoil').value, 10) || 0;
+        var insertPrice = parseInt(document.getElementById('insert-price').value, 10) || 0;
+        var quantity = parseInt(document.getElementById('quantity').value, 10) || 0;
+        var extraInserts = parseInt(document.getElementById('extra-inserts').value, 10) || 0;
+        var hasFoilChoice = document.getElementById('has-foil-choice').value === '1';
+
+        var cardPrice = (foil === 'foil') ? priceFoil : priceNofoil;
+        if (priceNofoil === 0) {
+            cardPrice = priceFoil;
+        }
+        var total = (cardPrice + (extraInserts * insertPrice)) * quantity;
+
+        var unitText = 'PKR ' + cardPrice.toLocaleString() + ' per card';
+        if (hasFoilChoice) {
+            unitText += foil === 'foil' ? ' (with foil)' : ' (without foil)';
+        }
+
+        document.getElementById('unit-price-display').textContent = unitText;
+        document.getElementById('subtotal-display').textContent = 'PKR ' + total.toLocaleString();
+
+        var foilExplanation = document.getElementById('foil-explanation');
+        if (foilExplanation) {
+            if (foil === 'nofoil') {
+                foilExplanation.textContent = 'Standard print without metallic shine. A clean and minimal finish.';
+            } else {
+                foilExplanation.textContent = '✨ Foiling adds a shiny metallic finish (gold/silver) to parts of the design, giving a premium and elegant look.';
+            }
+        }
+    }
+
     function toggleMenu() {
         document.getElementById("sidebar").classList.toggle("active");
         document.getElementById("overlay").classList.toggle("active");
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updatePrice();
+        document.querySelectorAll('input[name="foil_option"]').forEach(function(el) {
+            el.addEventListener('change', updatePrice);
+        });
+        document.getElementById('quantity').addEventListener('input', updatePrice);
+        document.getElementById('extra-inserts').addEventListener('input', updatePrice);
+    });
 </script>
 
 </body>
