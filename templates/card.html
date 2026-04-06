@@ -12,10 +12,15 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .card-gallery {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            max-width: 100%;
         }
 
         .gallery-main {
@@ -51,6 +56,7 @@
             display: flex;
             gap: 12px;
             margin: 16px 0;
+            flex-wrap: wrap;
         }
 
         .foil-option {
@@ -120,6 +126,7 @@
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 1.3rem;
             font-weight: 500;
+            gap: 8px;
         }
 
         .min-order-note {
@@ -141,6 +148,20 @@
             .foil-toggle {
                 flex-direction: column;
                 gap: 10px;
+            }
+
+            .price-calculator .subtotal-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .order-form button {
+                position: relative;
+                z-index: 10;
+                width: 100%;
+                -webkit-appearance: none;
+                appearance: none;
+                touch-action: manipulation;
             }
         }
     </style>

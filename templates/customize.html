@@ -12,6 +12,10 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .customize-page {
             max-width: 1100px;
             margin: 0 auto;
@@ -25,6 +29,19 @@
             align-items: start;
         }
 
+        html,
+        body {
+            position: relative;
+            z-index: 1;
+        }
+
+        .customize-form {
+            min-width: 0;
+            max-width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
         .customize-summary {
             background: #ffffff;
             border: 1px solid #ece4db;
@@ -33,6 +50,12 @@
             box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
             position: sticky;
             top: 100px;
+        }
+
+        .customize-summary,
+        .customize-form form,
+        .section-card {
+            max-width: 100%;
         }
 
         .customize-summary img {
@@ -123,6 +146,7 @@
         .form-group select,
         .form-group textarea {
             width: 100%;
+            max-width: 100%;
             border: 1px solid #e0d6cc;
             border-radius: 12px;
             padding: 12px 14px;
@@ -200,6 +224,9 @@
             letter-spacing: 1.2px;
             text-transform: uppercase;
             cursor: pointer;
+            position: relative;
+            z-index: 50;
+            touch-action: manipulation;
             transition: background 0.35s ease;
         }
 
@@ -207,13 +234,57 @@
             background: #5c4510;
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 768px) {
             .customize-page {
                 padding: 20px 18px 40px;
             }
 
             .customize-grid {
-                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .preview-column,
+            .customize-summary {
+                display: none !important;
+                position: static !important;
+                top: auto !important;
+                pointer-events: none !important;
+            }
+
+            .section-card {
+                padding: 16px;
+                position: relative;
+                z-index: 1;
+            }
+
+            .side-toggle,
+            .time-type-toggle {
+                flex-wrap: wrap;
+            }
+
+            .customize-form {
+                position: relative;
+                z-index: 10;
+                isolation: isolate;
+            }
+
+            .customize-form button,
+            .customize-form input,
+            .customize-form select,
+            .customize-form textarea {
+                position: relative;
+                z-index: 1;
+                pointer-events: auto;
+            }
+
+            .customize-form button {
+                touch-action: manipulation;
+            }
+
+            .customize-form .submit-btn {
+                z-index: 50;
             }
 
             .form-grid {
@@ -276,7 +347,7 @@
                 <h1>Customize Your Invitation</h1>
                 <p class="customize-subtitle">Add event details and we will personalize your design before production.</p>
 
-                <form action="/order" method="post">
+                <form action="/order" method="POST">
                     <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
                     <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
                     <input type="hidden" name="currency" value="{{ .summary.Currency }}">
@@ -551,11 +622,11 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="rsvp_name">RSVP Name</label>
-                                <input id="rsvp_name" name="rsvp_name" type="text" required>
+                                <input id="rsvp_name" name="rsvp_name" type="text">
                             </div>
                             <div class="form-group">
                                 <label for="rsvp_phone">RSVP Phone</label>
-                                <input id="rsvp_phone" name="rsvp_phone" type="tel" required>
+                                <input id="rsvp_phone" name="rsvp_phone" type="tel">
                             </div>
                             <div class="form-group full-width">
                                 <label for="notes">Notes (Optional)</label>
@@ -564,7 +635,7 @@
                         </div>
                     </div>
 
-                    <button class="submit-btn" type="submit">Place Order</button>
+                    <button class="submit-btn" type="button">Place Order</button>
                 </form>
             </section>
         </div>
@@ -605,29 +676,57 @@
 </footer>
 
 <script>
-    function toggleMenu() {
-        document.getElementById("sidebar").classList.toggle("active");
-        document.getElementById("overlay").classList.toggle("active");
-    }
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
 
-    function setSide(side) {
-        var sideInput = document.getElementById('side-input');
+function setSide(side) {
+    document.getElementById('side-input').value = side;
+    document.querySelectorAll('.side-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-side') === side);
+    });
+}
 
-        sideInput.value = side;
+function submitOrder() {
+    var form = document.querySelector('form[action="/order"]');
+    if (!form) return;
+    var formData = new URLSearchParams(new FormData(form));
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/order', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 303 || xhr.status === 302) {
+            var redirectUrl = xhr.responseURL;
+            if (redirectUrl && redirectUrl.indexOf('/order-confirmation/') !== -1) {
+                window.location.href = redirectUrl;
+            } else {
+                var match = xhr.responseText.match(/\/order-confirmation\/(\d+)/);
+                if (match) {
+                    window.location.href = '/order-confirmation/' + match[1];
+                } else {
+                    window.location.href = '/';
+                }
+            }
+        } else {
+            alert('Order failed. Please try again or contact us on WhatsApp.');
+        }
+    };
+    xhr.onerror = function() {
+        alert('Network error. Please check your connection.');
+    };
+    xhr.send(formData.toString());
+}
 
-        document.querySelectorAll('.side-btn').forEach(function(btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-side') === side);
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        setSide(document.getElementById('side-input').value || 'bride');
-        document.querySelectorAll('.side-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                setSide(btn.getAttribute('data-side'));
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    setSide(document.getElementById('side-input').value || 'bride');
+    document.querySelectorAll('.side-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setSide(btn.getAttribute('data-side'));
         });
     });
+    document.querySelector('.submit-btn').addEventListener('click', submitOrder);
+});
 </script>
 
 </body>

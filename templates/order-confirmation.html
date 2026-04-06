@@ -12,6 +12,10 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .confirmation-wrap {
             min-height: calc(100vh - 240px);
             display: grid;
@@ -81,6 +85,30 @@
 
         .track-order-link {
             margin-bottom: 12px;
+        }
+
+        @media (max-width: 760px) {
+            .confirmation-wrap {
+                padding: 20px 0 32px;
+            }
+
+            .confirmation-panel {
+                padding: 26px 18px;
+            }
+
+            .confirmation-panel h1 {
+                font-size: 2.3rem;
+            }
+
+            .detail-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .detail-row span:last-child {
+                text-align: left;
+            }
         }
     </style>
 </head>

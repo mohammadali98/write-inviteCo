@@ -12,11 +12,23 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .contact-hero {
             max-width: 1100px;
             margin: 0 auto;
             padding: 70px 40px 40px;
             text-align: center;
+        }
+
+        .contact-hero,
+        .contact-cards,
+        .hours-wrap,
+        .message-wrap,
+        .social-wrap {
+            max-width: 100%;
         }
 
         .contact-hero h1 {
@@ -52,6 +64,7 @@
             padding: 24px 22px;
             text-align: center;
             transition: transform 0.35s ease, box-shadow 0.35s ease;
+            max-width: 100%;
         }
 
         .contact-card:hover {
@@ -175,6 +188,7 @@
         .form-group input,
         .form-group textarea {
             width: 100%;
+            max-width: 100%;
             border: 1px solid #e0d6cc;
             border-radius: 12px;
             padding: 12px 14px;
@@ -244,6 +258,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 14px;
+            max-width: 100%;
         }
 
         .social-card h2 {
@@ -297,7 +312,38 @@
             }
 
             .contact-hero h1 {
-                font-size: 2.8rem;
+                font-size: 2.4rem;
+            }
+
+            .contact-card,
+            .hours-card,
+            .message-card,
+            .social-card {
+                padding: 20px 18px;
+            }
+
+            .message-actions {
+                width: 100%;
+                align-items: stretch;
+            }
+
+            .message-actions .pill-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .social-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .social-links {
+                width: 100%;
+            }
+
+            .social-links a {
+                flex: 1 1 100%;
+                text-align: center;
             }
         }
     </style>

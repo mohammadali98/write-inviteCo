@@ -2,6 +2,7 @@ package orderpresentation
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -64,6 +65,13 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
+	log.Printf("=== ORDER FORM DEBUG ===")
+	log.Printf("card_id=%q quantity=%q currency=%q foil_option=%q extra_inserts=%q",
+		c.PostForm("card_id"), c.PostForm("quantity"), c.PostForm("currency"),
+		c.PostForm("foil_option"), c.PostForm("extra_inserts"))
+	log.Printf("name=%q email=%q phone=%q", c.PostForm("name"), c.PostForm("email"), c.PostForm("phone"))
+	log.Printf("Content-Type: %s", c.ContentType())
+
 	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid card id.")
@@ -139,13 +147,29 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order-confirmation/%d", result.OrderID))
+}
+
+func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
+	orderID, err := parsePositiveInt64(c.Param("id"))
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid order id.")
+		return
+	}
+
+	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
+	if err != nil {
+		c.String(http.StatusNotFound, "Order not found.")
+		return
+	}
+
 	c.HTML(http.StatusOK, "order-confirmation.html", gin.H{
-		"customerName": result.CustomerName,
-		"quantity":     result.Quantity,
-		"totalPrice":   result.TotalPrice,
-		"currency":     result.Currency,
-		"cardName":     result.CardName,
-		"orderID":      result.OrderID,
+		"customerName": payload.Customer.Name,
+		"quantity":     payload.Order.Quantity,
+		"totalPrice":   payload.Order.TotalPrice,
+		"currency":     payload.Order.Currency,
+		"cardName":     payload.Order.CardName,
+		"orderID":      payload.Order.ID,
 	})
 }
 
@@ -251,6 +275,7 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "admin_order_detail.html", gin.H{
 		"order":      payload.Order,
+		"statusStr":  string(payload.Order.Status),
 		"customer":   payload.Customer,
 		"details":    payload.Details,
 		"card_name":  payload.Order.CardName,

@@ -563,11 +563,6 @@ func validateCustomerFields(name string, email string, phone string, address str
 }
 
 func validateCustomizationFields(input PlaceOrderInput) error {
-	if input.RsvpName == "" ||
-		input.RsvpPhone == "" {
-		return ErrInvalidInput
-	}
-
 	return nil
 }
 

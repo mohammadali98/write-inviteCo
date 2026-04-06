@@ -12,6 +12,10 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .checkout-page {
             max-width: 1100px;
             margin: 0 auto;
@@ -25,6 +29,11 @@
             align-items: start;
         }
 
+        .checkout-form {
+            min-width: 0;
+            max-width: 100%;
+        }
+
         .order-summary {
             background: #ffffff;
             border: 1px solid #ece4db;
@@ -33,6 +42,11 @@
             box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
             position: sticky;
             top: 100px;
+        }
+
+        .order-summary,
+        .checkout-form form {
+            max-width: 100%;
         }
 
         .order-summary img {
@@ -62,6 +76,7 @@
 
         .summary-row span:last-child {
             text-align: right;
+            overflow-wrap: anywhere;
         }
 
         .summary-total {
@@ -106,6 +121,7 @@
         .checkout-form input,
         .checkout-form textarea {
             width: 100%;
+            max-width: 100%;
             border: 1px solid #e0d6cc;
             border-radius: 12px;
             padding: 12px 14px;
@@ -188,11 +204,33 @@
 
         @media (max-width: 760px) {
             .checkout-grid {
-                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .order-summary {
+                position: static;
+                top: auto;
+                order: 2;
+            }
+
+            .checkout-form {
+                order: 1;
             }
 
             .checkout-form .form-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .checkout-submit,
+            .order-form button {
+                position: relative;
+                z-index: 10;
+                width: 100%;
+                -webkit-appearance: none;
+                appearance: none;
+                touch-action: manipulation;
             }
 
             .checkout-page {

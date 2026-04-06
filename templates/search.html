@@ -12,10 +12,19 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .search-page {
             max-width: 1100px;
             margin: 0 auto;
             padding: 40px 40px 60px;
+        }
+
+        .search-page,
+        .search-input-wrap {
+            max-width: 100%;
         }
 
         .search-header {
@@ -141,6 +150,21 @@
 
             .search-header h1 {
                 font-size: 2rem;
+            }
+
+            .search-input-wrap {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .search-input-wrap button {
+                position: static;
+                top: auto;
+                right: auto;
+                transform: none;
+                width: 100%;
+                max-width: 100%;
             }
         }
     </style>

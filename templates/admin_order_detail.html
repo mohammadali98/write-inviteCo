@@ -12,6 +12,10 @@
             justify-content: center;
         }
 
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .admin-detail-page {
             max-width: 1100px;
             margin: 0 auto;
@@ -148,6 +152,7 @@
             font-family: var(--font-body);
             font-size: 0.9rem;
             color: var(--text);
+            max-width: 100%;
         }
 
         .status-btn {
@@ -178,6 +183,17 @@
 
             .product-card-wrap {
                 grid-template-columns: 1fr;
+            }
+
+            .status-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .status-select,
+            .status-btn {
+                width: 100%;
+                max-width: 100%;
             }
         }
     </style>
@@ -237,10 +253,10 @@
             <form class="status-form" method="post" action="/admin/orders/{{ .order.ID }}/status">
                 <label for="order-status">Update Status</label>
                 <select id="order-status" class="status-select" name="status">
-                    <option value="pending" {{ if eq .order.Status "pending" }}selected{{ end }}>Pending</option>
-                    <option value="confirmed" {{ if eq .order.Status "confirmed" }}selected{{ end }}>Confirmed</option>
-                    <option value="cancelled" {{ if eq .order.Status "cancelled" }}selected{{ end }}>Cancelled</option>
-                    <option value="completed" {{ if eq .order.Status "completed" }}selected{{ end }}>Completed</option>
+                    <option value="pending" {{ if eq .statusStr "pending" }}selected{{ end }}>Pending</option>
+                    <option value="confirmed" {{ if eq .statusStr "confirmed" }}selected{{ end }}>Confirmed</option>
+                    <option value="cancelled" {{ if eq .statusStr "cancelled" }}selected{{ end }}>Cancelled</option>
+                    <option value="completed" {{ if eq .statusStr "completed" }}selected{{ end }}>Completed</option>
                 </select>
                 <button class="status-btn" type="submit">Save</button>
             </form>

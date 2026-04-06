@@ -93,6 +93,7 @@ func main() {
 	router.GET("/card/:id", cardHandler.CardDetail)
 	router.GET("/checkout", cardHandler.Checkout)
 	router.GET("/customize", orderHandler.CustomizePage)
+	router.GET("/order-confirmation/:id", orderHandler.OrderConfirmation)
 	router.GET("/order/:id", orderHandler.OrderStatus)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
