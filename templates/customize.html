@@ -120,6 +120,7 @@
         }
 
         .form-group input,
+        .form-group select,
         .form-group textarea {
             width: 100%;
             border: 1px solid #e0d6cc;
@@ -136,6 +137,7 @@
         }
 
         .form-group input:focus,
+        .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
             border-color: #c4953a;
@@ -164,10 +166,6 @@
             background: #8b6914;
             border-color: #8b6914;
             color: #ffffff;
-        }
-
-        .side-hidden {
-            display: none;
         }
 
         .time-type-toggle {
@@ -303,12 +301,12 @@
                     <div class="section-card">
                         <h3>Bride & Groom</h3>
                         <div class="form-grid">
-                            <div class="form-group bride-only">
-                                <label for="bride_name">Bride Name</label>
-                                <input id="bride_name" name="bride_name" type="text" required>
+                            <div class="form-group">
+                                <label for="bride_name">Bride Name (Optional)</label>
+                                <input id="bride_name" name="bride_name" type="text">
                             </div>
-                            <div class="form-group groom-only side-hidden">
-                                <label for="groom_name">Groom Name</label>
+                            <div class="form-group">
+                                <label for="groom_name">Groom Name (Optional)</label>
                                 <input id="groom_name" name="groom_name" type="text">
                             </div>
                         </div>
@@ -317,12 +315,12 @@
                     <div class="section-card">
                         <h3>Parents</h3>
                         <div class="form-grid">
-                            <div class="form-group bride-only">
-                                <label for="bride_father_name">Bride's Father Name</label>
-                                <input id="bride_father_name" name="bride_father_name" type="text" required>
+                            <div class="form-group">
+                                <label for="bride_father_name">Bride's Father Name (Optional)</label>
+                                <input id="bride_father_name" name="bride_father_name" type="text">
                             </div>
-                            <div class="form-group groom-only side-hidden">
-                                <label for="groom_father_name">Groom's Father Name</label>
+                            <div class="form-group">
+                                <label for="groom_father_name">Groom's Father Name (Optional)</label>
                                 <input id="groom_father_name" name="groom_father_name" type="text">
                             </div>
                         </div>
@@ -334,6 +332,19 @@
                             <div class="form-group">
                                 <label for="mehndi_date">Mehndi Date</label>
                                 <input id="mehndi_date" name="mehndi_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="mehndi_day">Mehndi Day</label>
+                                <select id="mehndi_day" name="mehndi_day">
+                                    <option value="">Select day</option>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="mehndi_time">Mehndi Event Time</label>
@@ -356,6 +367,14 @@
                                 <label for="mehndi_dinner_time">Mehndi Dinner Time</label>
                                 <input id="mehndi_dinner_time" name="mehndi_dinner_time" type="time">
                             </div>
+                            <div class="form-group">
+                                <label for="mehndi_venue_name">Mehndi Venue Name</label>
+                                <input id="mehndi_venue_name" name="mehndi_venue_name" type="text">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="mehndi_venue_address">Mehndi Venue Address</label>
+                                <textarea id="mehndi_venue_address" name="mehndi_venue_address"></textarea>
+                            </div>
                         </div>
                     </div>
 
@@ -365,6 +384,19 @@
                             <div class="form-group">
                                 <label for="baraat_date">Baraat Date</label>
                                 <input id="baraat_date" name="baraat_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="baraat_day">Baraat Day</label>
+                                <select id="baraat_day" name="baraat_day">
+                                    <option value="">Select day</option>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="baraat_time">Baraat Event Time</label>
@@ -395,6 +427,14 @@
                                 <label for="rukhsati_time">Rukhsati Time</label>
                                 <input id="rukhsati_time" name="rukhsati_time" type="time">
                             </div>
+                            <div class="form-group">
+                                <label for="baraat_venue_name">Baraat Venue Name</label>
+                                <input id="baraat_venue_name" name="baraat_venue_name" type="text">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="baraat_venue_address">Baraat Venue Address</label>
+                                <textarea id="baraat_venue_address" name="baraat_venue_address"></textarea>
+                            </div>
                         </div>
                     </div>
 
@@ -404,6 +444,19 @@
                             <div class="form-group">
                                 <label for="nikkah_date">Nikkah Date</label>
                                 <input id="nikkah_date" name="nikkah_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="nikkah_day">Nikkah Day</label>
+                                <select id="nikkah_day" name="nikkah_day">
+                                    <option value="">Select day</option>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="nikkah_time">Nikkah Event Time</label>
@@ -426,6 +479,14 @@
                                 <label for="nikkah_dinner_time">Nikkah Dinner Time</label>
                                 <input id="nikkah_dinner_time" name="nikkah_dinner_time" type="time">
                             </div>
+                            <div class="form-group">
+                                <label for="nikkah_venue_name">Nikkah Venue Name</label>
+                                <input id="nikkah_venue_name" name="nikkah_venue_name" type="text">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="nikkah_venue_address">Nikkah Venue Address</label>
+                                <textarea id="nikkah_venue_address" name="nikkah_venue_address"></textarea>
+                            </div>
                         </div>
                     </div>
 
@@ -435,6 +496,19 @@
                             <div class="form-group">
                                 <label for="walima_date">Walima Date</label>
                                 <input id="walima_date" name="walima_date" type="date">
+                            </div>
+                            <div class="form-group">
+                                <label for="walima_day">Walima Day</label>
+                                <select id="walima_day" name="walima_day">
+                                    <option value="">Select day</option>
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="walima_time">Walima Event Time</label>
@@ -462,22 +536,12 @@
                                 <input id="reception_time" name="reception_time" type="time">
                             </div>
                             <div class="form-group">
-                                <label for="dinner_time">Dinner Time</label>
-                                <input id="dinner_time" name="dinner_time" type="time">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <h3>Venue</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="venue_name">Venue Name</label>
-                                <input id="venue_name" name="venue_name" type="text" required>
+                                <label for="walima_venue_name">Walima Venue Name</label>
+                                <input id="walima_venue_name" name="walima_venue_name" type="text">
                             </div>
                             <div class="form-group full-width">
-                                <label for="venue_address">Venue Address</label>
-                                <textarea id="venue_address" name="venue_address" required></textarea>
+                                <label for="walima_venue_address">Walima Venue Address</label>
+                                <textarea id="walima_venue_address" name="walima_venue_address"></textarea>
                             </div>
                         </div>
                     </div>
@@ -547,31 +611,13 @@
     }
 
     function setSide(side) {
-        var brideGroups = document.querySelectorAll('.bride-only');
-        var groomGroups = document.querySelectorAll('.groom-only');
         var sideInput = document.getElementById('side-input');
-        var brideName = document.getElementById('bride_name');
-        var brideFather = document.getElementById('bride_father_name');
-        var groomName = document.getElementById('groom_name');
-        var groomFather = document.getElementById('groom_father_name');
 
         sideInput.value = side;
 
         document.querySelectorAll('.side-btn').forEach(function(btn) {
             btn.classList.toggle('active', btn.getAttribute('data-side') === side);
         });
-
-        brideGroups.forEach(function(group) {
-            group.classList.toggle('side-hidden', side !== 'bride');
-        });
-        groomGroups.forEach(function(group) {
-            group.classList.toggle('side-hidden', side !== 'groom');
-        });
-
-        brideName.required = side === 'bride';
-        brideFather.required = side === 'bride';
-        groomName.required = side === 'groom';
-        groomFather.required = side === 'groom';
     }
 
     document.addEventListener('DOMContentLoaded', function() {

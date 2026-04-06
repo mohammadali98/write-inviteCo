@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Status</title>
+    <style>
+        body {
+            font-family: 'Georgia', serif;
+            background: #fdf8f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            color: #b76e79;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+
+        .status span {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .completed {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .section {
+            margin-top: 25px;
+        }
+
+        .section h3 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .info {
+            margin-top: 10px;
+            line-height: 1.8;
+        }
+
+        .highlight {
+            color: #b76e79;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 14px;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            font-style: italic;
+            color: #555;
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                margin: 20px 14px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+{{ $status := printf "%s" .order.Status }}
+
+<div class="container">
+
+    <h1>Write &amp; Invite Co.</h1>
+    <p style="text-align:center;">Order #{{ .order.ID }}</p>
+
+    <div class="status">
+        Status:
+        <span class="{{ if eq $status "pending" }}pending{{ else if eq $status "confirmed" }}confirmed{{ else if eq $status "completed" }}completed{{ else }}pending{{ end }}">
+            {{ .order.Status }}
+        </span>
+    </div>
+
+    <div class="message">
+        {{ if eq $status "pending" }}
+            Your order is being reviewed.
+        {{ else if eq $status "confirmed" }}
+            Your order has been confirmed.
+        {{ else if eq $status "completed" }}
+            Your order is completed and ready.
+        {{ else }}
+            Your order status has been updated.
+        {{ end }}
+    </div>
+
+    <div class="section">
+        <h3>Customer Details</h3>
+        <div class="info">
+            Name: {{ if .customer }}{{ .customer.Name }}{{ else }}-{{ end }} <br>
+            Email: {{ if and .customer .customer.Email }}{{ .customer.Email }}{{ else }}-{{ end }} <br>
+            Phone: {{ if and .customer .customer.Phone }}{{ .customer.Phone }}{{ else }}-{{ end }}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Wedding Details</h3>
+        <div class="info">
+            Bride: <span class="highlight">{{ if and .details .details.BrideName }}{{ .details.BrideName }}{{ else }}-{{ end }}</span><br>
+            Groom: <span class="highlight">{{ if and .details .details.GroomName }}{{ .details.GroomName }}{{ else }}-{{ end }}</span><br><br>
+
+            Mehndi: {{ if and .details .details.MehndiDate }}{{ .details.MehndiDate }}{{ else }}-{{ end }}<br>
+            Mehndi Venue: {{ if and .details .details.MehndiVenueName }}{{ .details.MehndiVenueName }}{{ else }}-{{ end }}<br>
+            Mehndi Address: {{ if and .details .details.MehndiVenueAddress }}{{ .details.MehndiVenueAddress }}{{ else }}-{{ end }}<br><br>
+
+            Baraat: {{ if and .details .details.BaraatDate }}{{ .details.BaraatDate }}{{ else }}-{{ end }}<br>
+            Baraat Venue: {{ if and .details .details.BaraatVenueName }}{{ .details.BaraatVenueName }}{{ else }}-{{ end }}<br>
+            Baraat Address: {{ if and .details .details.BaraatVenueAddress }}{{ .details.BaraatVenueAddress }}{{ else }}-{{ end }}<br><br>
+
+            Nikkah: {{ if and .details .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}<br>
+            Nikkah Venue: {{ if and .details .details.NikkahVenueName }}{{ .details.NikkahVenueName }}{{ else }}-{{ end }}<br>
+            Nikkah Address: {{ if and .details .details.NikkahVenueAddress }}{{ .details.NikkahVenueAddress }}{{ else }}-{{ end }}<br><br>
+
+            Walima: {{ if and .details .details.WalimaDate }}{{ .details.WalimaDate }}{{ else }}-{{ end }}<br>
+            Walima Venue: {{ if and .details .details.WalimaVenueName }}{{ .details.WalimaVenueName }}{{ else }}-{{ end }}<br>
+            Walima Address: {{ if and .details .details.WalimaVenueAddress }}{{ .details.WalimaVenueAddress }}{{ else }}-{{ end }}
+        </div>
+    </div>
+
+    <div class="footer">
+        Thank you for choosing Write &amp; Invite Co.
+    </div>
+
+</div>
+
+</body>
+</html>

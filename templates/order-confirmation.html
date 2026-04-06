@@ -78,6 +78,10 @@
             color: var(--brand-dark);
             text-align: right;
         }
+
+        .track-order-link {
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +141,10 @@
                     <span>{{ .currency }} {{ .totalPrice }}</span>
                 </div>
             </div>
+
+            <a class="pill-btn track-order-link" href="/order/{{ .orderID }}">
+                Track Order Status <span class="arrow">→</span>
+            </a>
 
             <a class="pill-btn" href="/collections/wedding-cards">
                 Continue Shopping <span class="arrow">→</span>

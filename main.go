@@ -14,16 +14,26 @@ import (
 	customerrepository "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/repository"
 	customerwriter "writeandinviteco/inviteandco/customer/customerinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/customer/customerpresentation"
+	"writeandinviteco/inviteandco/notification"
 	"writeandinviteco/inviteandco/order/orderapplication"
+	orderreader "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/reader"
+	orderrepository "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/repository"
 	orderwriter "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/order/orderpresentation"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("godotenv load warning:", err)
+	}
+
 	cfg := config.Load()
+	log.Println("RESEND_API_KEY:", cfg.ResendAPIKey)
+	log.Println("RESEND_FROM_EMAIL:", cfg.ResendFromEmail)
 
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -40,11 +50,18 @@ func main() {
 	cardWriter := cardwriter.New(db)
 	customerReader := customerreader.New(db)
 	customerWriter := customerwriter.New(db)
+	orderReader := orderreader.New(db)
 	orderWriter := orderwriter.New(db)
 
 	// repositories
 	cardRepo := cardrepository.NewCardRepository(cardReader, cardWriter)
 	customerRepo := customerrepository.NewCustomerRepository(customerReader, customerWriter)
+	orderRepo := orderrepository.NewOrderRepository(orderReader, orderWriter)
+
+	var emailSender orderapplication.EmailSender
+	if cfg.ResendAPIKey != "" {
+		emailSender = notification.NewResendSender(cfg.ResendAPIKey, cfg.ResendFromEmail)
+	}
 
 	// handlers
 	cardHandler := cardpresentation.NewCardHandler(cardRepo)
@@ -52,8 +69,11 @@ func main() {
 	orderService := orderapplication.NewService(
 		db,
 		cardRepo,
+		customerRepo,
+		orderRepo,
 		customerWriter,
 		orderWriter,
+		emailSender,
 	)
 	orderHandler := orderpresentation.NewOrderHandler(orderService)
 
@@ -73,8 +93,16 @@ func main() {
 	router.GET("/card/:id", cardHandler.CardDetail)
 	router.GET("/checkout", cardHandler.Checkout)
 	router.GET("/customize", orderHandler.CustomizePage)
+	router.GET("/order/:id", orderHandler.OrderStatus)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
+
+	admin := router.Group("/admin", gin.BasicAuth(gin.Accounts{
+		"admin": "admin123",
+	}))
+	admin.GET("/orders", orderHandler.AdminOrders)
+	admin.GET("/orders/:id", orderHandler.AdminOrderDetail)
+	admin.POST("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
 
 	log.Printf("Server starting on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

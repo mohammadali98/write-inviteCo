@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Status — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .order-status-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .status-card {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            box-shadow: var(--shadow-card);
+            padding: 22px 24px;
+        }
+
+        .status-kicker {
+            margin: 0;
+            font-size: 0.82rem;
+            color: var(--muted);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .status-card h1,
+        .status-card h2 {
+            margin: 6px 0 12px;
+            font-family: var(--font-display);
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .status-card h1 {
+            font-size: 2rem;
+        }
+
+        .status-card h2 {
+            font-size: 1.6rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+            border: 1px solid transparent;
+        }
+
+        .status-pending {
+            background: #f7eed8;
+            color: #8b6914;
+            border-color: #e6d7b0;
+        }
+
+        .status-confirmed {
+            background: #e9f6ea;
+            color: #2d7a39;
+            border-color: #c7e8cb;
+        }
+
+        .status-cancelled {
+            background: #fceaea;
+            color: #9f3131;
+            border-color: #f4c6c6;
+        }
+
+        .status-completed {
+            background: #ebf0ff;
+            color: #3450a0;
+            border-color: #cad6fa;
+        }
+
+        .status-message {
+            margin: 0;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 16px;
+            margin-top: 16px;
+        }
+
+        .row-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .row-value {
+            color: var(--text);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .event-card {
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 14px;
+            background: var(--bg);
+        }
+
+        .event-card h3 {
+            margin: 0 0 8px;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .event-row {
+            margin: 3px 0;
+            color: var(--text-light);
+            font-size: 0.88rem;
+        }
+
+        .empty-text {
+            margin: 0;
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.92rem;
+        }
+
+        @media (max-width: 760px) {
+            .order-status-page {
+                padding: 20px 18px 40px;
+            }
+
+            .status-grid,
+            .event-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="order-status-page">
+        <section class="status-card animate-in">
+            <p class="status-kicker">Order Tracking</p>
+            <h1>Order #{{ .order.ID }}</h1>
+            <div class="status-badge status-{{ .order.Status }}">{{ .order.Status }}</div>
+            <p class="status-message">{{ .statusMessage }}</p>
+
+            <div class="status-grid">
+                <div>
+                    <div class="row-label">Total</div>
+                    <div class="row-value">{{ .order.Currency }} {{ .order.TotalPrice }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Quantity</div>
+                    <div class="row-value">{{ .order.Quantity }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Created At</div>
+                    <div class="row-value">{{ if .order.CreatedAt }}{{ .order.CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Customer</div>
+                    <div class="row-value">{{ if .customer }}{{ .customer.Name }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="status-card">
+            <h2>Bride & Groom</h2>
+            {{ if .details }}
+            <div class="status-grid">
+                <div>
+                    <div class="row-label">Bride Name</div>
+                    <div class="row-value">{{ if .details.BrideName }}{{ .details.BrideName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Groom Name</div>
+                    <div class="row-value">{{ if .details.GroomName }}{{ .details.GroomName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Bride's Father</div>
+                    <div class="row-value">{{ if .details.BrideFatherName }}{{ .details.BrideFatherName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Groom's Father</div>
+                    <div class="row-value">{{ if .details.GroomFatherName }}{{ .details.GroomFatherName }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+            {{ else }}
+            <p class="empty-text">No personalization details are available for this order yet.</p>
+            {{ end }}
+        </section>
+
+        <section class="status-card">
+            <h2>Events</h2>
+            {{ if .details }}
+            <div class="event-grid">
+                <article class="event-card">
+                    <h3>Mehndi</h3>
+                    <p class="event-row">Date: {{ if .details.MehndiDate }}{{ .details.MehndiDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.MehndiDay }}{{ .details.MehndiDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.MehndiTime }}{{ .details.MehndiTime }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Baraat</h3>
+                    <p class="event-row">Date: {{ if .details.BaraatDate }}{{ .details.BaraatDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.BaraatDay }}{{ .details.BaraatDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.BaraatTime }}{{ .details.BaraatTime }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Nikkah</h3>
+                    <p class="event-row">Date: {{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.NikkahDay }}{{ .details.NikkahDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.NikkahTime }}{{ .details.NikkahTime }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Walima</h3>
+                    <p class="event-row">Date: {{ if .details.WalimaDate }}{{ .details.WalimaDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.WalimaDay }}{{ .details.WalimaDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.WalimaTime }}{{ .details.WalimaTime }}{{ else }}-{{ end }}</p>
+                </article>
+            </div>
+            {{ else }}
+            <p class="empty-text">No event schedule is available for this order yet.</p>
+            {{ end }}
+        </section>
+    </div>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/">Shop All</a>
+                <a href="/">New Arrivals</a>
+                <a href="/">Wedding Cards</a>
+                <a href="/">Save the Dates</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/">Track an Order</a>
+                <a href="/">Shipping Info</a>
+                <a href="/">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/">Terms of Use</a>
+            <a href="/">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

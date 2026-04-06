@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Orders — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+        }
+
+        .admin-page h1 {
+            margin: 0 0 18px;
+            font-family: var(--font-display);
+            font-size: 2.3rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .admin-subtitle {
+            margin: 0 0 22px;
+            color: var(--text-light);
+            font-size: 0.92rem;
+        }
+
+        .admin-table-wrap {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .admin-table th {
+            background: var(--bg-warm);
+            color: var(--text-light);
+            font-size: 0.78rem;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: var(--accent-cream);
+            border: 1px solid var(--border);
+            color: var(--brand-dark);
+            font-size: 0.76rem;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .view-link {
+            text-decoration: none;
+            font-size: 0.82rem;
+            color: var(--brand);
+            font-weight: 500;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .view-link:hover {
+            color: var(--brand-dark);
+        }
+
+        .admin-empty {
+            padding: 30px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .admin-page {
+                padding: 22px 16px 40px;
+            }
+
+            .admin-table-wrap {
+                overflow-x: auto;
+            }
+
+            .admin-table {
+                min-width: 760px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/admin/orders">Admin Orders</a>
+        <a class="nav-link" href="/">Storefront</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/admin/orders">Admin Orders</a>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="admin-page">
+        <h1>Orders Dashboard</h1>
+        <p class="admin-subtitle">All orders with customer name, total amount, status, and timestamp.</p>
+
+        <div class="admin-table-wrap">
+            {{ if .orders }}
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .orders }}
+                <tr>
+                    <td>#{{ .ID }}</td>
+                    <td>{{ .CustomerName }}</td>
+                    <td>{{ .Currency }} {{ .TotalPrice }}</td>
+                    <td><span class="status-pill">{{ .Status }}</span></td>
+                    <td>{{ if .CreatedAt }}{{ .CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</td>
+                    <td><a class="view-link" href="/admin/orders/{{ .ID }}">View →</a></td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+            {{ else }}
+            <div class="admin-empty">No orders found.</div>
+            {{ end }}
+        </div>
+    </div>
+</main>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

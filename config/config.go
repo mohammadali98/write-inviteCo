@@ -6,8 +6,10 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
+	DatabaseURL     string
+	Port            string
+	ResendAPIKey    string
+	ResendFromEmail string
 }
 
 func Load() Config {
@@ -20,8 +22,10 @@ func Load() Config {
 	dsn := fmt.Sprintf("postgres://%s@%s:%s/%s?sslmode=%s", user, host, port, name, sslmode)
 
 	return Config{
-		DatabaseURL: dsn,
-		Port:        getEnv("PORT", "8080"),
+		DatabaseURL:     dsn,
+		Port:            getEnv("PORT", "8080"),
+		ResendAPIKey:    getEnv("RESEND_API_KEY", ""),
+		ResendFromEmail: getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
 	}
 }
 

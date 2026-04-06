@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Order Detail — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-detail-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .admin-back {
+            font-size: 0.85rem;
+            text-decoration: none;
+            color: var(--brand);
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            font-weight: 500;
+        }
+
+        .admin-back:hover {
+            color: var(--brand-dark);
+        }
+
+        .admin-card {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            box-shadow: var(--shadow-card);
+            padding: 22px 24px;
+        }
+
+        .admin-card h2 {
+            margin: 0 0 14px;
+            font-family: var(--font-display);
+            font-size: 1.7rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 18px;
+        }
+
+        .row-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .row-value {
+            color: var(--text);
+            font-size: 0.93rem;
+            line-height: 1.55;
+        }
+
+        .events-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .event-card {
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 14px;
+            background: var(--bg);
+        }
+
+        .event-card h3 {
+            margin: 0 0 8px;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .event-row {
+            margin: 3px 0;
+            color: var(--text-light);
+            font-size: 0.88rem;
+        }
+
+        .notes-box {
+            border: 1px solid var(--border-light);
+            background: var(--bg-warm);
+            border-radius: 12px;
+            padding: 12px;
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
+        .product-card-wrap {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .product-image {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            object-fit: cover;
+            aspect-ratio: 4 / 3;
+            background: var(--bg);
+        }
+
+        .status-form {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: var(--bg);
+        }
+
+        .status-form label {
+            font-size: 0.82rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .status-select {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .status-btn {
+            border: none;
+            background: var(--brand);
+            color: #fff;
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .status-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        @media (max-width: 760px) {
+            .admin-detail-page {
+                padding: 22px 16px 40px;
+            }
+
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .product-card-wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/admin/orders">Admin Orders</a>
+        <a class="nav-link" href="/">Storefront</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/admin/orders">Admin Orders</a>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="admin-detail-page">
+        <a class="admin-back" href="/admin/orders">← Back to Orders</a>
+
+        <section class="admin-card">
+            <h2>Order #{{ .order.ID }}</h2>
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Status</div>
+                    <div class="row-value">{{ .order.Status }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Total</div>
+                    <div class="row-value">{{ .order.Currency }} {{ .order.TotalPrice }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Quantity</div>
+                    <div class="row-value">{{ .order.Quantity }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Created At</div>
+                    <div class="row-value">{{ if .order.CreatedAt }}{{ .order.CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+
+            <form class="status-form" method="post" action="/admin/orders/{{ .order.ID }}/status">
+                <label for="order-status">Update Status</label>
+                <select id="order-status" class="status-select" name="status">
+                    <option value="pending" {{ if eq .order.Status "pending" }}selected{{ end }}>Pending</option>
+                    <option value="confirmed" {{ if eq .order.Status "confirmed" }}selected{{ end }}>Confirmed</option>
+                    <option value="cancelled" {{ if eq .order.Status "cancelled" }}selected{{ end }}>Cancelled</option>
+                    <option value="completed" {{ if eq .order.Status "completed" }}selected{{ end }}>Completed</option>
+                </select>
+                <button class="status-btn" type="submit">Save</button>
+            </form>
+        </section>
+
+        <section class="admin-card">
+            <h2>Selected Product</h2>
+            <div class="product-card-wrap">
+                {{ if .card_image }}
+                <img class="product-image" src="{{ .card_image }}" alt="{{ if .card_name }}{{ .card_name }}{{ else }}Selected product{{ end }}">
+                {{ else }}
+                <div class="product-image"></div>
+                {{ end }}
+                <div>
+                    <div class="row-label">Card / Bid Box Name</div>
+                    <div class="row-value">{{ if .card_name }}{{ .card_name }}{{ else }}-{{ end }}</div>
+                    <div style="margin-top: 10px;">
+                        <div class="row-label">Product Image</div>
+                        <div class="row-value">{{ if .card_image }}Available{{ else }}Not available{{ end }}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-card">
+            <h2>Customer</h2>
+            {{ if .customer }}
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Name</div>
+                    <div class="row-value">{{ .customer.Name }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Email</div>
+                    <div class="row-value">{{ if .customer.Email }}{{ .customer.Email }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Phone</div>
+                    <div class="row-value">{{ if .customer.Phone }}{{ .customer.Phone }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Address</div>
+                    <div class="row-value">
+                        {{ if .customer.Address }}{{ .customer.Address }}{{ else }}-{{ end }}
+                        {{ if .customer.City }}<br>{{ .customer.City }}{{ end }}
+                        {{ if .customer.PostalCode }} {{ .customer.PostalCode }}{{ end }}
+                    </div>
+                </div>
+            </div>
+            {{ else }}
+            <p class="row-value">Customer record not found.</p>
+            {{ end }}
+        </section>
+
+        <section class="admin-card">
+            <h2>Customization Details</h2>
+            {{ if .details }}
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Side</div>
+                    <div class="row-value">{{ .details.Side }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Bride / Groom</div>
+                    <div class="row-value">
+                        Bride: {{ if .details.BrideName }}{{ .details.BrideName }}{{ else }}-{{ end }}<br>
+                        Groom: {{ if .details.GroomName }}{{ .details.GroomName }}{{ else }}-{{ end }}
+                    </div>
+                </div>
+                <div>
+                    <div class="row-label">Bride's Father</div>
+                    <div class="row-value">{{ if .details.BrideFatherName }}{{ .details.BrideFatherName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Groom's Father</div>
+                    <div class="row-value">{{ if .details.GroomFatherName }}{{ .details.GroomFatherName }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+
+            <div class="events-grid">
+                <article class="event-card">
+                    <h3>Mehndi</h3>
+                    <p class="event-row">Date: {{ if .details.MehndiDate }}{{ .details.MehndiDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.MehndiDay }}{{ .details.MehndiDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.MehndiTimeType }}{{ .details.MehndiTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.MehndiTime }}{{ .details.MehndiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.MehndiDinnerTime }}{{ .details.MehndiDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.MehndiVenueName }}{{ .details.MehndiVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.MehndiVenueAddress }}{{ .details.MehndiVenueAddress }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Baraat</h3>
+                    <p class="event-row">Date: {{ if .details.BaraatDate }}{{ .details.BaraatDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.BaraatDay }}{{ .details.BaraatDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.BaraatTimeType }}{{ .details.BaraatTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.BaraatTime }}{{ .details.BaraatTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.BaraatDinnerTime }}{{ .details.BaraatDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Arrival: {{ if .details.BaraatArrivalTime }}{{ .details.BaraatArrivalTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Rukhsati: {{ if .details.RukhsatiTime }}{{ .details.RukhsatiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.BaraatVenueName }}{{ .details.BaraatVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.BaraatVenueAddress }}{{ .details.BaraatVenueAddress }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Nikkah</h3>
+                    <p class="event-row">Date: {{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.NikkahDay }}{{ .details.NikkahDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.NikkahTimeType }}{{ .details.NikkahTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.NikkahTime }}{{ .details.NikkahTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.NikkahDinnerTime }}{{ .details.NikkahDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.NikkahVenueName }}{{ .details.NikkahVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.NikkahVenueAddress }}{{ .details.NikkahVenueAddress }}{{ else }}-{{ end }}</p>
+                </article>
+
+                <article class="event-card">
+                    <h3>Walima</h3>
+                    <p class="event-row">Date: {{ if .details.WalimaDate }}{{ .details.WalimaDate }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Day: {{ if .details.WalimaDay }}{{ .details.WalimaDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.WalimaTimeType }}{{ .details.WalimaTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.WalimaTime }}{{ .details.WalimaTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.WalimaDinnerTime }}{{ .details.WalimaDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Reception: {{ if .details.ReceptionTime }}{{ .details.ReceptionTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.WalimaVenueName }}{{ .details.WalimaVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.WalimaVenueAddress }}{{ .details.WalimaVenueAddress }}{{ else }}-{{ end }}</p>
+                </article>
+            </div>
+
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">RSVP Name</div>
+                    <div class="row-value">{{ if .details.RsvpName }}{{ .details.RsvpName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">RSVP Phone</div>
+                    <div class="row-value">{{ if .details.RsvpPhone }}{{ .details.RsvpPhone }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+                <div class="row-label">Notes</div>
+                <div class="notes-box">{{ if .details.Notes }}{{ .details.Notes }}{{ else }}No notes provided.{{ end }}</div>
+            </div>
+            {{ else }}
+            <p class="row-value">No customization details found for this order.</p>
+            {{ end }}
+        </section>
+    </div>
+</main>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

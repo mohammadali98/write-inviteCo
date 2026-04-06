@@ -11,10 +11,229 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAdminOrders = `-- name: GetAdminOrders :many
+SELECT
+    o.id,
+    COALESCE(c.name, 'Unknown Customer') AS customer_name,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.created_at
+FROM orders o
+LEFT JOIN customers c ON c.id = o.customer_id
+ORDER BY o.created_at DESC
+`
+
+type GetAdminOrdersRow struct {
+	ID           int64
+	CustomerName string
+	TotalPrice   int64
+	Status       *string
+	Currency     string
+	CreatedAt    pgtype.Timestamptz
+}
+
+func (q *Queries) GetAdminOrders(ctx context.Context) ([]GetAdminOrdersRow, error) {
+	rows, err := q.db.Query(ctx, getAdminOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAdminOrdersRow
+	for rows.Next() {
+		var i GetAdminOrdersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerName,
+			&i.TotalPrice,
+			&i.Status,
+			&i.Currency,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLatestOrderDetailByOrderID = `-- name: GetLatestOrderDetailByOrderID :many
+SELECT
+    id,
+    order_id,
+    COALESCE(side, 'bride') AS side,
+    bride_name,
+    groom_name,
+    bride_father_name,
+    groom_father_name,
+    COALESCE(mehndi_date::text, '')::text AS mehndi_date,
+    COALESCE(mehndi_day, '') AS mehndi_day,
+    mehndi_time_type,
+    COALESCE(mehndi_time::text, '')::text AS mehndi_time,
+    COALESCE(mehndi_dinner_time::text, '')::text AS mehndi_dinner_time,
+    COALESCE(mehndi_venue_name, '') AS mehndi_venue_name,
+    COALESCE(mehndi_venue_address, '') AS mehndi_venue_address,
+    COALESCE(baraat_date::text, '')::text AS baraat_date,
+    COALESCE(baraat_day, '') AS baraat_day,
+    baraat_time_type,
+    COALESCE(baraat_time::text, '')::text AS baraat_time,
+    COALESCE(baraat_dinner_time::text, '')::text AS baraat_dinner_time,
+    COALESCE(baraat_arrival_time::text, '')::text AS baraat_arrival_time,
+    COALESCE(rukhsati_time::text, '')::text AS rukhsati_time,
+    COALESCE(baraat_venue_name, '') AS baraat_venue_name,
+    COALESCE(baraat_venue_address, '') AS baraat_venue_address,
+    COALESCE(nikkah_date::text, '')::text AS nikkah_date,
+    COALESCE(nikkah_day, '') AS nikkah_day,
+    nikkah_time_type,
+    COALESCE(nikkah_time::text, '')::text AS nikkah_time,
+    COALESCE(nikkah_dinner_time::text, '')::text AS nikkah_dinner_time,
+    COALESCE(nikkah_venue_name, '') AS nikkah_venue_name,
+    COALESCE(nikkah_venue_address, '') AS nikkah_venue_address,
+    COALESCE(walima_date::text, '')::text AS walima_date,
+    COALESCE(walima_day, '') AS walima_day,
+    walima_time_type,
+    COALESCE(walima_time::text, '')::text AS walima_time,
+    COALESCE(walima_dinner_time::text, '')::text AS walima_dinner_time,
+    COALESCE(reception_time::text, '')::text AS reception_time,
+    COALESCE(walima_venue_name, '') AS walima_venue_name,
+    COALESCE(walima_venue_address, '') AS walima_venue_address,
+    COALESCE(rsvp_name, '') AS rsvp_name,
+    COALESCE(rsvp_phone, '') AS rsvp_phone,
+    notes,
+    created_at
+FROM order_details
+WHERE order_id = $1
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+type GetLatestOrderDetailByOrderIDRow struct {
+	ID                 int64
+	OrderID            int64
+	Side               string
+	BrideName          *string
+	GroomName          *string
+	BrideFatherName    *string
+	GroomFatherName    *string
+	MehndiDate         string
+	MehndiDay          string
+	MehndiTimeType     *string
+	MehndiTime         string
+	MehndiDinnerTime   string
+	MehndiVenueName    string
+	MehndiVenueAddress string
+	BaraatDate         string
+	BaraatDay          string
+	BaraatTimeType     *string
+	BaraatTime         string
+	BaraatDinnerTime   string
+	BaraatArrivalTime  string
+	RukhsatiTime       string
+	BaraatVenueName    string
+	BaraatVenueAddress string
+	NikkahDate         string
+	NikkahDay          string
+	NikkahTimeType     *string
+	NikkahTime         string
+	NikkahDinnerTime   string
+	NikkahVenueName    string
+	NikkahVenueAddress string
+	WalimaDate         string
+	WalimaDay          string
+	WalimaTimeType     *string
+	WalimaTime         string
+	WalimaDinnerTime   string
+	ReceptionTime      string
+	WalimaVenueName    string
+	WalimaVenueAddress string
+	RsvpName           string
+	RsvpPhone          string
+	Notes              *string
+	CreatedAt          pgtype.Timestamptz
+}
+
+func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int64) ([]GetLatestOrderDetailByOrderIDRow, error) {
+	rows, err := q.db.Query(ctx, getLatestOrderDetailByOrderID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetLatestOrderDetailByOrderIDRow
+	for rows.Next() {
+		var i GetLatestOrderDetailByOrderIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.Side,
+			&i.BrideName,
+			&i.GroomName,
+			&i.BrideFatherName,
+			&i.GroomFatherName,
+			&i.MehndiDate,
+			&i.MehndiDay,
+			&i.MehndiTimeType,
+			&i.MehndiTime,
+			&i.MehndiDinnerTime,
+			&i.MehndiVenueName,
+			&i.MehndiVenueAddress,
+			&i.BaraatDate,
+			&i.BaraatDay,
+			&i.BaraatTimeType,
+			&i.BaraatTime,
+			&i.BaraatDinnerTime,
+			&i.BaraatArrivalTime,
+			&i.RukhsatiTime,
+			&i.BaraatVenueName,
+			&i.BaraatVenueAddress,
+			&i.NikkahDate,
+			&i.NikkahDay,
+			&i.NikkahTimeType,
+			&i.NikkahTime,
+			&i.NikkahDinnerTime,
+			&i.NikkahVenueName,
+			&i.NikkahVenueAddress,
+			&i.WalimaDate,
+			&i.WalimaDay,
+			&i.WalimaTimeType,
+			&i.WalimaTime,
+			&i.WalimaDinnerTime,
+			&i.ReceptionTime,
+			&i.WalimaVenueName,
+			&i.WalimaVenueAddress,
+			&i.RsvpName,
+			&i.RsvpPhone,
+			&i.Notes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at
-FROM orders
-WHERE id = $1
+SELECT
+    o.id,
+    o.customer_id,
+    o.card_id,
+    o.quantity,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.created_at,
+    o.updated_at,
+    COALESCE(c.name, '') AS card_name,
+    COALESCE(c.image, '') AS card_image
+FROM orders o
+LEFT JOIN cards c ON o.card_id = c.id
+WHERE o.id = $1
 `
 
 type GetOrderByIDRow struct {
@@ -27,6 +246,8 @@ type GetOrderByIDRow struct {
 	Currency   string
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
+	CardName   string
+	CardImage  string
 }
 
 func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, error) {
@@ -42,6 +263,8 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, 
 		&i.Currency,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CardName,
+		&i.CardImage,
 	)
 	return i, err
 }

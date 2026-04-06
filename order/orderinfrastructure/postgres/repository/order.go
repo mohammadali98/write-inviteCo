@@ -29,6 +29,8 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id int64) (*orderdom
 		ID:         row.ID,
 		CustomerID: derefInt64(row.CustomerID),
 		CardID:     derefInt64(row.CardID),
+		CardName:   row.CardName,
+		CardImage:  row.CardImage,
 		Quantity:   row.Quantity,
 		TotalPrice: row.TotalPrice,
 		Status:     toOrderStatus(row.Status),
@@ -60,6 +62,82 @@ func (r *OrderRepository) GetOrdersByCustomerID(ctx context.Context, customerID 
 	return orders, nil
 }
 
+func (r *OrderRepository) GetAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error) {
+	rows, err := r.reader.GetAdminOrders(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]*orderdomain.AdminOrder, len(rows))
+	for i, row := range rows {
+		orders[i] = &orderdomain.AdminOrder{
+			ID:           row.ID,
+			CustomerName: row.CustomerName,
+			TotalPrice:   row.TotalPrice,
+			Status:       toOrderStatus(row.Status),
+			Currency:     row.Currency,
+			CreatedAt:    toTimePtr(row.CreatedAt),
+		}
+	}
+	return orders, nil
+}
+
+func (r *OrderRepository) GetOrderDetailByOrderID(ctx context.Context, orderID int64) (*orderdomain.OrderDetail, error) {
+	rows, err := r.reader.GetLatestOrderDetailByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	row := rows[0]
+	return &orderdomain.OrderDetail{
+		ID:                 row.ID,
+		OrderID:            row.OrderID,
+		Side:               row.Side,
+		BrideName:          row.BrideName,
+		GroomName:          row.GroomName,
+		BrideFatherName:    row.BrideFatherName,
+		GroomFatherName:    row.GroomFatherName,
+		MehndiDate:         emptyToNil(row.MehndiDate),
+		MehndiDay:          emptyToNil(row.MehndiDay),
+		MehndiTimeType:     row.MehndiTimeType,
+		MehndiTime:         emptyToNil(row.MehndiTime),
+		MehndiDinnerTime:   emptyToNil(row.MehndiDinnerTime),
+		MehndiVenueName:    emptyToNil(row.MehndiVenueName),
+		MehndiVenueAddress: emptyToNil(row.MehndiVenueAddress),
+		BaraatDate:         emptyToNil(row.BaraatDate),
+		BaraatDay:          emptyToNil(row.BaraatDay),
+		BaraatTimeType:     row.BaraatTimeType,
+		BaraatTime:         emptyToNil(row.BaraatTime),
+		BaraatDinnerTime:   emptyToNil(row.BaraatDinnerTime),
+		BaraatArrivalTime:  emptyToNil(row.BaraatArrivalTime),
+		RukhsatiTime:       emptyToNil(row.RukhsatiTime),
+		BaraatVenueName:    emptyToNil(row.BaraatVenueName),
+		BaraatVenueAddress: emptyToNil(row.BaraatVenueAddress),
+		NikkahDate:         emptyToNil(row.NikkahDate),
+		NikkahDay:          emptyToNil(row.NikkahDay),
+		NikkahTimeType:     row.NikkahTimeType,
+		NikkahTime:         emptyToNil(row.NikkahTime),
+		NikkahDinnerTime:   emptyToNil(row.NikkahDinnerTime),
+		NikkahVenueName:    emptyToNil(row.NikkahVenueName),
+		NikkahVenueAddress: emptyToNil(row.NikkahVenueAddress),
+		WalimaDate:         emptyToNil(row.WalimaDate),
+		WalimaDay:          emptyToNil(row.WalimaDay),
+		WalimaTimeType:     row.WalimaTimeType,
+		WalimaTime:         emptyToNil(row.WalimaTime),
+		WalimaDinnerTime:   emptyToNil(row.WalimaDinnerTime),
+		WalimaVenueName:    emptyToNil(row.WalimaVenueName),
+		WalimaVenueAddress: emptyToNil(row.WalimaVenueAddress),
+		ReceptionTime:      emptyToNil(row.ReceptionTime),
+		RsvpName:           row.RsvpName,
+		RsvpPhone:          row.RsvpPhone,
+		Notes:              row.Notes,
+		CreatedAt:          toTimePtr(row.CreatedAt),
+	}, nil
+}
+
 func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status orderdomain.OrderStatus, currency string) (*orderdomain.Order, error) {
 	s := string(status)
 	row, err := r.writer.CreateOrder(ctx, orderwriter.CreateOrderParams{
@@ -86,77 +164,95 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 	}, nil
 }
 
-func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, side string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, baraatDate *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, nikkahDate *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, walimaDate *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, dinnerTime *string, venueName string, venueAddress string, rsvpName string, rsvpPhone string, notes *string) (*orderdomain.OrderDetail, error) {
+func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, side string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiDay *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, mehndiVenueName *string, mehndiVenueAddress *string, baraatDate *string, baraatDay *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, baraatVenueName *string, baraatVenueAddress *string, nikkahDate *string, nikkahDay *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, nikkahVenueName *string, nikkahVenueAddress *string, walimaDate *string, walimaDay *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, walimaVenueName *string, walimaVenueAddress *string, rsvpName string, rsvpPhone string, notes *string) (*orderdomain.OrderDetail, error) {
 	row, err := r.writer.CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
-		OrderID:           orderID,
-		Side:              side,
-		BrideName:         brideName,
-		GroomName:         groomName,
-		BrideFatherName:   brideFatherName,
-		GroomFatherName:   groomFatherName,
-		MehndiDate:        stringOrEmpty(mehndiDate),
-		MehndiTimeType:    mehndiTimeType,
-		MehndiTime:        stringOrEmpty(mehndiTime),
-		MehndiDinnerTime:  stringOrEmpty(mehndiDinnerTime),
-		BaraatDate:        stringOrEmpty(baraatDate),
-		BaraatTimeType:    baraatTimeType,
-		BaraatTime:        stringOrEmpty(baraatTime),
-		BaraatDinnerTime:  stringOrEmpty(baraatDinnerTime),
-		BaraatArrivalTime: stringOrEmpty(baraatArrivalTime),
-		RukhsatiTime:      stringOrEmpty(rukhsatiTime),
-		NikkahDate:        stringOrEmpty(nikkahDate),
-		NikkahTimeType:    nikkahTimeType,
-		NikkahTime:        stringOrEmpty(nikkahTime),
-		NikkahDinnerTime:  stringOrEmpty(nikkahDinnerTime),
-		WalimaDate:        stringOrEmpty(walimaDate),
-		WalimaTimeType:    walimaTimeType,
-		WalimaTime:        stringOrEmpty(walimaTime),
-		WalimaDinnerTime:  stringOrEmpty(walimaDinnerTime),
-		ReceptionTime:     stringOrEmpty(receptionTime),
-		DinnerTime:        stringOrEmpty(dinnerTime),
-		VenueName:         venueName,
-		VenueAddress:      venueAddress,
-		RsvpName:          rsvpName,
-		RsvpPhone:         rsvpPhone,
-		Notes:             notes,
+		OrderID:            orderID,
+		Side:               side,
+		BrideName:          brideName,
+		GroomName:          groomName,
+		BrideFatherName:    brideFatherName,
+		GroomFatherName:    groomFatherName,
+		MehndiDate:         stringOrEmpty(mehndiDate),
+		MehndiDay:          mehndiDay,
+		MehndiTimeType:     mehndiTimeType,
+		MehndiTime:         stringOrEmpty(mehndiTime),
+		MehndiDinnerTime:   stringOrEmpty(mehndiDinnerTime),
+		MehndiVenueName:    mehndiVenueName,
+		MehndiVenueAddress: mehndiVenueAddress,
+		BaraatDate:         stringOrEmpty(baraatDate),
+		BaraatDay:          baraatDay,
+		BaraatTimeType:     baraatTimeType,
+		BaraatTime:         stringOrEmpty(baraatTime),
+		BaraatDinnerTime:   stringOrEmpty(baraatDinnerTime),
+		BaraatArrivalTime:  stringOrEmpty(baraatArrivalTime),
+		RukhsatiTime:       stringOrEmpty(rukhsatiTime),
+		BaraatVenueName:    baraatVenueName,
+		BaraatVenueAddress: baraatVenueAddress,
+		NikkahDate:         stringOrEmpty(nikkahDate),
+		NikkahDay:          nikkahDay,
+		NikkahTimeType:     nikkahTimeType,
+		NikkahTime:         stringOrEmpty(nikkahTime),
+		NikkahDinnerTime:   stringOrEmpty(nikkahDinnerTime),
+		NikkahVenueName:    nikkahVenueName,
+		NikkahVenueAddress: nikkahVenueAddress,
+		WalimaDate:         stringOrEmpty(walimaDate),
+		WalimaDay:          walimaDay,
+		WalimaTimeType:     walimaTimeType,
+		WalimaTime:         stringOrEmpty(walimaTime),
+		WalimaDinnerTime:   stringOrEmpty(walimaDinnerTime),
+		ReceptionTime:      stringOrEmpty(receptionTime),
+		WalimaVenueName:    walimaVenueName,
+		WalimaVenueAddress: walimaVenueAddress,
+		RsvpName:           rsvpName,
+		RsvpPhone:          rsvpPhone,
+		Notes:              notes,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &orderdomain.OrderDetail{
-		ID:                row.ID,
-		OrderID:           row.OrderID,
-		Side:              row.Side,
-		BrideName:         row.BrideName,
-		GroomName:         row.GroomName,
-		BrideFatherName:   row.BrideFatherName,
-		GroomFatherName:   row.GroomFatherName,
-		MehndiDate:        emptyToNil(row.MehndiDate),
-		MehndiTimeType:    row.MehndiTimeType,
-		MehndiTime:        emptyToNil(row.MehndiTime),
-		MehndiDinnerTime:  emptyToNil(row.MehndiDinnerTime),
-		BaraatDate:        emptyToNil(row.BaraatDate),
-		BaraatTimeType:    row.BaraatTimeType,
-		BaraatTime:        emptyToNil(row.BaraatTime),
-		BaraatDinnerTime:  emptyToNil(row.BaraatDinnerTime),
-		BaraatArrivalTime: emptyToNil(row.BaraatArrivalTime),
-		RukhsatiTime:      emptyToNil(row.RukhsatiTime),
-		NikkahDate:        emptyToNil(row.NikkahDate),
-		NikkahTimeType:    row.NikkahTimeType,
-		NikkahTime:        emptyToNil(row.NikkahTime),
-		NikkahDinnerTime:  emptyToNil(row.NikkahDinnerTime),
-		WalimaDate:        emptyToNil(row.WalimaDate),
-		WalimaTimeType:    row.WalimaTimeType,
-		WalimaTime:        emptyToNil(row.WalimaTime),
-		WalimaDinnerTime:  emptyToNil(row.WalimaDinnerTime),
-		ReceptionTime:     emptyToNil(row.ReceptionTime),
-		DinnerTime:        emptyToNil(row.DinnerTime),
-		VenueName:         row.VenueName,
-		VenueAddress:      row.VenueAddress,
-		RsvpName:          row.RsvpName,
-		RsvpPhone:         row.RsvpPhone,
-		Notes:             row.Notes,
-		CreatedAt:         toTimePtr(row.CreatedAt),
+		ID:                 row.ID,
+		OrderID:            row.OrderID,
+		Side:               row.Side,
+		BrideName:          row.BrideName,
+		GroomName:          row.GroomName,
+		BrideFatherName:    row.BrideFatherName,
+		GroomFatherName:    row.GroomFatherName,
+		MehndiDate:         emptyToNil(row.MehndiDate),
+		MehndiDay:          row.MehndiDay,
+		MehndiTimeType:     row.MehndiTimeType,
+		MehndiTime:         emptyToNil(row.MehndiTime),
+		MehndiDinnerTime:   emptyToNil(row.MehndiDinnerTime),
+		MehndiVenueName:    emptyToNil(row.MehndiVenueName),
+		MehndiVenueAddress: emptyToNil(row.MehndiVenueAddress),
+		BaraatDate:         emptyToNil(row.BaraatDate),
+		BaraatDay:          row.BaraatDay,
+		BaraatTimeType:     row.BaraatTimeType,
+		BaraatTime:         emptyToNil(row.BaraatTime),
+		BaraatDinnerTime:   emptyToNil(row.BaraatDinnerTime),
+		BaraatArrivalTime:  emptyToNil(row.BaraatArrivalTime),
+		RukhsatiTime:       emptyToNil(row.RukhsatiTime),
+		BaraatVenueName:    emptyToNil(row.BaraatVenueName),
+		BaraatVenueAddress: emptyToNil(row.BaraatVenueAddress),
+		NikkahDate:         emptyToNil(row.NikkahDate),
+		NikkahDay:          row.NikkahDay,
+		NikkahTimeType:     row.NikkahTimeType,
+		NikkahTime:         emptyToNil(row.NikkahTime),
+		NikkahDinnerTime:   emptyToNil(row.NikkahDinnerTime),
+		NikkahVenueName:    emptyToNil(row.NikkahVenueName),
+		NikkahVenueAddress: emptyToNil(row.NikkahVenueAddress),
+		WalimaDate:         emptyToNil(row.WalimaDate),
+		WalimaDay:          row.WalimaDay,
+		WalimaTimeType:     row.WalimaTimeType,
+		WalimaTime:         emptyToNil(row.WalimaTime),
+		WalimaDinnerTime:   emptyToNil(row.WalimaDinnerTime),
+		WalimaVenueName:    emptyToNil(row.WalimaVenueName),
+		WalimaVenueAddress: emptyToNil(row.WalimaVenueAddress),
+		ReceptionTime:      emptyToNil(row.ReceptionTime),
+		RsvpName:           row.RsvpName,
+		RsvpPhone:          row.RsvpPhone,
+		Notes:              row.Notes,
+		CreatedAt:          toTimePtr(row.CreatedAt),
 	}, nil
 }
 

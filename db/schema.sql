@@ -1,4 +1,4 @@
-\restrict hIVDuotQykb77Vs5q4zuySp2RSUaIlGKxgolJjznNOgnQHi1PTCrfKrOgqUMIpw
+\restrict cTm0jkjtUQnr9Pmv20Rx8HoYiJrLiz20DUcVdNhjwu5Z1rL4qJOKxbXXPgeNTUH
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -142,8 +142,6 @@ CREATE TABLE public.order_details (
     event_type text,
     event_date text,
     event_time text,
-    venue_name text,
-    venue_address text,
     rsvp_name text,
     rsvp_phone text,
     notes text,
@@ -168,7 +166,18 @@ CREATE TABLE public.order_details (
     walima_time_type text,
     walima_time time without time zone,
     reception_time time without time zone,
-    dinner_time time without time zone,
+    mehndi_day text,
+    baraat_day text,
+    nikkah_day text,
+    walima_day text,
+    mehndi_venue_name text,
+    mehndi_venue_address text,
+    baraat_venue_name text,
+    baraat_venue_address text,
+    nikkah_venue_name text,
+    nikkah_venue_address text,
+    walima_venue_name text,
+    walima_venue_address text,
     CONSTRAINT chk_order_details_side CHECK ((side = ANY (ARRAY['bride'::text, 'groom'::text])))
 );
 
@@ -405,7 +414,7 @@ ALTER TABLE ONLY public.orders
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hIVDuotQykb77Vs5q4zuySp2RSUaIlGKxgolJjznNOgnQHi1PTCrfKrOgqUMIpw
+\unrestrict cTm0jkjtUQnr9Pmv20Rx8HoYiJrLiz20DUcVdNhjwu5Z1rL4qJOKxbXXPgeNTUH
 
 
 --
@@ -424,4 +433,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260326000006'),
     ('20260326000007'),
     ('20260326000008'),
-    ('20260405111718');
+    ('20260405111718'),
+    ('20260405190000'),
+    ('20260406000001');
