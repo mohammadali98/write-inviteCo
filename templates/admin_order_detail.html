@@ -223,7 +223,7 @@
         <a href="/contact">Contact</a>
     </nav>
 </aside>
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+<div id="overlay" class="overlay" onclick="toggleMenu()" style="pointer-events: none;"></div>
 
 <main class="main-content">
     <div class="admin-detail-page">
@@ -258,7 +258,7 @@
                     <option value="cancelled" {{ if eq .statusStr "cancelled" }}selected{{ end }}>Cancelled</option>
                     <option value="completed" {{ if eq .statusStr "completed" }}selected{{ end }}>Completed</option>
                 </select>
-                <button class="status-btn" type="submit">Save</button>
+                <button class="status-btn" type="button" onclick="updateStatus()">Save</button>
             </form>
         </section>
 
@@ -412,6 +412,41 @@
         document.getElementById("sidebar").classList.toggle("active");
         document.getElementById("overlay").classList.toggle("active");
     }
+
+    function updateStatus() {
+        var form = document.querySelector('.status-form');
+        if (!form) return;
+        var formData = new URLSearchParams(new FormData(form));
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+            window.location.reload();
+        };
+        xhr.onerror = function() {
+            alert('Failed to update status. Please try again.');
+        };
+        xhr.send(formData.toString());
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var overlay = document.getElementById('overlay');
+        if (overlay) {
+            overlay.style.pointerEvents = 'none';
+        }
+
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            var observer = new MutationObserver(function() {
+                if (sidebar.classList.contains('active')) {
+                    overlay.style.pointerEvents = 'auto';
+                } else {
+                    overlay.style.pointerEvents = 'none';
+                }
+            });
+            observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+        }
+    });
 </script>
 
 </body>

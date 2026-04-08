@@ -144,7 +144,7 @@
         <a href="/contact">Contact</a>
     </nav>
 </aside>
-<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+<div id="overlay" class="overlay" onclick="toggleMenu()" style="pointer-events: none;"></div>
 
 <main class="main-content">
     <div class="admin-page">
@@ -189,6 +189,25 @@
         document.getElementById("sidebar").classList.toggle("active");
         document.getElementById("overlay").classList.toggle("active");
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var overlay = document.getElementById('overlay');
+        if (overlay) {
+            overlay.style.pointerEvents = 'none';
+        }
+
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            var observer = new MutationObserver(function() {
+                if (sidebar.classList.contains('active')) {
+                    overlay.style.pointerEvents = 'auto';
+                } else {
+                    overlay.style.pointerEvents = 'none';
+                }
+            });
+            observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+        }
+    });
 </script>
 
 </body>
