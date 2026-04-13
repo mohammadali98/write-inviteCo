@@ -26,17 +26,18 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id int64) (*orderdom
 		return nil, err
 	}
 	return &orderdomain.Order{
-		ID:         row.ID,
-		CustomerID: derefInt64(row.CustomerID),
-		CardID:     derefInt64(row.CardID),
-		CardName:   row.CardName,
-		CardImage:  row.CardImage,
-		Quantity:   row.Quantity,
-		TotalPrice: row.TotalPrice,
-		Status:     toOrderStatus(row.Status),
-		Currency:   row.Currency,
-		CreatedAt:  toTimePtr(row.CreatedAt),
-		UpdatedAt:  toTimePtr(row.UpdatedAt),
+		ID:           row.ID,
+		CustomerID:   derefInt64(row.CustomerID),
+		CardID:       derefInt64(row.CardID),
+		CardName:     row.CardName,
+		CardImage:    row.CardImage,
+		CardCategory: row.CardCategory,
+		Quantity:     row.Quantity,
+		TotalPrice:   row.TotalPrice,
+		Status:       toOrderStatus(row.Status),
+		Currency:     row.Currency,
+		CreatedAt:    toTimePtr(row.CreatedAt),
+		UpdatedAt:    toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
@@ -96,6 +97,10 @@ func (r *OrderRepository) GetOrderDetailByOrderID(ctx context.Context, orderID i
 		ID:                 row.ID,
 		OrderID:            row.OrderID,
 		Side:               row.Side,
+		BidBoxTopLabel:     emptyToNil(row.TopLabel),
+		BidBoxCoupleName:   emptyToNil(row.CoupleName),
+		BidBoxEventDate:    emptyToNil(row.EventDate),
+		BidBoxDetails:      emptyToNil(row.BidBoxDetails),
 		BrideName:          row.BrideName,
 		GroomName:          row.GroomName,
 		BrideFatherName:    row.BrideFatherName,
@@ -164,10 +169,14 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 	}, nil
 }
 
-func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, side string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiDay *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, mehndiVenueName *string, mehndiVenueAddress *string, baraatDate *string, baraatDay *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, baraatVenueName *string, baraatVenueAddress *string, nikkahDate *string, nikkahDay *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, nikkahVenueName *string, nikkahVenueAddress *string, walimaDate *string, walimaDay *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, walimaVenueName *string, walimaVenueAddress *string, rsvpName string, rsvpPhone string, notes *string) (*orderdomain.OrderDetail, error) {
+func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, side string, bidBoxTopLabel *string, bidBoxCoupleName *string, bidBoxEventDate *string, bidBoxDetails *string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiDay *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, mehndiVenueName *string, mehndiVenueAddress *string, baraatDate *string, baraatDay *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, baraatVenueName *string, baraatVenueAddress *string, nikkahDate *string, nikkahDay *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, nikkahVenueName *string, nikkahVenueAddress *string, walimaDate *string, walimaDay *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, walimaVenueName *string, walimaVenueAddress *string, rsvpName string, rsvpPhone string, notes *string) (*orderdomain.OrderDetail, error) {
 	row, err := r.writer.CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
 		OrderID:            orderID,
 		Side:               side,
+		TopLabel:           bidBoxTopLabel,
+		CoupleName:         bidBoxCoupleName,
+		BidBoxEventDate:    stringOrEmpty(bidBoxEventDate),
+		BidBoxDetails:      bidBoxDetails,
 		BrideName:          brideName,
 		GroomName:          groomName,
 		BrideFatherName:    brideFatherName,
@@ -214,6 +223,10 @@ func (r *OrderRepository) CreateOrderDetail(ctx context.Context, orderID int64, 
 		ID:                 row.ID,
 		OrderID:            row.OrderID,
 		Side:               row.Side,
+		BidBoxTopLabel:     emptyToNil(row.TopLabel),
+		BidBoxCoupleName:   emptyToNil(row.CoupleName),
+		BidBoxEventDate:    emptyToNil(row.EventDate),
+		BidBoxDetails:      emptyToNil(row.BidBoxDetails),
 		BrideName:          row.BrideName,
 		GroomName:          row.GroomName,
 		BrideFatherName:    row.BrideFatherName,

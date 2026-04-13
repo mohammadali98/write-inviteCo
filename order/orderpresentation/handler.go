@@ -61,7 +61,12 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "customize.html", gin.H{
+	templateName := "customize.html"
+	if strings.EqualFold(summary.CardCategory, "bid-boxes") {
+		templateName = "customize_bid_box.html"
+	}
+
+	c.HTML(http.StatusOK, templateName, gin.H{
 		"summary":   summary,
 		"csrfToken": webui.EnsureCSRFToken(c),
 	})
@@ -103,6 +108,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		Address:            c.PostForm("address"),
 		City:               c.PostForm("city"),
 		PostalCode:         c.PostForm("postal_code"),
+		BidBoxTopLabel:     c.PostForm("top_label"),
+		BidBoxCoupleName:   c.PostForm("couple_name"),
+		BidBoxEventDate:    c.PostForm("event_date"),
+		BidBoxDetails:      c.PostForm("details"),
 		Side:               c.PostForm("side"),
 		BrideName:          c.PostForm("bride_name"),
 		GroomName:          c.PostForm("groom_name"),
@@ -224,6 +233,7 @@ func (h *OrderHandler) OrderStatus(c *gin.Context) {
 		"order":         payload.Order,
 		"customer":      payload.Customer,
 		"details":       payload.Details,
+		"isBidBox":      isBidBoxOrder(payload.Order, payload.Details),
 		"statusMessage": orderStatusMessage(payload.Order.Status),
 	})
 }
@@ -305,23 +315,30 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		"details":    payload.Details,
 		"card_name":  payload.Order.CardName,
 		"card_image": payload.Order.CardImage,
+		"isBidBox":   isBidBoxOrder(payload.Order, payload.Details),
 		"csrfToken":  webui.EnsureCSRFToken(c),
 	})
 }
 
 func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
 	if !webui.ValidateCSRF(c) {
+		log.Println("ADMIN STATUS UPDATE ERROR: request expired due to CSRF validation failure")
 		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try updating the order again.")
 		return
 	}
 
 	orderID, err := parsePositiveInt64(c.Param("id"))
 	if err != nil {
+		log.Printf("ADMIN STATUS UPDATE ERROR: invalid order id raw=%q err=%v", c.Param("id"), err)
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 		return
 	}
 
-	if err := h.service.AdminUpdateOrderStatus(c.Request.Context(), orderID, c.PostForm("status")); err != nil {
+	requestedStatus := c.PostForm("status")
+	log.Printf("ADMIN STATUS UPDATE START: order_id=%d requested_status=%q", orderID, requestedStatus)
+
+	if err := h.service.AdminUpdateOrderStatus(c.Request.Context(), orderID, requestedStatus); err != nil {
+		log.Printf("ADMIN STATUS UPDATE ERROR: order_id=%d requested_status=%q err=%v", orderID, requestedStatus, err)
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
 			webui.RenderError(c, http.StatusBadRequest, "Invalid Status", "Please choose a valid order status.")
 			return
@@ -335,6 +352,7 @@ func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
+	log.Printf("ADMIN STATUS UPDATE SUCCESS: order_id=%d requested_status=%q redirect=/admin/orders/%d", orderID, requestedStatus, orderID)
 	c.Redirect(http.StatusSeeOther, "/admin/orders/"+strconv.FormatInt(orderID, 10))
 }
 
@@ -367,4 +385,17 @@ func orderStatusMessage(status orderdomain.OrderStatus) string {
 	default:
 		return "Your order status has been updated."
 	}
+}
+
+func isBidBoxOrder(order *orderdomain.Order, details *orderdomain.OrderDetail) bool {
+	if order != nil && strings.EqualFold(strings.TrimSpace(order.CardCategory), "bid-boxes") {
+		return true
+	}
+	if details == nil {
+		return false
+	}
+	return details.BidBoxTopLabel != nil ||
+		details.BidBoxCoupleName != nil ||
+		details.BidBoxEventDate != nil ||
+		details.BidBoxDetails != nil
 }

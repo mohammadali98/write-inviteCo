@@ -234,12 +234,8 @@
             background: #5c4510;
         }
 
+        .submit-btn.is-submitting,
         .submit-btn:disabled {
-            opacity: 0.7;
-            cursor: wait;
-        }
-
-        .submit-btn.is-submitting {
             opacity: 0.7;
             cursor: wait;
         }
@@ -688,55 +684,124 @@
 
 <script>
 function toggleMenu() {
-    document.getElementById("sidebar").classList.toggle("active");
-    document.getElementById("overlay").classList.toggle("active");
+    var sidebar = document.getElementById("sidebar");
+    var overlay = document.getElementById("overlay");
+
+    if (sidebar) {
+        sidebar.classList.toggle("active");
+    }
+    if (overlay) {
+        overlay.classList.toggle("active");
+    }
 }
 
 function setSide(side) {
-    document.getElementById('side-input').value = side;
-    document.querySelectorAll('.side-btn').forEach(function(btn) {
+    var sideInput = document.getElementById('side-input');
+    var sideButtons = document.querySelectorAll('.side-btn');
+
+    if (!sideInput || !sideButtons.length) {
+        return;
+    }
+
+    sideInput.value = side;
+    sideButtons.forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-side') === side);
     });
 }
 
-function submitOrder() {
-    var form = document.querySelector('form[action="/order"]');
-    if (!form) return;
-    var formData = new URLSearchParams(new FormData(form));
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/order', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function() {
-        if (xhr.status === 200 || xhr.status === 303 || xhr.status === 302) {
-            var redirectUrl = xhr.responseURL;
-            if (redirectUrl && redirectUrl.indexOf('/order-confirmation/') !== -1) {
-                window.location.href = redirectUrl;
-            } else {
-                var match = xhr.responseText.match(/\/order-confirmation\/(\d+)/);
-                if (match) {
-                    window.location.href = '/order-confirmation/' + match[1];
-                } else {
-                    window.location.href = '/';
-                }
-            }
-        } else {
-            alert('Order failed. Please try again or contact us on WhatsApp.');
-        }
-    };
-    xhr.onerror = function() {
-        alert('Network error. Please check your connection.');
-    };
-    xhr.send(formData.toString());
+function extractOrderConfirmationUrl(responseUrl, responseText) {
+    if (responseUrl && responseUrl.indexOf('/order-confirmation/') !== -1) {
+        return responseUrl;
+    }
+
+    var confirmationPathMatch = responseText.match(/\/order-confirmation\/(\d+)/);
+    if (confirmationPathMatch) {
+        return '/order-confirmation/' + confirmationPathMatch[1];
+    }
+
+    var orderPathMatch = responseText.match(/\/order\/(\d+)/);
+    if (orderPathMatch) {
+        return '/order-confirmation/' + orderPathMatch[1];
+    }
+
+    var orderIDMatch = responseText.match(/Order\s*#\s*(\d+)/i);
+    if (orderIDMatch) {
+        return '/order-confirmation/' + orderIDMatch[1];
+    }
+
+    return '';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    setSide(document.getElementById('side-input').value || 'bride');
-    document.querySelectorAll('.side-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            setSide(btn.getAttribute('data-side'));
+    var sideInput = document.getElementById('side-input');
+    var sideButtons = document.querySelectorAll('.side-btn');
+    var form = document.querySelector('form[action="/order"]');
+    var submitBtn = form ? form.querySelector('.submit-btn[type="submit"]') : null;
+    var isSubmitting = false;
+
+    if (sideInput && sideButtons.length) {
+        setSide(sideInput.value || 'bride');
+        sideButtons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setSide(btn.getAttribute('data-side'));
+            });
         });
+    }
+
+    if (!form || !submitBtn) {
+        return;
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+            return;
+        }
+        if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+            return;
+        }
+        if (isSubmitting) {
+            return;
+        }
+
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.classList.add('is-submitting');
+        submitBtn.textContent = 'Submitting...';
+
+        try {
+            var response = await fetch(form.action, {
+                method: (form.method || 'POST').toUpperCase(),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams(new FormData(form)).toString(),
+                credentials: 'same-origin',
+                redirect: 'follow'
+            });
+            var responseText = await response.text();
+
+            if (!response.ok) {
+                throw new Error('Order request failed');
+            }
+
+            var redirectUrl = extractOrderConfirmationUrl(response.url, responseText);
+            if (!redirectUrl) {
+                throw new Error('Order confirmation redirect missing');
+            }
+
+            submitBtn.textContent = 'Redirecting...';
+            window.location.href = redirectUrl;
+        } catch (error) {
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('is-submitting');
+            submitBtn.textContent = 'Place Order';
+            alert('Order failed. Please try again or contact us on WhatsApp.');
+        }
     });
-    document.querySelector('.submit-btn').addEventListener('click', submitOrder);
 });
 </script>
 

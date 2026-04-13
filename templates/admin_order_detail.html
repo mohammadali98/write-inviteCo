@@ -135,6 +135,9 @@
             border: 1px solid var(--border-light);
             border-radius: 12px;
             background: var(--bg);
+            position: relative;
+            z-index: 20;
+            isolation: isolate;
         }
 
         .status-form label {
@@ -153,6 +156,9 @@
             font-size: 0.9rem;
             color: var(--text);
             max-width: 100%;
+            position: relative;
+            z-index: 21;
+            pointer-events: auto;
         }
 
         .status-btn {
@@ -166,6 +172,12 @@
             letter-spacing: 0.8px;
             text-transform: uppercase;
             cursor: pointer;
+            position: relative;
+            z-index: 21;
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
         }
 
         .status-btn:hover {
@@ -259,7 +271,7 @@
                     <option value="cancelled" {{ if eq .statusStr "cancelled" }}selected{{ end }}>Cancelled</option>
                     <option value="completed" {{ if eq .statusStr "completed" }}selected{{ end }}>Completed</option>
                 </select>
-                <button class="status-btn" type="button" onclick="updateStatus()">Save</button>
+                <button class="status-btn" type="submit">Save</button>
             </form>
         </section>
 
@@ -315,6 +327,27 @@
         <section class="admin-card">
             <h2>Customization Details</h2>
             {{ if .details }}
+            {{ if .isBidBox }}
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Top Label</div>
+                    <div class="row-value">{{ if .details.BidBoxTopLabel }}{{ .details.BidBoxTopLabel }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Couple Name</div>
+                    <div class="row-value">{{ if .details.BidBoxCoupleName }}{{ .details.BidBoxCoupleName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Event Date</div>
+                    <div class="row-value">{{ if .details.BidBoxEventDate }}{{ .details.BidBoxEventDate }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+                <div class="row-label">Box Details</div>
+                <div class="notes-box">{{ if .details.BidBoxDetails }}{{ .details.BidBoxDetails }}{{ else }}No additional bid box details provided.{{ end }}</div>
+            </div>
+            {{ else }}
             <div class="admin-grid">
                 <div>
                     <div class="row-label">Side</div>
@@ -401,6 +434,7 @@
                 <div class="row-label">Notes</div>
                 <div class="notes-box">{{ if .details.Notes }}{{ .details.Notes }}{{ else }}No notes provided.{{ end }}</div>
             </div>
+            {{ end }}
             {{ else }}
             <p class="row-value">No customization details found for this order.</p>
             {{ end }}
@@ -414,39 +448,53 @@
         document.getElementById("overlay").classList.toggle("active");
     }
 
-    function updateStatus() {
-        var form = document.querySelector('.status-form');
-        if (!form) return;
-        var formData = new URLSearchParams(new FormData(form));
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', form.action, true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function() {
-            window.location.reload();
-        };
-        xhr.onerror = function() {
-            alert('Failed to update status. Please try again.');
-        };
-        xhr.send(formData.toString());
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+        var statusForm = document.querySelector(".status-form");
+        var statusBtn = statusForm ? statusForm.querySelector(".status-btn") : null;
+        var submitting = false;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var overlay = document.getElementById('overlay');
-        if (overlay) {
-            overlay.style.pointerEvents = 'none';
+        if (!statusForm || !statusBtn) {
+            return;
         }
 
-        var sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-            var observer = new MutationObserver(function() {
-                if (sidebar.classList.contains('active')) {
-                    overlay.style.pointerEvents = 'auto';
-                } else {
-                    overlay.style.pointerEvents = 'none';
-                }
-            });
-            observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+        function submitStatusForm(e) {
+            if (submitting) {
+                return;
+            }
+
+            submitting = true;
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (typeof statusForm.requestSubmit === "function") {
+                statusForm.requestSubmit(statusBtn);
+            } else {
+                statusForm.submit();
+            }
+
+            window.setTimeout(function () {
+                submitting = false;
+            }, 800);
         }
+
+        statusBtn.addEventListener("pointerup", function (e) {
+            if (e.pointerType !== "touch") {
+                return;
+            }
+
+            submitStatusForm(e);
+        });
+
+        statusBtn.addEventListener("touchend", submitStatusForm, { passive: false });
+
+        statusBtn.addEventListener("click", function (e) {
+            if (!submitting) {
+                return;
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+        });
     });
 </script>
 

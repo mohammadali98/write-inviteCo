@@ -15,17 +15,18 @@ const (
 )
 
 type Order struct {
-	ID         int64
-	CustomerID int64
-	CardID     int64
-	CardName   string
-	CardImage  string
-	Quantity   int64
-	TotalPrice int64
-	Status     OrderStatus
-	Currency   string
-	CreatedAt  *time.Time
-	UpdatedAt  *time.Time
+	ID           int64
+	CustomerID   int64
+	CardID       int64
+	CardName     string
+	CardImage    string
+	CardCategory string
+	Quantity     int64
+	TotalPrice   int64
+	Status       OrderStatus
+	Currency     string
+	CreatedAt    *time.Time
+	UpdatedAt    *time.Time
 }
 
 type AdminOrder struct {
@@ -41,6 +42,10 @@ type OrderDetail struct {
 	ID                 int64
 	OrderID            int64
 	Side               string
+	BidBoxTopLabel     *string
+	BidBoxCoupleName   *string
+	BidBoxEventDate    *string
+	BidBoxDetails      *string
 	BrideName          *string
 	GroomName          *string
 	BrideFatherName    *string
@@ -89,7 +94,7 @@ type OrderRepo interface {
 
 type OrderWriter interface {
 	CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status OrderStatus, currency string) (*Order, error)
-	CreateOrderDetail(ctx context.Context, orderID int64, side string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiDay *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, mehndiVenueName *string, mehndiVenueAddress *string, baraatDate *string, baraatDay *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, baraatVenueName *string, baraatVenueAddress *string, nikkahDate *string, nikkahDay *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, nikkahVenueName *string, nikkahVenueAddress *string, walimaDate *string, walimaDay *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, walimaVenueName *string, walimaVenueAddress *string, rsvpName string, rsvpPhone string, notes *string) (*OrderDetail, error)
+	CreateOrderDetail(ctx context.Context, orderID int64, side string, bidBoxTopLabel *string, bidBoxCoupleName *string, bidBoxEventDate *string, bidBoxDetails *string, brideName *string, groomName *string, brideFatherName *string, groomFatherName *string, mehndiDate *string, mehndiDay *string, mehndiTimeType *string, mehndiTime *string, mehndiDinnerTime *string, mehndiVenueName *string, mehndiVenueAddress *string, baraatDate *string, baraatDay *string, baraatTimeType *string, baraatTime *string, baraatDinnerTime *string, baraatArrivalTime *string, rukhsatiTime *string, baraatVenueName *string, baraatVenueAddress *string, nikkahDate *string, nikkahDay *string, nikkahTimeType *string, nikkahTime *string, nikkahDinnerTime *string, nikkahVenueName *string, nikkahVenueAddress *string, walimaDate *string, walimaDay *string, walimaTimeType *string, walimaTime *string, walimaDinnerTime *string, receptionTime *string, walimaVenueName *string, walimaVenueAddress *string, rsvpName string, rsvpPhone string, notes *string) (*OrderDetail, error)
 	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
 

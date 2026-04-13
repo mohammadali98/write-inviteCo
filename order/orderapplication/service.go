@@ -32,18 +32,20 @@ var (
 )
 
 const (
-	maxQuantity           = 5000
-	maxRequestedInserts   = 20
-	maxCustomerNameLength = 120
-	maxEmailLength        = 254
-	maxPhoneLength        = 20
-	maxAddressLength      = 500
-	maxCityLength         = 100
-	maxPostalCodeLength   = 20
-	maxPersonNameLength   = 120
-	maxVenueNameLength    = 150
-	maxVenueAddressLength = 500
-	maxNotesLength        = 2000
+	maxQuantity            = 5000
+	maxRequestedInserts    = 20
+	maxCustomerNameLength  = 120
+	maxEmailLength         = 254
+	maxPhoneLength         = 20
+	maxAddressLength       = 500
+	maxCityLength          = 100
+	maxPostalCodeLength    = 20
+	maxPersonNameLength    = 120
+	maxVenueNameLength     = 150
+	maxVenueAddressLength  = 500
+	maxNotesLength         = 2000
+	maxBidBoxLabelLength   = 120
+	maxBidBoxDetailsLength = 1000
 )
 
 type MinOrderError struct {
@@ -73,6 +75,7 @@ type CustomizationSummary struct {
 	CardID           int64
 	CardName         string
 	CardImage        string
+	CardCategory     string
 	Quantity         int64
 	Currency         string
 	FoilOption       string
@@ -110,6 +113,10 @@ type PlaceOrderInput struct {
 	City       string
 	PostalCode string
 
+	BidBoxTopLabel     string
+	BidBoxCoupleName   string
+	BidBoxEventDate    string
+	BidBoxDetails      string
 	Side               string
 	BrideName          string
 	GroomName          string
@@ -245,26 +252,68 @@ func (s *Service) getOrderDetail(ctx context.Context, orderID int64) (*AdminOrde
 }
 
 func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error {
+	log.Printf("ADMIN STATUS FLOW START: order_id=%d requested_status=%q", orderID, statusRaw)
+
 	if orderID <= 0 {
+		log.Printf("ADMIN STATUS FLOW ERROR: invalid order id=%d", orderID)
 		return ErrInvalidInput
 	}
 
 	newStatus, err := normalizeOrderStatus(statusRaw)
 	if err != nil {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d invalid status=%q err=%v", orderID, statusRaw, err)
 		return err
 	}
 
 	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
 	if err != nil {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d load order failed err=%v", orderID, err)
 		return err
 	}
+	log.Printf(
+		"ADMIN STATUS FLOW ORDER LOADED: order_id=%d current_status=%q category=%q type=%s customer_id=%d",
+		orderID,
+		order.Status,
+		order.CardCategory,
+		orderTypeLabel(order, nil),
+		order.CustomerID,
+	)
 
+	details, detailsErr := s.orderRepo.GetOrderDetailByOrderID(ctx, order.ID)
+	if detailsErr != nil {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d load details failed err=%v", orderID, detailsErr)
+		return detailsErr
+	}
+	log.Printf(
+		"ADMIN STATUS FLOW DETAILS LOADED: order_id=%d type=%s has_bid_box_fields=%t has_details=%t",
+		orderID,
+		orderTypeLabel(order, details),
+		hasBidBoxFields(details),
+		details != nil,
+	)
+
+	log.Printf("ADMIN STATUS FLOW BEFORE DB UPDATE: order_id=%d current_status=%q new_status=%q", orderID, order.Status, newStatus)
 	if err := s.orderRepo.UpdateOrderStatus(ctx, orderID, newStatus); err != nil {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d update status failed err=%v", orderID, err)
 		return err
 	}
+	log.Printf("ADMIN STATUS FLOW AFTER DB UPDATE: order_id=%d new_status=%q", orderID, newStatus)
 
 	if order.Status != orderdomain.ConfirmedOrderStatus && newStatus == orderdomain.ConfirmedOrderStatus {
+		log.Printf(
+			"ADMIN STATUS FLOW BEFORE EMAIL: order_id=%d type=%s customer_id=%d",
+			orderID,
+			orderTypeLabel(order, details),
+			order.CustomerID,
+		)
 		s.sendOrderConfirmationEmailAsync(order.CustomerID, orderID)
+	} else {
+		log.Printf(
+			"ADMIN STATUS FLOW EMAIL SKIPPED: order_id=%d previous_status=%q new_status=%q",
+			orderID,
+			order.Status,
+			newStatus,
+		)
 	}
 
 	return nil
@@ -285,6 +334,7 @@ func (s *Service) PrepareCustomization(ctx context.Context, input CustomizationI
 		CardID:           pricing.card.ID,
 		CardName:         pricing.card.Name,
 		CardImage:        pricing.card.Image,
+		CardCategory:     pricing.card.Category,
 		Quantity:         pricing.quantity,
 		Currency:         pricing.currency,
 		FoilOption:       pricing.foilOption,
@@ -314,9 +364,6 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	if err := validateCustomerFields(input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode); err != nil {
 		return nil, err
 	}
-	if err := validateCustomizationFields(input); err != nil {
-		return nil, err
-	}
 	side, err := parseSide(input.Side)
 	if err != nil {
 		return nil, err
@@ -325,6 +372,9 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 
 	pricing, err := s.calculatePricing(ctx, input.CardID, input.Quantity, input.Currency, input.FoilOption, input.RequestedInserts)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateCustomizationFields(input, pricing.card.Category); err != nil {
 		return nil, err
 	}
 
@@ -364,6 +414,10 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	_, err = s.orderWriter.WithTx(tx).CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
 		OrderID:            orderRow.ID,
 		Side:               input.Side,
+		TopLabel:           nullableString(input.BidBoxTopLabel),
+		CoupleName:         nullableString(input.BidBoxCoupleName),
+		BidBoxEventDate:    input.BidBoxEventDate,
+		BidBoxDetails:      nullableString(input.BidBoxDetails),
 		BrideName:          nullableString(input.BrideName),
 		GroomName:          nullableString(input.GroomName),
 		BrideFatherName:    nullableString(input.BrideFatherName),
@@ -560,6 +614,10 @@ func sanitizePlaceOrderInput(input PlaceOrderInput) PlaceOrderInput {
 	input.Address = sanitizeSingleLine(input.Address)
 	input.City = sanitizeSingleLine(input.City)
 	input.PostalCode = sanitizeSingleLine(input.PostalCode)
+	input.BidBoxTopLabel = sanitizeSingleLine(input.BidBoxTopLabel)
+	input.BidBoxCoupleName = sanitizeSingleLine(input.BidBoxCoupleName)
+	input.BidBoxEventDate = strings.TrimSpace(input.BidBoxEventDate)
+	input.BidBoxDetails = sanitizeMultiline(input.BidBoxDetails)
 	input.BrideName = sanitizeSingleLine(input.BrideName)
 	input.GroomName = sanitizeSingleLine(input.GroomName)
 	input.BrideFatherName = sanitizeSingleLine(input.BrideFatherName)
@@ -625,7 +683,32 @@ func validateCustomerFields(name string, email string, phone string, address str
 	return nil
 }
 
-func validateCustomizationFields(input PlaceOrderInput) error {
+func validateCustomizationFields(input PlaceOrderInput, category string) error {
+	if isBidBoxCategory(category) {
+		return validateBidBoxCustomizationFields(input)
+	}
+	return validateWeddingCustomizationFields(input)
+}
+
+func validateBidBoxCustomizationFields(input PlaceOrderInput) error {
+	for _, value := range []string{
+		input.BidBoxTopLabel,
+		input.BidBoxCoupleName,
+	} {
+		if utf8.RuneCountInString(value) > maxBidBoxLabelLength {
+			return ErrInvalidInput
+		}
+	}
+	if err := validateOptionalDate(input.BidBoxEventDate); err != nil {
+		return err
+	}
+	if utf8.RuneCountInString(input.BidBoxDetails) > maxBidBoxDetailsLength {
+		return ErrInvalidInput
+	}
+	return nil
+}
+
+func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 	if _, err := parseSide(input.Side); err != nil {
 		return err
 	}
@@ -720,6 +803,10 @@ func validateCustomizationFields(input PlaceOrderInput) error {
 	return nil
 }
 
+func isBidBoxCategory(category string) bool {
+	return strings.EqualFold(strings.TrimSpace(category), "bid-boxes")
+}
+
 func normalizeCurrency(raw string) string {
 	return strings.ToUpper(strings.TrimSpace(raw))
 }
@@ -749,10 +836,11 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 
 func (s *Service) sendOrderConfirmationEmailAsync(customerID int64, orderID int64) {
 	if s.emailSender == nil {
+		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", orderID)
 		return
 	}
 	if customerID <= 0 {
-		log.Println("ORDER EMAIL ERROR: customer id invalid")
+		log.Printf("ORDER EMAIL ERROR: order_id=%d customer id invalid", orderID)
 		return
 	}
 
@@ -762,17 +850,39 @@ func (s *Service) sendOrderConfirmationEmailAsync(customerID int64, orderID int6
 
 		customer, err := s.customerRepo.GetCustomerByID(ctx, customerID)
 		if err != nil {
-			log.Println("ORDER EMAIL ERROR: failed to load customer:", err)
+			log.Printf("ORDER EMAIL ERROR: order_id=%d failed to load customer err=%v", orderID, err)
 			return
 		}
 		if customer.Email == nil || strings.TrimSpace(*customer.Email) == "" {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing", orderID)
 			return
 		}
 
+		log.Printf("ORDER EMAIL SEND START: order_id=%d customer_id=%d email=%q", orderID, customerID, strings.TrimSpace(*customer.Email))
 		if err := s.emailSender.SendOrderConfirmationEmail(ctx, *customer.Email, orderID); err != nil {
-			log.Println("ORDER EMAIL ERROR:", err)
+			log.Printf("ORDER EMAIL ERROR: order_id=%d err=%v", orderID, err)
 		}
 	}()
+}
+
+func orderTypeLabel(order *orderdomain.Order, details *orderdomain.OrderDetail) string {
+	if order != nil && isBidBoxCategory(order.CardCategory) {
+		return "bid-box"
+	}
+	if hasBidBoxFields(details) {
+		return "bid-box"
+	}
+	return "wedding-card"
+}
+
+func hasBidBoxFields(details *orderdomain.OrderDetail) bool {
+	if details == nil {
+		return false
+	}
+	return details.BidBoxTopLabel != nil ||
+		details.BidBoxCoupleName != nil ||
+		details.BidBoxEventDate != nil ||
+		details.BidBoxDetails != nil
 }
 
 func stringPtr(value string) *string {

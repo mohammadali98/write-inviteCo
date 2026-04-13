@@ -66,6 +66,10 @@ const createOrderDetail = `-- name: CreateOrderDetail :one
 INSERT INTO order_details (
     order_id,
     side,
+    top_label,
+    couple_name,
+    event_date,
+    bid_box_details,
     bride_name,
     groom_name,
     bride_father_name,
@@ -110,47 +114,55 @@ VALUES (
     $2,
     $3,
     $4,
-    $5,
+    NULLIF($5, ''),
     $6,
-    NULLIF($7, '')::date,
+    $7,
     $8,
     $9,
-    NULLIF($10, '')::time,
-    NULLIF($11, '')::time,
+    $10,
+    NULLIF($11, '')::date,
     $12,
     $13,
-    NULLIF($14, '')::date,
-    $15,
+    NULLIF($14, '')::time,
+    NULLIF($15, '')::time,
     $16,
-    NULLIF($17, '')::time,
-    NULLIF($18, '')::time,
-    NULLIF($19, '')::time,
-    NULLIF($20, '')::time,
-    $21,
-    $22,
-    NULLIF($23, '')::date,
-    $24,
+    $17,
+    NULLIF($18, '')::date,
+    $19,
+    $20,
+    NULLIF($21, '')::time,
+    NULLIF($22, '')::time,
+    NULLIF($23, '')::time,
+    NULLIF($24, '')::time,
     $25,
-    NULLIF($26, '')::time,
-    NULLIF($27, '')::time,
+    $26,
+    NULLIF($27, '')::date,
     $28,
     $29,
-    NULLIF($30, '')::date,
-    $31,
+    NULLIF($30, '')::time,
+    NULLIF($31, '')::time,
     $32,
-    NULLIF($33, '')::time,
-    NULLIF($34, '')::time,
-    NULLIF($35, '')::time,
+    $33,
+    NULLIF($34, '')::date,
+    $35,
     $36,
-    $37,
-    $38,
-    $39,
-    $40
+    NULLIF($37, '')::time,
+    NULLIF($38, '')::time,
+    NULLIF($39, '')::time,
+    $40,
+    $41,
+    $42,
+    $43,
+    $44
 )
 RETURNING
     id,
     order_id,
     side,
+    COALESCE(top_label, '') AS top_label,
+    COALESCE(couple_name, '') AS couple_name,
+    COALESCE(event_date, '') AS event_date,
+    COALESCE(bid_box_details, '') AS bid_box_details,
     bride_name,
     groom_name,
     bride_father_name,
@@ -195,6 +207,10 @@ RETURNING
 type CreateOrderDetailParams struct {
 	OrderID            int64
 	Side               string
+	TopLabel           *string
+	CoupleName         *string
+	BidBoxEventDate    interface{}
+	BidBoxDetails      *string
 	BrideName          *string
 	GroomName          *string
 	BrideFatherName    *string
@@ -239,6 +255,10 @@ type CreateOrderDetailRow struct {
 	ID                 int64
 	OrderID            int64
 	Side               string
+	TopLabel           string
+	CoupleName         string
+	EventDate          string
+	BidBoxDetails      string
 	BrideName          *string
 	GroomName          *string
 	BrideFatherName    *string
@@ -284,6 +304,10 @@ func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailPa
 	row := q.db.QueryRow(ctx, createOrderDetail,
 		arg.OrderID,
 		arg.Side,
+		arg.TopLabel,
+		arg.CoupleName,
+		arg.BidBoxEventDate,
+		arg.BidBoxDetails,
 		arg.BrideName,
 		arg.GroomName,
 		arg.BrideFatherName,
@@ -328,6 +352,10 @@ func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailPa
 		&i.ID,
 		&i.OrderID,
 		&i.Side,
+		&i.TopLabel,
+		&i.CoupleName,
+		&i.EventDate,
+		&i.BidBoxDetails,
 		&i.BrideName,
 		&i.GroomName,
 		&i.BrideFatherName,

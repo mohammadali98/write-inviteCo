@@ -65,6 +65,10 @@ SELECT
     id,
     order_id,
     COALESCE(side, 'bride') AS side,
+    COALESCE(top_label, '') AS top_label,
+    COALESCE(couple_name, '') AS couple_name,
+    COALESCE(event_date, '') AS event_date,
+    COALESCE(bid_box_details, '') AS bid_box_details,
     bride_name,
     groom_name,
     bride_father_name,
@@ -114,6 +118,10 @@ type GetLatestOrderDetailByOrderIDRow struct {
 	ID                 int64
 	OrderID            int64
 	Side               string
+	TopLabel           string
+	CoupleName         string
+	EventDate          string
+	BidBoxDetails      string
 	BrideName          *string
 	GroomName          *string
 	BrideFatherName    *string
@@ -168,6 +176,10 @@ func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int
 			&i.ID,
 			&i.OrderID,
 			&i.Side,
+			&i.TopLabel,
+			&i.CoupleName,
+			&i.EventDate,
+			&i.BidBoxDetails,
 			&i.BrideName,
 			&i.GroomName,
 			&i.BrideFatherName,
@@ -230,24 +242,26 @@ SELECT
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
-    COALESCE(c.image, '') AS card_image
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
 FROM orders o
 LEFT JOIN cards c ON o.card_id = c.id
 WHERE o.id = $1
 `
 
 type GetOrderByIDRow struct {
-	ID         int64
-	CustomerID *int64
-	CardID     *int64
-	Quantity   int64
-	TotalPrice int64
-	Status     *string
-	Currency   string
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	CardName   string
-	CardImage  string
+	ID           int64
+	CustomerID   *int64
+	CardID       *int64
+	Quantity     int64
+	TotalPrice   int64
+	Status       *string
+	Currency     string
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+	CardName     string
+	CardImage    string
+	CardCategory string
 }
 
 func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, error) {
@@ -265,6 +279,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, 
 		&i.UpdatedAt,
 		&i.CardName,
 		&i.CardImage,
+		&i.CardCategory,
 	)
 	return i, err
 }

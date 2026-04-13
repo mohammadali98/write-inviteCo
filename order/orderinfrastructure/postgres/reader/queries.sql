@@ -10,7 +10,8 @@ SELECT
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
-    COALESCE(c.image, '') AS card_image
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
 FROM orders o
 LEFT JOIN cards c ON o.card_id = c.id
 WHERE o.id = $1;
@@ -38,6 +39,10 @@ SELECT
     id,
     order_id,
     COALESCE(side, 'bride') AS side,
+    COALESCE(top_label, '') AS top_label,
+    COALESCE(couple_name, '') AS couple_name,
+    COALESCE(event_date, '') AS event_date,
+    COALESCE(bid_box_details, '') AS bid_box_details,
     bride_name,
     groom_name,
     bride_father_name,
