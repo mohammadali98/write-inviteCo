@@ -5,8 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
+	"net/mail"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"writeandinviteco/inviteandco/card/carddomain"
 	"writeandinviteco/inviteandco/customer/customerdomain"
@@ -19,8 +24,26 @@ import (
 )
 
 var (
-	ErrCardNotFound = errors.New("card not found")
-	ErrInvalidInput = errors.New("invalid input")
+	ErrCardNotFound    = errors.New("card not found")
+	ErrInvalidInput    = errors.New("invalid input")
+	errPricingOverflow = errors.New("pricing overflow")
+
+	pakistanPhonePattern = regexp.MustCompile(`^(?:03\d{9}|\+923\d{9})$`)
+)
+
+const (
+	maxQuantity           = 5000
+	maxRequestedInserts   = 20
+	maxCustomerNameLength = 120
+	maxEmailLength        = 254
+	maxPhoneLength        = 20
+	maxAddressLength      = 500
+	maxCityLength         = 100
+	maxPostalCodeLength   = 20
+	maxPersonNameLength   = 120
+	maxVenueNameLength    = 150
+	maxVenueAddressLength = 500
+	maxNotesLength        = 2000
 )
 
 type MinOrderError struct {
@@ -235,15 +258,12 @@ func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, sta
 	if err != nil {
 		return err
 	}
-	log.Println("OLD STATUS:", order.Status)
-	log.Println("NEW STATUS:", newStatus)
 
 	if err := s.orderRepo.UpdateOrderStatus(ctx, orderID, newStatus); err != nil {
 		return err
 	}
 
 	if order.Status != orderdomain.ConfirmedOrderStatus && newStatus == orderdomain.ConfirmedOrderStatus {
-		log.Println("EMAIL TRIGGERED FOR ORDER:", order.ID)
 		s.sendOrderConfirmationEmailAsync(order.CustomerID, orderID)
 	}
 
@@ -297,6 +317,11 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	if err := validateCustomizationFields(input); err != nil {
 		return nil, err
 	}
+	side, err := parseSide(input.Side)
+	if err != nil {
+		return nil, err
+	}
+	input.Side = side
 
 	pricing, err := s.calculatePricing(ctx, input.CardID, input.Quantity, input.Currency, input.FoilOption, input.RequestedInserts)
 	if err != nil {
@@ -419,13 +444,16 @@ type pricingResult struct {
 }
 
 func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity int64, currency string, foilOption string, requestedInserts int64) (*pricingResult, error) {
-	if cardID <= 0 || quantity < 1 || requestedInserts < 0 {
+	if cardID <= 0 || quantity < 1 || quantity > maxQuantity || requestedInserts < 0 || requestedInserts > maxRequestedInserts {
 		return nil, ErrInvalidInput
 	}
 
 	card, err := s.cardRepo.GetCardByID(ctx, cardID)
 	if err != nil {
-		return nil, ErrCardNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrCardNotFound
+		}
+		return nil, fmt.Errorf("get card: %w", err)
 	}
 
 	minOrder := int64(card.MinOrder)
@@ -436,8 +464,14 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 		return nil, MinOrderError{MinOrder: minOrder}
 	}
 
-	currency = normalizeCurrency(currency)
-	foilOption = normalizeFoilOption(foilOption)
+	currency, err = parseCurrency(currency)
+	if err != nil {
+		return nil, err
+	}
+	foilOption, err = parseFoilOption(foilOption)
+	if err != nil {
+		return nil, err
+	}
 
 	priceFoil := card.PriceFoilPKR
 	priceNofoil := card.PriceNofoilPKR
@@ -446,6 +480,9 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 		priceFoil = card.PriceFoilNOK
 		priceNofoil = card.PriceNofoilNOK
 		insertPrice = card.InsertPriceNOK
+	}
+	if priceFoil < 0 || priceNofoil < 0 || insertPrice < 0 {
+		return nil, fmt.Errorf("invalid pricing configured for card %d", card.ID)
 	}
 	if priceNofoil == 0 {
 		priceNofoil = priceFoil
@@ -470,9 +507,18 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 		extraInserts = 0
 	}
 
-	extraInsertCost := extraInserts * insertPrice
-	perCardPrice := basePrice + extraInsertCost
-	totalPrice := perCardPrice * quantity
+	extraInsertCost, err := safeMultiplyInt64(extraInserts, insertPrice)
+	if err != nil {
+		return nil, fmt.Errorf("calculate extra insert cost: %w", err)
+	}
+	perCardPrice, err := safeAddInt64(basePrice, extraInsertCost)
+	if err != nil {
+		return nil, fmt.Errorf("calculate per-card price: %w", err)
+	}
+	totalPrice, err := safeMultiplyInt64(perCardPrice, quantity)
+	if err != nil {
+		return nil, fmt.Errorf("calculate total price: %w", err)
+	}
 
 	return &pricingResult{
 		card:             card,
@@ -495,12 +541,12 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 func sanitizeCustomizationInput(input CustomizationInput) CustomizationInput {
 	input.Currency = normalizeCurrency(input.Currency)
 	input.FoilOption = normalizeFoilOption(input.FoilOption)
-	input.Name = strings.TrimSpace(input.Name)
-	input.Email = strings.TrimSpace(input.Email)
-	input.Phone = strings.TrimSpace(input.Phone)
-	input.Address = strings.TrimSpace(input.Address)
-	input.City = strings.TrimSpace(input.City)
-	input.PostalCode = strings.TrimSpace(input.PostalCode)
+	input.Name = sanitizeSingleLine(input.Name)
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
+	input.Phone = normalizePhone(input.Phone)
+	input.Address = sanitizeSingleLine(input.Address)
+	input.City = sanitizeSingleLine(input.City)
+	input.PostalCode = sanitizeSingleLine(input.PostalCode)
 	return input
 }
 
@@ -508,50 +554,50 @@ func sanitizePlaceOrderInput(input PlaceOrderInput) PlaceOrderInput {
 	input.Currency = normalizeCurrency(input.Currency)
 	input.FoilOption = normalizeFoilOption(input.FoilOption)
 	input.Side = normalizeSide(input.Side)
-	input.Name = strings.TrimSpace(input.Name)
-	input.Email = strings.TrimSpace(input.Email)
-	input.Phone = strings.TrimSpace(input.Phone)
-	input.Address = strings.TrimSpace(input.Address)
-	input.City = strings.TrimSpace(input.City)
-	input.PostalCode = strings.TrimSpace(input.PostalCode)
-	input.BrideName = strings.TrimSpace(input.BrideName)
-	input.GroomName = strings.TrimSpace(input.GroomName)
-	input.BrideFatherName = strings.TrimSpace(input.BrideFatherName)
-	input.GroomFatherName = strings.TrimSpace(input.GroomFatherName)
+	input.Name = sanitizeSingleLine(input.Name)
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
+	input.Phone = normalizePhone(input.Phone)
+	input.Address = sanitizeSingleLine(input.Address)
+	input.City = sanitizeSingleLine(input.City)
+	input.PostalCode = sanitizeSingleLine(input.PostalCode)
+	input.BrideName = sanitizeSingleLine(input.BrideName)
+	input.GroomName = sanitizeSingleLine(input.GroomName)
+	input.BrideFatherName = sanitizeSingleLine(input.BrideFatherName)
+	input.GroomFatherName = sanitizeSingleLine(input.GroomFatherName)
 	input.MehndiDate = strings.TrimSpace(input.MehndiDate)
-	input.MehndiDay = strings.TrimSpace(input.MehndiDay)
-	input.MehndiTimeType = strings.TrimSpace(input.MehndiTimeType)
+	input.MehndiDay = normalizeOptionalDay(input.MehndiDay)
+	input.MehndiTimeType = normalizeOptionalTimeType(input.MehndiTimeType)
 	input.MehndiTime = strings.TrimSpace(input.MehndiTime)
 	input.MehndiDinnerTime = strings.TrimSpace(input.MehndiDinnerTime)
-	input.MehndiVenueName = strings.TrimSpace(input.MehndiVenueName)
-	input.MehndiVenueAddress = strings.TrimSpace(input.MehndiVenueAddress)
+	input.MehndiVenueName = sanitizeSingleLine(input.MehndiVenueName)
+	input.MehndiVenueAddress = sanitizeMultiline(input.MehndiVenueAddress)
 	input.BaraatDate = strings.TrimSpace(input.BaraatDate)
-	input.BaraatDay = strings.TrimSpace(input.BaraatDay)
-	input.BaraatTimeType = strings.TrimSpace(input.BaraatTimeType)
+	input.BaraatDay = normalizeOptionalDay(input.BaraatDay)
+	input.BaraatTimeType = normalizeOptionalTimeType(input.BaraatTimeType)
 	input.BaraatTime = strings.TrimSpace(input.BaraatTime)
 	input.BaraatDinnerTime = strings.TrimSpace(input.BaraatDinnerTime)
 	input.BaraatArrivalTime = strings.TrimSpace(input.BaraatArrivalTime)
 	input.RukhsatiTime = strings.TrimSpace(input.RukhsatiTime)
-	input.BaraatVenueName = strings.TrimSpace(input.BaraatVenueName)
-	input.BaraatVenueAddress = strings.TrimSpace(input.BaraatVenueAddress)
+	input.BaraatVenueName = sanitizeSingleLine(input.BaraatVenueName)
+	input.BaraatVenueAddress = sanitizeMultiline(input.BaraatVenueAddress)
 	input.NikkahDate = strings.TrimSpace(input.NikkahDate)
-	input.NikkahDay = strings.TrimSpace(input.NikkahDay)
-	input.NikkahTimeType = strings.TrimSpace(input.NikkahTimeType)
+	input.NikkahDay = normalizeOptionalDay(input.NikkahDay)
+	input.NikkahTimeType = normalizeOptionalTimeType(input.NikkahTimeType)
 	input.NikkahTime = strings.TrimSpace(input.NikkahTime)
 	input.NikkahDinnerTime = strings.TrimSpace(input.NikkahDinnerTime)
-	input.NikkahVenueName = strings.TrimSpace(input.NikkahVenueName)
-	input.NikkahVenueAddress = strings.TrimSpace(input.NikkahVenueAddress)
+	input.NikkahVenueName = sanitizeSingleLine(input.NikkahVenueName)
+	input.NikkahVenueAddress = sanitizeMultiline(input.NikkahVenueAddress)
 	input.WalimaDate = strings.TrimSpace(input.WalimaDate)
-	input.WalimaDay = strings.TrimSpace(input.WalimaDay)
-	input.WalimaTimeType = strings.TrimSpace(input.WalimaTimeType)
+	input.WalimaDay = normalizeOptionalDay(input.WalimaDay)
+	input.WalimaTimeType = normalizeOptionalTimeType(input.WalimaTimeType)
 	input.WalimaTime = strings.TrimSpace(input.WalimaTime)
 	input.WalimaDinnerTime = strings.TrimSpace(input.WalimaDinnerTime)
-	input.WalimaVenueName = strings.TrimSpace(input.WalimaVenueName)
-	input.WalimaVenueAddress = strings.TrimSpace(input.WalimaVenueAddress)
+	input.WalimaVenueName = sanitizeSingleLine(input.WalimaVenueName)
+	input.WalimaVenueAddress = sanitizeMultiline(input.WalimaVenueAddress)
 	input.ReceptionTime = strings.TrimSpace(input.ReceptionTime)
-	input.RsvpName = strings.TrimSpace(input.RsvpName)
-	input.RsvpPhone = strings.TrimSpace(input.RsvpPhone)
-	input.Notes = strings.TrimSpace(input.Notes)
+	input.RsvpName = sanitizeSingleLine(input.RsvpName)
+	input.RsvpPhone = normalizePhone(input.RsvpPhone)
+	input.Notes = sanitizeMultiline(input.Notes)
 	return input
 }
 
@@ -559,32 +605,131 @@ func validateCustomerFields(name string, email string, phone string, address str
 	if name == "" || email == "" || phone == "" || address == "" || city == "" || postalCode == "" {
 		return ErrInvalidInput
 	}
+	if utf8.RuneCountInString(name) > maxCustomerNameLength ||
+		utf8.RuneCountInString(email) > maxEmailLength ||
+		utf8.RuneCountInString(phone) > maxPhoneLength ||
+		utf8.RuneCountInString(address) > maxAddressLength ||
+		utf8.RuneCountInString(city) > maxCityLength ||
+		utf8.RuneCountInString(postalCode) > maxPostalCodeLength {
+		return ErrInvalidInput
+	}
+	if !containsLetterOrDigit(name) || !containsLetterOrDigit(address) || !containsLetterOrDigit(city) || !containsLetterOrDigit(postalCode) {
+		return ErrInvalidInput
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return ErrInvalidInput
+	}
+	if !pakistanPhonePattern.MatchString(phone) {
+		return ErrInvalidInput
+	}
 	return nil
 }
 
 func validateCustomizationFields(input PlaceOrderInput) error {
+	if _, err := parseSide(input.Side); err != nil {
+		return err
+	}
+	if _, err := parseOptionalDay(input.MehndiDay); err != nil {
+		return err
+	}
+	if _, err := parseOptionalDay(input.BaraatDay); err != nil {
+		return err
+	}
+	if _, err := parseOptionalDay(input.NikkahDay); err != nil {
+		return err
+	}
+	if _, err := parseOptionalDay(input.WalimaDay); err != nil {
+		return err
+	}
+	if _, err := parseOptionalTimeType(input.MehndiTimeType); err != nil {
+		return err
+	}
+	if _, err := parseOptionalTimeType(input.BaraatTimeType); err != nil {
+		return err
+	}
+	if _, err := parseOptionalTimeType(input.NikkahTimeType); err != nil {
+		return err
+	}
+	if _, err := parseOptionalTimeType(input.WalimaTimeType); err != nil {
+		return err
+	}
+	for _, value := range []string{
+		input.MehndiDate,
+		input.BaraatDate,
+		input.NikkahDate,
+		input.WalimaDate,
+	} {
+		if err := validateOptionalDate(value); err != nil {
+			return err
+		}
+	}
+	for _, value := range []string{
+		input.MehndiTime,
+		input.MehndiDinnerTime,
+		input.BaraatTime,
+		input.BaraatDinnerTime,
+		input.BaraatArrivalTime,
+		input.RukhsatiTime,
+		input.NikkahTime,
+		input.NikkahDinnerTime,
+		input.WalimaTime,
+		input.WalimaDinnerTime,
+		input.ReceptionTime,
+	} {
+		if err := validateOptionalTime(value); err != nil {
+			return err
+		}
+	}
+	for _, value := range []string{
+		input.BrideName,
+		input.GroomName,
+		input.BrideFatherName,
+		input.GroomFatherName,
+		input.RsvpName,
+	} {
+		if utf8.RuneCountInString(value) > maxPersonNameLength {
+			return ErrInvalidInput
+		}
+	}
+	for _, value := range []string{
+		input.MehndiVenueName,
+		input.BaraatVenueName,
+		input.NikkahVenueName,
+		input.WalimaVenueName,
+	} {
+		if utf8.RuneCountInString(value) > maxVenueNameLength {
+			return ErrInvalidInput
+		}
+	}
+	for _, value := range []string{
+		input.MehndiVenueAddress,
+		input.BaraatVenueAddress,
+		input.NikkahVenueAddress,
+		input.WalimaVenueAddress,
+	} {
+		if utf8.RuneCountInString(value) > maxVenueAddressLength {
+			return ErrInvalidInput
+		}
+	}
+	if utf8.RuneCountInString(input.Notes) > maxNotesLength {
+		return ErrInvalidInput
+	}
+	if input.RsvpPhone != "" && !pakistanPhonePattern.MatchString(input.RsvpPhone) {
+		return ErrInvalidInput
+	}
 	return nil
 }
 
 func normalizeCurrency(raw string) string {
-	if strings.EqualFold(strings.TrimSpace(raw), "NOK") {
-		return "NOK"
-	}
-	return "PKR"
+	return strings.ToUpper(strings.TrimSpace(raw))
 }
 
 func normalizeFoilOption(raw string) string {
-	if strings.EqualFold(strings.TrimSpace(raw), "nofoil") {
-		return "nofoil"
-	}
-	return "foil"
+	return strings.ToLower(strings.TrimSpace(raw))
 }
 
 func normalizeSide(raw string) string {
-	if strings.EqualFold(strings.TrimSpace(raw), "groom") {
-		return "groom"
-	}
-	return "bride"
+	return strings.ToLower(strings.TrimSpace(raw))
 }
 
 func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
@@ -603,8 +748,11 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 }
 
 func (s *Service) sendOrderConfirmationEmailAsync(customerID int64, orderID int64) {
-	if s.emailSender == nil || customerID <= 0 {
-		log.Println("ORDER EMAIL ERROR: email sender unavailable or customer id invalid")
+	if s.emailSender == nil {
+		return
+	}
+	if customerID <= 0 {
+		log.Println("ORDER EMAIL ERROR: customer id invalid")
 		return
 	}
 
@@ -636,4 +784,176 @@ func nullableString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func parseCurrency(raw string) (string, error) {
+	switch normalizeCurrency(raw) {
+	case "", "PKR":
+		return "PKR", nil
+	case "NOK":
+		return "NOK", nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+func parseFoilOption(raw string) (string, error) {
+	switch normalizeFoilOption(raw) {
+	case "", "foil":
+		return "foil", nil
+	case "nofoil":
+		return "nofoil", nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+func parseSide(raw string) (string, error) {
+	switch normalizeSide(raw) {
+	case "", "bride":
+		return "bride", nil
+	case "groom":
+		return "groom", nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+func parseOptionalDay(raw string) (string, error) {
+	switch normalizeOptionalDay(raw) {
+	case "":
+		return "", nil
+	case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday":
+		return normalizeOptionalDay(raw), nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+func parseOptionalTimeType(raw string) (string, error) {
+	switch normalizeOptionalTimeType(raw) {
+	case "", "evening", "night":
+		return normalizeOptionalTimeType(raw), nil
+	default:
+		return "", ErrInvalidInput
+	}
+}
+
+func validateOptionalDate(raw string) error {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	if _, err := time.Parse("2006-01-02", raw); err != nil {
+		return ErrInvalidInput
+	}
+	return nil
+}
+
+func validateOptionalTime(raw string) error {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	if _, err := time.Parse("15:04", raw); err != nil {
+		return ErrInvalidInput
+	}
+	return nil
+}
+
+func sanitizeSingleLine(value string) string {
+	value = sanitizeText(value, false)
+	return collapseWhitespace(strings.ReplaceAll(value, "\n", " "))
+}
+
+func sanitizeMultiline(value string) string {
+	return sanitizeText(value, true)
+}
+
+func sanitizeText(value string, allowNewlines bool) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "\r\n", "\n"))
+	value = strings.Map(func(r rune) rune {
+		switch {
+		case r == '<' || r == '>':
+			return -1
+		case r == '\n' && allowNewlines:
+			return r
+		case r == '\t' || r == '\n' || unicode.IsPrint(r):
+			return r
+		default:
+			return -1
+		}
+	}, value)
+	return strings.TrimSpace(value)
+}
+
+func collapseWhitespace(value string) string {
+	return strings.Join(strings.Fields(value), " ")
+}
+
+func normalizePhone(value string) string {
+	replacer := strings.NewReplacer(" ", "", "-", "", "(", "", ")", "")
+	return replacer.Replace(strings.TrimSpace(value))
+}
+
+func normalizeOptionalDay(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "monday":
+		return "Monday"
+	case "tuesday":
+		return "Tuesday"
+	case "wednesday":
+		return "Wednesday"
+	case "thursday":
+		return "Thursday"
+	case "friday":
+		return "Friday"
+	case "saturday":
+		return "Saturday"
+	case "sunday":
+		return "Sunday"
+	default:
+		return strings.TrimSpace(raw)
+	}
+}
+
+func normalizeOptionalTimeType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "evening":
+		return "evening"
+	case "night":
+		return "night"
+	default:
+		return strings.TrimSpace(raw)
+	}
+}
+
+func containsLetterOrDigit(value string) bool {
+	for _, r := range value {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return true
+		}
+	}
+	return false
+}
+
+func safeAddInt64(a int64, b int64) (int64, error) {
+	if b > 0 && a > math.MaxInt64-b {
+		return 0, errPricingOverflow
+	}
+	if b < 0 && a < math.MinInt64-b {
+		return 0, errPricingOverflow
+	}
+	return a + b, nil
+}
+
+func safeMultiplyInt64(a int64, b int64) (int64, error) {
+	if a == 0 || b == 0 {
+		return 0, nil
+	}
+	if a < 0 || b < 0 {
+		return 0, errPricingOverflow
+	}
+	if a > math.MaxInt64/b {
+		return 0, errPricingOverflow
+	}
+	return a * b, nil
 }

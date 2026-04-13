@@ -234,6 +234,16 @@
             background: #5c4510;
         }
 
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .submit-btn.is-submitting {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
         @media (max-width: 768px) {
             .customize-page {
                 padding: 20px 18px 40px;
@@ -331,7 +341,7 @@
     <section class="customize-page animate-in">
         <div class="customize-grid">
             <aside class="customize-summary">
-                <img src="{{ .summary.CardImage }}" alt="{{ .summary.CardName }}">
+                <img src="{{ safeImagePath .summary.CardImage }}" alt="{{ .summary.CardName }}">
                 <h3>{{ .summary.CardName }}</h3>
                 <div class="summary-row"><span>Foil Finish</span><span>{{ .summary.FoilLabel }}</span></div>
                 <div class="summary-row"><span>Base Price / Card</span><span>{{ .summary.Currency }} {{ .summary.UnitPrice }}</span></div>
@@ -354,6 +364,7 @@
                     <input type="hidden" name="foil_option" value="{{ .summary.FoilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .summary.RequestedInserts }}">
                     <input type="hidden" id="side-input" name="side" value="{{ .summary.Side }}">
+                    <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
                     <input type="hidden" name="name" value="{{ .summary.Name }}">
                     <input type="hidden" name="email" value="{{ .summary.Email }}">
                     <input type="hidden" name="phone" value="{{ .summary.Phone }}">
@@ -635,7 +646,7 @@
                         </div>
                     </div>
 
-                    <button class="submit-btn" type="button">Place Order</button>
+                    <button class="submit-btn" type="submit">Place Order</button>
                 </form>
             </section>
         </div>
@@ -650,16 +661,16 @@
         <div class="footer-columns">
             <div class="footer-col">
                 <h4>Shop</h4>
-                <a href="/">Shop All</a>
-                <a href="/">New Arrivals</a>
-                <a href="/">Wedding Cards</a>
-                <a href="/">Save the Dates</a>
+                <a href="/collections/wedding-cards">Shop All</a>
+                <a href="/collections/wedding-cards">New Arrivals</a>
+                <a href="/collections/wedding-cards">Wedding Cards</a>
+                <a href="/collections/wedding-cards">Save the Dates</a>
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/">Track an Order</a>
-                <a href="/">Shipping Info</a>
-                <a href="/">Returns & Exchanges</a>
+                <a href="/track-order">Track an Order</a>
+                <a href="/shipping-info">Shipping Info</a>
+                <a href="/returns-exchanges">Returns & Exchanges</a>
             </div>
             <div class="footer-col">
                 <h4>Contact Us</h4>
@@ -669,8 +680,8 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 Write&InviteCo. All rights reserved.</span>
-            <a href="/">Terms of Use</a>
-            <a href="/">Privacy Policy</a>
+            <a href="/terms-of-use">Terms of Use</a>
+            <a href="/privacy-policy">Privacy Policy</a>
         </div>
     </div>
 </footer>

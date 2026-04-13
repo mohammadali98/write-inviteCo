@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track an Order — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .track-page {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 36px 20px 60px;
+        }
+
+        .track-card {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
+            padding: 32px 28px;
+        }
+
+        .track-card h1 {
+            margin: 0 0 10px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2.8rem;
+            font-weight: 400;
+        }
+
+        .track-card p {
+            margin: 0 0 22px;
+            color: #6b5e54;
+            line-height: 1.7;
+        }
+
+        .track-form {
+            display: grid;
+            gap: 12px;
+        }
+
+        .track-form label {
+            font-size: 0.84rem;
+            color: #6b5e54;
+            font-weight: 500;
+        }
+
+        .track-form input {
+            width: 100%;
+            border: 1px solid #e0d6cc;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            font-family: 'Jost', sans-serif;
+            background: #f5f0eb;
+        }
+
+        .track-form input:focus {
+            outline: none;
+            border-color: #c4953a;
+            box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
+        }
+
+        .track-submit {
+            width: 100%;
+            border: none;
+            border-radius: 50px;
+            background: #8b6914;
+            color: #fff;
+            padding: 16px 28px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        @media (max-width: 760px) {
+            .track-page {
+                padding: 22px 16px 40px;
+            }
+
+            .track-card {
+                padding: 24px 18px;
+            }
+
+            .track-card h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="track-page">
+        <div class="track-card animate-in">
+            <h1>Track an Order</h1>
+            <p>Enter your order number to view the latest status, customer details, and personalization summary.</p>
+
+            <form class="track-form" action="/track-order" method="get">
+                <label for="order_id">Order Number</label>
+                <input id="order_id" name="order_id" type="number" min="1" inputmode="numeric" placeholder="For example: 1024" required>
+                <button class="track-submit" type="submit">View Order Status</button>
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/collections/wedding-cards">Shop All</a>
+                <a href="/collections/wedding-cards">Wedding Cards</a>
+                <a href="/collections/bid-boxes">Bid Boxes</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/shipping-info">Shipping Info</a>
+                <a href="/returns-exchanges">Returns & Exchanges</a>
+                <a href="/my-account">My Account</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/terms-of-use">Terms of Use</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

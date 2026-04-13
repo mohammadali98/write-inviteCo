@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"writeandinviteco/inviteandco/order/orderapplication"
+	"writeandinviteco/inviteandco/order/orderdomain"
+	"writeandinviteco/inviteandco/webui"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -25,19 +27,19 @@ func NewOrderHandler(service *orderapplication.Service) *OrderHandler {
 func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	cardID, err := parsePositiveInt64(c.Query("card_id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid card id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing.")
 		return
 	}
 
 	quantity, err := parsePositiveInt64(c.Query("quantity"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid quantity.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Quantity", "Please choose a valid quantity before continuing.")
 		return
 	}
 
 	requestedInserts, err := parseNonNegativeInt64(c.Query("extra_inserts"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid inserts quantity.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please choose a valid insert count before continuing.")
 		return
 	}
 
@@ -60,33 +62,32 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "customize.html", gin.H{
-		"summary": summary,
+		"summary":   summary,
+		"csrfToken": webui.EnsureCSRFToken(c),
 	})
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
-	log.Printf("=== ORDER FORM DEBUG ===")
-	log.Printf("card_id=%q quantity=%q currency=%q foil_option=%q extra_inserts=%q",
-		c.PostForm("card_id"), c.PostForm("quantity"), c.PostForm("currency"),
-		c.PostForm("foil_option"), c.PostForm("extra_inserts"))
-	log.Printf("name=%q email=%q phone=%q", c.PostForm("name"), c.PostForm("email"), c.PostForm("phone"))
-	log.Printf("Content-Type: %s", c.ContentType())
+	if !webui.ValidateCSRF(c) {
+		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try submitting the order again.")
+		return
+	}
 
 	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid card id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before submitting the order.")
 		return
 	}
 
 	quantity, err := parsePositiveInt64(c.PostForm("quantity"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid quantity.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Quantity", "Please choose a valid quantity before submitting the order.")
 		return
 	}
 
 	requestedInserts, err := parseNonNegativeInt64(c.PostForm("extra_inserts"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid inserts quantity.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please choose a valid insert count before submitting the order.")
 		return
 	}
 
@@ -153,22 +154,45 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
 	orderID, err := parsePositiveInt64(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid order id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 		return
 	}
 
 	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
 	if err != nil {
-		c.String(http.StatusNotFound, "Order not found.")
+		if errors.Is(err, orderapplication.ErrInvalidInput) {
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+			return
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			return
+		}
+
+		log.Println("ORDER CONFIRMATION ERROR:", err)
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the confirmation page right now.")
 		return
 	}
 
+	customerName := "Customer"
+	if payload.Customer != nil && strings.TrimSpace(payload.Customer.Name) != "" {
+		customerName = payload.Customer.Name
+	}
+	cardName := strings.TrimSpace(payload.Order.CardName)
+	if cardName == "" {
+		cardName = "Selected Product"
+	}
+	currency := strings.TrimSpace(payload.Order.Currency)
+	if currency == "" {
+		currency = "PKR"
+	}
+
 	c.HTML(http.StatusOK, "order-confirmation.html", gin.H{
-		"customerName": payload.Customer.Name,
+		"customerName": customerName,
 		"quantity":     payload.Order.Quantity,
 		"totalPrice":   payload.Order.TotalPrice,
-		"currency":     payload.Order.Currency,
-		"cardName":     payload.Order.CardName,
+		"currency":     currency,
+		"cardName":     cardName,
 		"orderID":      payload.Order.ID,
 	})
 }
@@ -176,49 +200,50 @@ func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
 func (h *OrderHandler) OrderStatus(c *gin.Context) {
 	orderID, err := parsePositiveInt64(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid order id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 		return
 	}
 
 	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
 	if err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			c.String(http.StatusBadRequest, "Invalid order id.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.String(http.StatusNotFound, "Order not found.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
 			return
 		}
 
 		log.Println("ORDER STATUS ERROR:", err)
-		c.String(http.StatusInternalServerError, "Failed to load order.")
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the order status right now.")
 		return
 	}
 
-	c.HTML(http.StatusOK, "order_status.html", gin.H{
-		"order":    payload.Order,
-		"customer": payload.Customer,
-		"details":  payload.Details,
+	c.HTML(http.StatusOK, "order-status.html", gin.H{
+		"order":         payload.Order,
+		"customer":      payload.Customer,
+		"details":       payload.Details,
+		"statusMessage": orderStatusMessage(payload.Order.Status),
 	})
 }
 
 func renderServiceError(c *gin.Context, err error) {
 	var minOrderErr orderapplication.MinOrderError
 	if errors.As(err, &minOrderErr) {
-		c.String(http.StatusBadRequest, "Minimum order quantity is %d.", minOrderErr.MinOrder)
+		webui.RenderError(c, http.StatusBadRequest, "Minimum Order Not Met", fmt.Sprintf("The minimum order quantity for this design is %d.", minOrderErr.MinOrder))
 		return
 	}
 	if errors.Is(err, orderapplication.ErrInvalidInput) {
-		c.String(http.StatusBadRequest, "Please provide valid checkout details.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Details", "Please review the submitted details and try again.")
 		return
 	}
-	if errors.Is(err, orderapplication.ErrCardNotFound) {
-		c.String(http.StatusNotFound, "Card not found.")
+	if errors.Is(err, orderapplication.ErrCardNotFound) || errors.Is(err, pgx.ErrNoRows) {
+		webui.RenderError(c, http.StatusNotFound, "Card Not Found", "The selected product is no longer available.")
 		return
 	}
 	log.Println("ORDER ERROR:", err)
-	c.String(http.StatusInternalServerError, err.Error())
+	webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not process the request right now.")
 }
 
 func parsePositiveInt64(raw string) (int64, error) {
@@ -241,7 +266,7 @@ func (h *OrderHandler) AdminOrders(c *gin.Context) {
 	orders, err := h.service.ListAdminOrders(c.Request.Context())
 	if err != nil {
 		log.Println("ADMIN ORDERS ERROR:", err)
-		c.String(http.StatusInternalServerError, "Failed to load admin orders.")
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load admin orders right now.")
 		return
 	}
 
@@ -253,23 +278,23 @@ func (h *OrderHandler) AdminOrders(c *gin.Context) {
 func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 	orderID, err := parsePositiveInt64(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid order id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 		return
 	}
 
 	payload, err := h.service.GetAdminOrderDetail(c.Request.Context(), orderID)
 	if err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			c.String(http.StatusBadRequest, "Invalid order id.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.String(http.StatusNotFound, "Order not found.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
 			return
 		}
 
 		log.Println("ADMIN ORDER DETAIL ERROR:", err)
-		c.String(http.StatusInternalServerError, "Failed to load order details.")
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the order details right now.")
 		return
 	}
 
@@ -280,29 +305,66 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		"details":    payload.Details,
 		"card_name":  payload.Order.CardName,
 		"card_image": payload.Order.CardImage,
+		"csrfToken":  webui.EnsureCSRFToken(c),
 	})
 }
 
 func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
+	if !webui.ValidateCSRF(c) {
+		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try updating the order again.")
+		return
+	}
+
 	orderID, err := parsePositiveInt64(c.Param("id"))
 	if err != nil {
-		c.String(http.StatusBadRequest, "Invalid order id.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
 		return
 	}
 
 	if err := h.service.AdminUpdateOrderStatus(c.Request.Context(), orderID, c.PostForm("status")); err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			c.String(http.StatusBadRequest, "Invalid order status.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Status", "Please choose a valid order status.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.String(http.StatusNotFound, "Order not found.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
 			return
 		}
 		log.Println("ADMIN STATUS UPDATE ERROR:", err)
-		c.String(http.StatusInternalServerError, "Failed to update order status.")
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not update the order status right now.")
 		return
 	}
 
 	c.Redirect(http.StatusSeeOther, "/admin/orders/"+strconv.FormatInt(orderID, 10))
+}
+
+func (h *OrderHandler) TrackOrderPage(c *gin.Context) {
+	rawOrderID := strings.TrimSpace(c.Query("order_id"))
+	if rawOrderID == "" {
+		c.HTML(http.StatusOK, "track-order.html", nil)
+		return
+	}
+
+	orderID, err := parsePositiveInt64(rawOrderID)
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/order/"+strconv.FormatInt(orderID, 10))
+}
+
+func orderStatusMessage(status orderdomain.OrderStatus) string {
+	switch status {
+	case orderdomain.PendingOrderStatus:
+		return "Your order is pending review and production confirmation."
+	case orderdomain.ConfirmedOrderStatus:
+		return "Your order has been confirmed and is moving through production."
+	case orderdomain.CancelledOrderStatus:
+		return "This order has been cancelled. Contact us if you need help."
+	case orderdomain.CompletedOrderStatus:
+		return "Your order is completed."
+	default:
+		return "Your order status has been updated."
+	}
 }

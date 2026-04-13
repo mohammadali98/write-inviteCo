@@ -2,3 +2,5 @@
 static/misc/
 *.MOV
 .DS_Store
+
+.env

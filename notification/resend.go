@@ -42,11 +42,10 @@ func (s *ResendSender) SendOrderConfirmationEmail(ctx context.Context, customerE
 	if email == "" {
 		return fmt.Errorf("customer email is empty")
 	}
-	log.Println("Sending email to:", email)
 
 	from := s.fromEmail
 	if !strings.Contains(from, "<") {
-		from = fmt.Sprintf("WriteInviteCo <%s>", from)
+		from = fmt.Sprintf("Write&InviteCo <%s>", from)
 	}
 
 	params := &resend.SendEmailRequest{

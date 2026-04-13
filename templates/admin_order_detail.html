@@ -238,7 +238,7 @@
                 </div>
                 <div>
                     <div class="row-label">Total</div>
-                    <div class="row-value">{{ .order.Currency }} {{ .order.TotalPrice }}</div>
+                    <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .order.TotalPrice }}</div>
                 </div>
                 <div>
                     <div class="row-label">Quantity</div>
@@ -252,6 +252,7 @@
 
             <form class="status-form" method="post" action="/admin/orders/{{ .order.ID }}/status">
                 <label for="order-status">Update Status</label>
+                <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
                 <select id="order-status" class="status-select" name="status">
                     <option value="pending" {{ if eq .statusStr "pending" }}selected{{ end }}>Pending</option>
                     <option value="confirmed" {{ if eq .statusStr "confirmed" }}selected{{ end }}>Confirmed</option>
@@ -266,7 +267,7 @@
             <h2>Selected Product</h2>
             <div class="product-card-wrap">
                 {{ if .card_image }}
-                <img class="product-image" src="{{ .card_image }}" alt="{{ if .card_name }}{{ .card_name }}{{ else }}Selected product{{ end }}">
+                <img class="product-image" src="{{ safeImagePath .card_image }}" alt="{{ if .card_name }}{{ .card_name }}{{ else }}Selected product{{ end }}">
                 {{ else }}
                 <div class="product-image"></div>
                 {{ end }}

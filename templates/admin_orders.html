@@ -169,7 +169,7 @@
                 <tr>
                     <td>#{{ .ID }}</td>
                     <td>{{ .CustomerName }}</td>
-                    <td>{{ .Currency }} {{ .TotalPrice }}</td>
+                    <td>{{ if .Currency }}{{ .Currency }}{{ else }}PKR{{ end }} {{ .TotalPrice }}</td>
                     <td><span class="status-pill">{{ .Status }}</span></td>
                     <td>{{ if .CreatedAt }}{{ .CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</td>
                     <td><a class="view-link" href="/admin/orders/{{ .ID }}">View →</a></td>
