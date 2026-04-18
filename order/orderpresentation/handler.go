@@ -72,6 +72,104 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	})
 }
 
+func (h *OrderHandler) ReviewPage(c *gin.Context) {
+	if !webui.ValidateCSRF(c) {
+		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try again.")
+		return
+	}
+
+	log.Println("DEBUG: ReviewPage hit")
+	log.Printf("DEBUG: method=%s action=%s", c.Request.Method, c.Request.URL.Path)
+	log.Printf("DEBUG: raw query=%s", c.Request.URL.RawQuery)
+	if err := c.Request.ParseForm(); err == nil {
+		log.Printf("DEBUG: post form=%+v", c.Request.PostForm)
+	}
+
+	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing.")
+		return
+	}
+
+	quantity, err := parsePositiveInt64(c.PostForm("quantity"))
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Quantity", "Please choose a valid quantity before continuing.")
+		return
+	}
+
+	requestedInserts, err := parseNonNegativeInt64(c.PostForm("extra_inserts"))
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please choose a valid insert count before continuing.")
+		return
+	}
+
+	review, err := h.service.PrepareOrderReview(c.Request.Context(), orderapplication.PlaceOrderInput{
+		CardID:             cardID,
+		Quantity:           quantity,
+		Currency:           c.PostForm("currency"),
+		FoilOption:         c.PostForm("foil_option"),
+		RequestedInserts:   requestedInserts,
+		Name:               c.PostForm("name"),
+		Email:              c.PostForm("email"),
+		Phone:              c.PostForm("phone"),
+		Address:            c.PostForm("address"),
+		City:               c.PostForm("city"),
+		PostalCode:         c.PostForm("postal_code"),
+		BidBoxTopLabel:     c.PostForm("top_label"),
+		BidBoxCoupleName:   c.PostForm("couple_name"),
+		BidBoxEventDate:    c.PostForm("event_date"),
+		BidBoxDetails:      c.PostForm("details"),
+		Side:               c.PostForm("side"),
+		BrideName:          c.PostForm("bride_name"),
+		GroomName:          c.PostForm("groom_name"),
+		BrideFatherName:    c.PostForm("bride_father_name"),
+		GroomFatherName:    c.PostForm("groom_father_name"),
+		MehndiDate:         c.PostForm("mehndi_date"),
+		MehndiDay:          c.PostForm("mehndi_day"),
+		MehndiTimeType:     c.PostForm("mehndi_time_type"),
+		MehndiTime:         c.PostForm("mehndi_time"),
+		MehndiDinnerTime:   c.PostForm("mehndi_dinner_time"),
+		MehndiVenueName:    c.PostForm("mehndi_venue_name"),
+		MehndiVenueAddress: c.PostForm("mehndi_venue_address"),
+		BaraatDate:         c.PostForm("baraat_date"),
+		BaraatDay:          c.PostForm("baraat_day"),
+		BaraatTimeType:     c.PostForm("baraat_time_type"),
+		BaraatTime:         c.PostForm("baraat_time"),
+		BaraatDinnerTime:   c.PostForm("baraat_dinner_time"),
+		BaraatArrivalTime:  c.PostForm("baraat_arrival_time"),
+		RukhsatiTime:       c.PostForm("rukhsati_time"),
+		BaraatVenueName:    c.PostForm("baraat_venue_name"),
+		BaraatVenueAddress: c.PostForm("baraat_venue_address"),
+		NikkahDate:         c.PostForm("nikkah_date"),
+		NikkahDay:          c.PostForm("nikkah_day"),
+		NikkahTimeType:     c.PostForm("nikkah_time_type"),
+		NikkahTime:         c.PostForm("nikkah_time"),
+		NikkahDinnerTime:   c.PostForm("nikkah_dinner_time"),
+		NikkahVenueName:    c.PostForm("nikkah_venue_name"),
+		NikkahVenueAddress: c.PostForm("nikkah_venue_address"),
+		WalimaDate:         c.PostForm("walima_date"),
+		WalimaDay:          c.PostForm("walima_day"),
+		WalimaTimeType:     c.PostForm("walima_time_type"),
+		WalimaTime:         c.PostForm("walima_time"),
+		WalimaDinnerTime:   c.PostForm("walima_dinner_time"),
+		WalimaVenueName:    c.PostForm("walima_venue_name"),
+		WalimaVenueAddress: c.PostForm("walima_venue_address"),
+		ReceptionTime:      c.PostForm("reception_time"),
+		RsvpName:           c.PostForm("rsvp_name"),
+		RsvpPhone:          c.PostForm("rsvp_phone"),
+		Notes:              c.PostForm("notes"),
+	})
+	if err != nil {
+		renderServiceError(c, err)
+		return
+	}
+
+	c.HTML(http.StatusOK, "review_order.html", gin.H{
+		"review":    review,
+		"csrfToken": webui.EnsureCSRFToken(c),
+	})
+}
+
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	if !webui.ValidateCSRF(c) {
 		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try submitting the order again.")

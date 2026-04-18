@@ -194,6 +194,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"cardID":                 card.ID,
 		"cardName":               card.Name,
 		"cardImage":              card.Image,
+		"cardCategory":           card.Category,
 		"quantity":               quantity,
 		"currency":               currency,
 		"priceFoil":              priceFoil,

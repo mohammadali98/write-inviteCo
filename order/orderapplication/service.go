@@ -167,6 +167,12 @@ type PlaceOrderResult struct {
 	Currency     string
 }
 
+type OrderReview struct {
+	Summary  *CustomizationSummary
+	Input    PlaceOrderInput
+	IsBidBox bool
+}
+
 type Service struct {
 	db             *pgxpool.Pool
 	cardRepo       carddomain.CardRepo
@@ -330,31 +336,34 @@ func (s *Service) PrepareCustomization(ctx context.Context, input CustomizationI
 		return nil, err
 	}
 
-	return &CustomizationSummary{
-		CardID:           pricing.card.ID,
-		CardName:         pricing.card.Name,
-		CardImage:        pricing.card.Image,
-		CardCategory:     pricing.card.Category,
-		Quantity:         pricing.quantity,
-		Currency:         pricing.currency,
-		FoilOption:       pricing.foilOption,
-		FoilLabel:        pricing.foilLabel,
-		Side:             "bride",
-		RequestedInserts: pricing.requestedInserts,
-		IncludedInserts:  pricing.includedInserts,
-		ExtraInserts:     pricing.extraInserts,
-		UnitPrice:        pricing.basePrice,
-		InsertPrice:      pricing.insertPrice,
-		ExtraInsertCost:  pricing.extraInsertCost,
-		PerCardTotal:     pricing.perCardPrice,
-		TotalPrice:       pricing.totalPrice,
-		MinOrder:         pricing.minOrder,
-		Name:             input.Name,
-		Email:            input.Email,
-		Phone:            input.Phone,
-		Address:          input.Address,
-		City:             input.City,
-		PostalCode:       input.PostalCode,
+	return buildCustomizationSummary(pricing, input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode, "bride"), nil
+}
+
+func (s *Service) PrepareOrderReview(ctx context.Context, input PlaceOrderInput) (*OrderReview, error) {
+	input = sanitizePlaceOrderInput(input)
+
+	if err := validateCustomerFields(input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode); err != nil {
+		return nil, err
+	}
+
+	side, err := parseSide(input.Side)
+	if err != nil {
+		return nil, err
+	}
+	input.Side = side
+
+	pricing, err := s.calculatePricing(ctx, input.CardID, input.Quantity, input.Currency, input.FoilOption, input.RequestedInserts)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateCustomizationFields(input, pricing.card.Category); err != nil {
+		return nil, err
+	}
+
+	return &OrderReview{
+		Summary:  buildCustomizationSummary(pricing, input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode, input.Side),
+		Input:    input,
+		IsBidBox: isBidBoxCategory(pricing.card.Category),
 	}, nil
 }
 
@@ -478,6 +487,35 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 		TotalPrice:   pricing.totalPrice,
 		Currency:     pricing.currency,
 	}, nil
+}
+
+func buildCustomizationSummary(pricing *pricingResult, name string, email string, phone string, address string, city string, postalCode string, side string) *CustomizationSummary {
+	return &CustomizationSummary{
+		CardID:           pricing.card.ID,
+		CardName:         pricing.card.Name,
+		CardImage:        pricing.card.Image,
+		CardCategory:     pricing.card.Category,
+		Quantity:         pricing.quantity,
+		Currency:         pricing.currency,
+		FoilOption:       pricing.foilOption,
+		FoilLabel:        pricing.foilLabel,
+		Side:             side,
+		RequestedInserts: pricing.requestedInserts,
+		IncludedInserts:  pricing.includedInserts,
+		ExtraInserts:     pricing.extraInserts,
+		UnitPrice:        pricing.basePrice,
+		InsertPrice:      pricing.insertPrice,
+		ExtraInsertCost:  pricing.extraInsertCost,
+		PerCardTotal:     pricing.perCardPrice,
+		TotalPrice:       pricing.totalPrice,
+		MinOrder:         pricing.minOrder,
+		Name:             name,
+		Email:            email,
+		Phone:            phone,
+		Address:          address,
+		City:             city,
+		PostalCode:       postalCode,
+	}
 }
 
 type pricingResult struct {

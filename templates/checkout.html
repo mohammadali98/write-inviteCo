@@ -285,9 +285,10 @@
                     <span>{{ .foilLabel }}</span>
                 </div>
                 <div class="summary-row">
-                    <span>Base Price / Card</span>
+                    <span>{{ if eq .cardCategory "bid-boxes" }}Base Price / Box{{ else }}Base Price / Card{{ end }}</span>
                     <span>{{ .currency }} {{ .unitPrice }}</span>
                 </div>
+                {{ if ne .cardCategory "bid-boxes" }}
                 <div class="summary-row">
                     <span>Included Inserts / Card</span>
                     <span>{{ .includedInserts }}</span>
@@ -300,8 +301,9 @@
                     <span>Extra Insert Cost / Card</span>
                     <span>{{ .currency }} {{ .extraInsertCostPerCard }}</span>
                 </div>
+                {{ end }}
                 <div class="summary-row">
-                    <span>Per Card Total</span>
+                    <span>{{ if eq .cardCategory "bid-boxes" }}Per Box Total{{ else }}Per Card Total{{ end }}</span>
                     <span>{{ .currency }} {{ .perCardTotal }}</span>
                 </div>
                 <div class="summary-row">
@@ -353,18 +355,6 @@
                             <label for="postal_code">Postal Code</label>
                             <input id="postal_code" name="postal_code" type="text" required>
                         </div>
-                    </div>
-
-                    <div class="payment-methods">
-                        <h3>Payment Method</h3>
-                        <div class="payment-icons">
-                            <div class="payment-badge">PayFast</div>
-                            <div class="payment-badge">JazzCash</div>
-                            <div class="payment-badge">EasyPaisa</div>
-                            <div class="payment-badge">Visa</div>
-                            <div class="payment-badge">MasterCard</div>
-                        </div>
-                        <p class="payment-note">Payment gateway coming soon. Orders are currently confirmed via WhatsApp.</p>
                     </div>
 
                     <button class="checkout-submit" type="submit">Continue to Personalization →</button>

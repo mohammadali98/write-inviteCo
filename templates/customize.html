@@ -226,7 +226,10 @@
             cursor: pointer;
             position: relative;
             z-index: 50;
+            pointer-events: auto;
             touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
             transition: background 0.35s ease;
         }
 
@@ -351,9 +354,9 @@
 
             <section class="customize-form">
                 <h1>Customize Your Invitation</h1>
-                <p class="customize-subtitle">Add event details and we will personalize your design before production.</p>
+                <p class="customize-subtitle">Add event details now. You will review everything and choose a payment method on the final step.</p>
 
-                <form action="/order" method="POST">
+                <form id="review-form" action="/review" method="POST">
                     <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
                     <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
                     <input type="hidden" name="currency" value="{{ .summary.Currency }}">
@@ -642,7 +645,7 @@
                         </div>
                     </div>
 
-                    <button class="submit-btn" type="submit">Place Order</button>
+                    <button class="submit-btn" id="review-submit-btn" type="button">Continue to Review →</button>
                 </form>
             </section>
         </div>
@@ -709,35 +712,11 @@ function setSide(side) {
     });
 }
 
-function extractOrderConfirmationUrl(responseUrl, responseText) {
-    if (responseUrl && responseUrl.indexOf('/order-confirmation/') !== -1) {
-        return responseUrl;
-    }
-
-    var confirmationPathMatch = responseText.match(/\/order-confirmation\/(\d+)/);
-    if (confirmationPathMatch) {
-        return '/order-confirmation/' + confirmationPathMatch[1];
-    }
-
-    var orderPathMatch = responseText.match(/\/order\/(\d+)/);
-    if (orderPathMatch) {
-        return '/order-confirmation/' + orderPathMatch[1];
-    }
-
-    var orderIDMatch = responseText.match(/Order\s*#\s*(\d+)/i);
-    if (orderIDMatch) {
-        return '/order-confirmation/' + orderIDMatch[1];
-    }
-
-    return '';
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     var sideInput = document.getElementById('side-input');
     var sideButtons = document.querySelectorAll('.side-btn');
-    var form = document.querySelector('form[action="/order"]');
-    var submitBtn = form ? form.querySelector('.submit-btn[type="submit"]') : null;
-    var isSubmitting = false;
+    var reviewForm = document.getElementById('review-form');
+    var reviewBtn = document.getElementById('review-submit-btn');
 
     if (sideInput && sideButtons.length) {
         setSide(sideInput.value || 'bride');
@@ -748,60 +727,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (!form || !submitBtn) {
-        return;
+    if (reviewForm && reviewBtn) {
+        reviewBtn.addEventListener('click', function() {
+            if (typeof reviewForm.requestSubmit === 'function') {
+                reviewForm.requestSubmit();
+            } else {
+                reviewForm.submit();
+            }
+        });
     }
-
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
-            return;
-        }
-        if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
-            return;
-        }
-        if (isSubmitting) {
-            return;
-        }
-
-        isSubmitting = true;
-        submitBtn.disabled = true;
-        submitBtn.classList.add('is-submitting');
-        submitBtn.textContent = 'Submitting...';
-
-        try {
-            var response = await fetch(form.action, {
-                method: (form.method || 'POST').toUpperCase(),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: new URLSearchParams(new FormData(form)).toString(),
-                credentials: 'same-origin',
-                redirect: 'follow'
-            });
-            var responseText = await response.text();
-
-            if (!response.ok) {
-                throw new Error('Order request failed');
-            }
-
-            var redirectUrl = extractOrderConfirmationUrl(response.url, responseText);
-            if (!redirectUrl) {
-                throw new Error('Order confirmation redirect missing');
-            }
-
-            submitBtn.textContent = 'Redirecting...';
-            window.location.href = redirectUrl;
-        } catch (error) {
-            isSubmitting = false;
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('is-submitting');
-            submitBtn.textContent = 'Place Order';
-            alert('Order failed. Please try again or contact us on WhatsApp.');
-        }
-    });
 });
 </script>
 
