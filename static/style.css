@@ -137,13 +137,35 @@ body {
     align-items: center;
 }
 
+.header-icon,
+.header-icons a,
+.header-icons button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+}
+
+.header-icon svg,
+.header-icon img,
+.header-icons svg,
+.header-icons img,
+.header-icon i {
+    width: 24px;
+    height: 24px;
+    font-size: 22px;
+    line-height: 1;
+}
+
 .header-icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
     color: var(--text);
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     cursor: pointer;
     border-radius: 50%;
     display: flex;
@@ -857,9 +879,9 @@ body {
     }
 
     .header-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 1rem;
+        width: 44px;
+        height: 44px;
+        font-size: 1.5rem;
     }
 
     .menu-btn {

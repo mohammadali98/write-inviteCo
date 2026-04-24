@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -24,6 +23,11 @@ import (
 	orderrepository "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/repository"
 	orderwriter "writeandinviteco/inviteandco/order/orderinfrastructure/postgres/writer"
 	"writeandinviteco/inviteandco/order/orderpresentation"
+	"writeandinviteco/inviteandco/product/productapplication"
+	productreader "writeandinviteco/inviteandco/product/productinfrastructure/postgres/reader"
+	productrepository "writeandinviteco/inviteandco/product/productinfrastructure/postgres/repository"
+	productwriter "writeandinviteco/inviteandco/product/productinfrastructure/postgres/writer"
+	"writeandinviteco/inviteandco/product/productpresentation"
 	"writeandinviteco/inviteandco/webui"
 
 	"github.com/gin-gonic/gin"
@@ -65,11 +69,14 @@ func main() {
 	customerWriter := customerwriter.New(db)
 	orderReader := orderreader.New(db)
 	orderWriter := orderwriter.New(db)
+	productReader := productreader.New(db)
+	productWriter := productwriter.New(db)
 
 	// repositories
 	cardRepo := cardrepository.NewCardRepository(cardReader, cardWriter)
 	customerRepo := customerrepository.NewCustomerRepository(customerReader, customerWriter)
 	orderRepo := orderrepository.NewOrderRepository(orderReader, orderWriter)
+	productRepo := productrepository.NewProductRepository(productReader, productWriter)
 
 	var emailSender orderapplication.EmailSender
 	if cfg.ResendAPIKey != "" {
@@ -77,8 +84,8 @@ func main() {
 	}
 
 	// handlers
-	cardHandler := cardpresentation.NewCardHandler(cardRepo)
-	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
+	productService := productapplication.NewService(productRepo)
+	productHandler := productpresentation.NewHandler(productService, cardRepo, filepath.Join(appRoot, "static", "uploads"))
 	orderService := orderapplication.NewService(
 		db,
 		cardRepo,
@@ -87,11 +94,15 @@ func main() {
 		customerWriter,
 		orderWriter,
 		emailSender,
+		cfg.AdminEmail,
 	)
 	orderHandler := orderpresentation.NewOrderHandler(orderService)
+	cardHandler := cardpresentation.NewCardHandler(cardRepo, productService)
+	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
 
 	// router
 	router := gin.Default()
+	router.MaxMultipartMemory = 20 << 20
 	router.SetFuncMap(template.FuncMap{
 		"add":           func(a, b int) int { return a + b },
 		"safeImagePath": makeSafeImagePathFunc(appRoot),
@@ -116,6 +127,7 @@ func main() {
 	router.GET("/privacy-policy", customerHandler.PrivacyPolicyPage)
 	router.GET("/search", cardHandler.SearchCards)
 	router.GET("/card/:id", cardHandler.CardDetail)
+	router.GET("/product/:id", productHandler.Detail)
 	router.GET("/checkout", cardHandler.Checkout)
 	router.GET("/customize", orderHandler.CustomizePage)
 	router.POST("/review", orderHandler.ReviewPage)
@@ -136,6 +148,13 @@ func main() {
 	admin.GET("/orders", orderHandler.AdminOrders)
 	admin.GET("/orders/:id", orderHandler.AdminOrderDetail)
 	admin.POST("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
+	admin.GET("/products", productHandler.List)
+	admin.GET("/products/new", productHandler.NewForm)
+	admin.POST("/products", productHandler.Create)
+	admin.GET("/products/:id/edit", productHandler.EditForm)
+	admin.POST("/products/:id/edit", productHandler.Update)
+	admin.POST("/products/:id", productHandler.Update)
+	admin.POST("/products/:id/delete", productHandler.Delete)
 
 	log.Printf("Server starting on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
@@ -157,34 +176,7 @@ func loadEnvFile(appRoot string) {
 }
 
 func resolveAppRoot() (string, error) {
-	candidates := []string{".", "inviteandco"}
-
-	if wd, err := os.Getwd(); err == nil {
-		candidates = append(candidates, wd, filepath.Join(wd, "inviteandco"))
-	}
-
-	if exe, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exe)
-		candidates = append(candidates, exeDir, filepath.Join(exeDir, "inviteandco"))
-	}
-
-	seen := make(map[string]struct{})
-	for _, candidate := range candidates {
-		abs, err := filepath.Abs(candidate)
-		if err != nil {
-			continue
-		}
-		if _, ok := seen[abs]; ok {
-			continue
-		}
-		seen[abs] = struct{}{}
-
-		if dirExists(filepath.Join(abs, "templates")) && dirExists(filepath.Join(abs, "static")) {
-			return abs, nil
-		}
-	}
-
-	return "", fmt.Errorf("templates/static directories were not found from the current execution path")
+	return os.Getwd()
 }
 
 func dirExists(path string) bool {
@@ -196,7 +188,13 @@ func makeSafeImagePathFunc(appRoot string) func(string) string {
 	return func(raw string) string {
 		fallback := "/static/sample.jpg"
 		clean := strings.TrimSpace(raw)
-		if clean == "" || !strings.HasPrefix(clean, "/static/") {
+		if clean == "" {
+			return fallback
+		}
+		if strings.HasPrefix(clean, "https://") || strings.HasPrefix(clean, "http://") {
+			return clean
+		}
+		if !strings.HasPrefix(clean, "/static/") {
 			return fallback
 		}
 

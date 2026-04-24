@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .product.Name }} — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .product-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+        }
+
+        .product-back {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 18px;
+            color: var(--brand);
+            text-decoration: none;
+            font-size: 0.86rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .product-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+            gap: 32px;
+            align-items: start;
+        }
+
+        .product-image {
+            width: 100%;
+            border-radius: var(--radius-soft);
+            border: 1px solid var(--border-light);
+            background: var(--panel);
+            box-shadow: var(--shadow-card);
+            object-fit: cover;
+        }
+
+        .product-gallery {
+            display: grid;
+            gap: 12px;
+        }
+
+        .gallery-main {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+
+        .gallery-thumbs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+            gap: 10px;
+        }
+
+        .gallery-img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border-light);
+            background: var(--panel);
+        }
+
+        .product-card {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .product-kicker {
+            display: inline-block;
+            margin-bottom: 10px;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .product-card h1 {
+            margin: 0 0 10px;
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .product-price {
+            margin: 0 0 18px;
+            color: var(--brand-dark);
+            font-size: 1.15rem;
+            font-weight: 500;
+        }
+
+        .product-copy {
+            margin: 0 0 18px;
+            color: var(--text-light);
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        .product-meta {
+            display: grid;
+            gap: 12px;
+        }
+
+        .product-actions {
+            margin: 22px 0 20px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+            padding: 0 22px;
+            border-radius: 999px;
+            background: var(--brand);
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-dark);
+        }
+
+        .product-note {
+            margin: 0;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .meta-row {
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .meta-label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-light);
+            font-size: 0.76rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 760px) {
+            .product-page {
+                padding: 22px 16px 40px;
+            }
+
+            .product-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
+            <button class="header-icon" aria-label="Cart">⊡</button>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="product-page animate-in">
+        <a class="product-back" href="{{ .CollectionPath }}">← Back to {{ .CategoryName }}</a>
+
+        <div class="product-layout">
+            <div>
+                <div class="product-gallery">
+                    <img class="product-image gallery-main" src="{{ .MainImage }}" alt="{{ .Product.Name }}">
+                    {{ if gt (len .Images) 1 }}
+                    <div class="gallery-thumbs">
+                        {{ range .Images }}
+                        {{ if ne . $.MainImage }}
+                        <img src="{{ . }}" class="gallery-img" alt="{{ $.Product.Name }}">
+                        {{ end }}
+                        {{ end }}
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <section class="product-card">
+                <span class="product-kicker">{{ .CategoryName }}</span>
+                <h1>{{ .Product.Name }}</h1>
+                <p class="product-price">PKR {{ .Product.Price }}</p>
+
+                <p class="product-copy">
+                    {{ if .Product.Description }}{{ .Product.Description }}{{ else }}No description added yet.{{ end }}
+                </p>
+
+                <div class="product-meta">
+                    <div class="product-actions">
+                        {{ if gt .Product.CardID 0 }}
+                        <a href="/card/{{ .Product.CardID }}" class="btn-primary">Customize & Order →</a>
+                        <p class="product-note">This opens the existing card checkout flow with pricing and personalization.</p>
+                        {{ else }}
+                        <p class="product-note">Checkout is unavailable for this product until it is linked to a card design in admin.</p>
+                        {{ end }}
+                    </div>
+
+                    <div class="meta-row">
+                        <span class="meta-label">Dimensions</span>
+                        <div class="meta-value">{{ if .Product.Dimensions }}{{ .Product.Dimensions }}{{ else }}Not specified{{ end }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Status</span>
+                        <div class="meta-value">{{ if .Product.IsActive }}Available{{ else }}Inactive{{ end }}</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/collections/wedding-cards">Shop All</a>
+                <a href="/collections/wedding-cards">Wedding Cards</a>
+                <a href="/collections/bid-boxes">Bid Boxes</a>
+                <a href="/collections/wedding-accessories">Wedding Accessories</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/track-order">Track an Order</a>
+                <a href="/shipping-info">Shipping Info</a>
+                <a href="/returns-exchanges">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/terms-of-use">Terms of Use</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+</script>
+
+</body>
+</html>

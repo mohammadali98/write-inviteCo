@@ -181,10 +181,11 @@ type Service struct {
 	customerWriter *customerwriter.Queries
 	orderWriter    *orderwriter.Queries
 	emailSender    EmailSender
+	adminEmail     string
 }
 
 type EmailSender interface {
-	SendOrderConfirmationEmail(ctx context.Context, customerEmail string, orderID int64) error
+	SendOrderEmail(ctx context.Context, to string, subject string, body string) error
 }
 
 func NewService(
@@ -195,6 +196,7 @@ func NewService(
 	customerWriter *customerwriter.Queries,
 	orderWriter *orderwriter.Queries,
 	emailSender EmailSender,
+	adminEmail string,
 ) *Service {
 	return &Service{
 		db:             db,
@@ -204,6 +206,7 @@ func NewService(
 		customerWriter: customerWriter,
 		orderWriter:    orderWriter,
 		emailSender:    emailSender,
+		adminEmail:     strings.TrimSpace(adminEmail),
 	}
 }
 
@@ -305,22 +308,14 @@ func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, sta
 	}
 	log.Printf("ADMIN STATUS FLOW AFTER DB UPDATE: order_id=%d new_status=%q", orderID, newStatus)
 
-	if order.Status != orderdomain.ConfirmedOrderStatus && newStatus == orderdomain.ConfirmedOrderStatus {
-		log.Printf(
-			"ADMIN STATUS FLOW BEFORE EMAIL: order_id=%d type=%s customer_id=%d",
-			orderID,
-			orderTypeLabel(order, details),
-			order.CustomerID,
-		)
-		s.sendOrderConfirmationEmailAsync(order.CustomerID, orderID)
-	} else {
-		log.Printf(
-			"ADMIN STATUS FLOW EMAIL SKIPPED: order_id=%d previous_status=%q new_status=%q",
-			orderID,
-			order.Status,
-			newStatus,
-		)
-	}
+	log.Printf(
+		"ADMIN STATUS FLOW BEFORE EMAIL: order_id=%d type=%s customer_id=%d new_status=%q",
+		orderID,
+		orderTypeLabel(order, details),
+		order.CustomerID,
+		newStatus,
+	)
+	s.sendOrderStatusEmailAsync(order, newStatus)
 
 	return nil
 }
@@ -478,6 +473,17 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	if cardName == "" {
 		cardName = "Invitation Card"
 	}
+
+	s.sendOrderCreatedEmailsAsync(orderEmailPayload{
+		OrderID:       orderRow.ID,
+		CustomerName:  input.Name,
+		CustomerEmail: input.Email,
+		ProductName:   cardName,
+		Quantity:      pricing.quantity,
+		TotalPrice:    pricing.totalPrice,
+		Currency:      pricing.currency,
+		Status:        orderdomain.PendingOrderStatus,
+	})
 
 	return &PlaceOrderResult{
 		OrderID:      orderRow.ID,
@@ -872,13 +878,21 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 	}
 }
 
-func (s *Service) sendOrderConfirmationEmailAsync(customerID int64, orderID int64) {
+type orderEmailPayload struct {
+	OrderID       int64
+	CustomerID    int64
+	CustomerName  string
+	CustomerEmail string
+	ProductName   string
+	Quantity      int64
+	TotalPrice    int64
+	Currency      string
+	Status        orderdomain.OrderStatus
+}
+
+func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
 	if s.emailSender == nil {
-		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", orderID)
-		return
-	}
-	if customerID <= 0 {
-		log.Printf("ORDER EMAIL ERROR: order_id=%d customer id invalid", orderID)
+		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", payload.OrderID)
 		return
 	}
 
@@ -886,21 +900,171 @@ func (s *Service) sendOrderConfirmationEmailAsync(customerID int64, orderID int6
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()
 
-		customer, err := s.customerRepo.GetCustomerByID(ctx, customerID)
+		adminEmail := strings.TrimSpace(s.adminEmail)
+		if adminEmail == "" {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d admin email not configured", payload.OrderID)
+		} else {
+			if err := s.sendOrderEmail(ctx, adminEmail, newOrderAdminSubject(payload.OrderID), buildNewOrderAdminEmailBody(payload)); err != nil {
+				log.Printf("ORDER EMAIL ERROR: order_id=%d admin_email=%q err=%v", payload.OrderID, adminEmail, err)
+			}
+		}
+
+		customerEmail := strings.TrimSpace(payload.CustomerEmail)
+		if customerEmail == "" {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing", payload.OrderID)
+			return
+		}
+		if err := s.sendOrderEmail(ctx, customerEmail, newOrderCustomerSubject(payload.OrderID), buildOrderStatusEmailBody(payload, orderStatusIntro(orderdomain.PendingOrderStatus))); err != nil {
+			log.Printf("ORDER EMAIL ERROR: order_id=%d customer_email=%q err=%v", payload.OrderID, customerEmail, err)
+		}
+	}()
+}
+
+func (s *Service) sendOrderStatusEmailAsync(order *orderdomain.Order, status orderdomain.OrderStatus) {
+	if order == nil {
+		log.Printf("ORDER EMAIL ERROR: order detail missing for status update")
+		return
+	}
+	if s.emailSender == nil {
+		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", order.ID)
+		return
+	}
+	if order.CustomerID <= 0 {
+		log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer id missing", order.ID)
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+
+		customer, err := s.customerRepo.GetCustomerByID(ctx, order.CustomerID)
 		if err != nil {
-			log.Printf("ORDER EMAIL ERROR: order_id=%d failed to load customer err=%v", orderID, err)
+			log.Printf("ORDER EMAIL ERROR: order_id=%d failed to load customer err=%v", order.ID, err)
 			return
 		}
 		if customer.Email == nil || strings.TrimSpace(*customer.Email) == "" {
-			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing", orderID)
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing", order.ID)
 			return
 		}
 
-		log.Printf("ORDER EMAIL SEND START: order_id=%d customer_id=%d email=%q", orderID, customerID, strings.TrimSpace(*customer.Email))
-		if err := s.emailSender.SendOrderConfirmationEmail(ctx, *customer.Email, orderID); err != nil {
-			log.Printf("ORDER EMAIL ERROR: order_id=%d err=%v", orderID, err)
+		payload := orderEmailPayload{
+			OrderID:       order.ID,
+			CustomerID:    order.CustomerID,
+			CustomerName:  customer.Name,
+			CustomerEmail: strings.TrimSpace(*customer.Email),
+			ProductName:   defaultProductName(order.CardName),
+			Quantity:      order.Quantity,
+			TotalPrice:    order.TotalPrice,
+			Currency:      defaultCurrency(order.Currency),
+			Status:        status,
+		}
+
+		if err := s.sendOrderEmail(ctx, payload.CustomerEmail, orderStatusSubject(payload.OrderID, status), buildOrderStatusEmailBody(payload, orderStatusIntro(status))); err != nil {
+			log.Printf("ORDER EMAIL ERROR: order_id=%d customer_email=%q status=%q err=%v", payload.OrderID, payload.CustomerEmail, status, err)
 		}
 	}()
+}
+
+func (s *Service) sendOrderEmail(ctx context.Context, to string, subject string, body string) error {
+	return s.emailSender.SendOrderEmail(ctx, to, subject, body)
+}
+
+func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
+	return fmt.Sprintf(
+		"New order received.\n\nOrder ID: #%d\nCustomer: %s\nProduct: %s\nQuantity: %d\nTotal: %s %d\nStatus: Pending",
+		payload.OrderID,
+		defaultCustomerName(payload.CustomerName),
+		defaultProductName(payload.ProductName),
+		payload.Quantity,
+		defaultCurrency(payload.Currency),
+		payload.TotalPrice,
+	)
+}
+
+func buildOrderStatusEmailBody(payload orderEmailPayload, intro string) string {
+	return fmt.Sprintf(
+		"%s\n\nOrder ID: #%d\nCustomer: %s\nProduct: %s\nQuantity: %d\nTotal: %s %d\nStatus: %s",
+		intro,
+		payload.OrderID,
+		defaultCustomerName(payload.CustomerName),
+		defaultProductName(payload.ProductName),
+		payload.Quantity,
+		defaultCurrency(payload.Currency),
+		payload.TotalPrice,
+		orderStatusDisplay(payload.Status),
+	)
+}
+
+func newOrderAdminSubject(orderID int64) string {
+	return fmt.Sprintf("New Order Received (#%d)", orderID)
+}
+
+func newOrderCustomerSubject(orderID int64) string {
+	return fmt.Sprintf("Order Received (#%d)", orderID)
+}
+
+func orderStatusSubject(orderID int64, status orderdomain.OrderStatus) string {
+	switch status {
+	case orderdomain.ConfirmedOrderStatus:
+		return fmt.Sprintf("Your order #%d is confirmed", orderID)
+	case orderdomain.CancelledOrderStatus:
+		return fmt.Sprintf("Your order #%d has been cancelled", orderID)
+	case orderdomain.CompletedOrderStatus:
+		return fmt.Sprintf("Your order #%d has been completed", orderID)
+	default:
+		return fmt.Sprintf("Your order #%d is pending", orderID)
+	}
+}
+
+func orderStatusIntro(status orderdomain.OrderStatus) string {
+	switch status {
+	case orderdomain.ConfirmedOrderStatus:
+		return "Your order has been confirmed."
+	case orderdomain.CancelledOrderStatus:
+		return "Your order has been cancelled."
+	case orderdomain.CompletedOrderStatus:
+		return "Your order has been completed."
+	default:
+		return "Thank you for your order. We have received it and marked it as pending."
+	}
+}
+
+func orderStatusDisplay(status orderdomain.OrderStatus) string {
+	switch status {
+	case orderdomain.ConfirmedOrderStatus:
+		return "Confirmed"
+	case orderdomain.CancelledOrderStatus:
+		return "Cancelled"
+	case orderdomain.CompletedOrderStatus:
+		return "Completed"
+	default:
+		return "Pending"
+	}
+}
+
+func defaultCustomerName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "Customer"
+	}
+	return name
+}
+
+func defaultProductName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "Invitation Card"
+	}
+	return name
+}
+
+func defaultCurrency(currency string) string {
+	currency = strings.TrimSpace(currency)
+	if currency == "" {
+		return "PKR"
+	}
+	return currency
 }
 
 func orderTypeLabel(order *orderdomain.Order, details *orderdomain.OrderDetail) string {

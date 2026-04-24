@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .title }} — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .admin-form-page {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+        }
+
+        .admin-form-page h1 {
+            margin: 0 0 8px;
+            font-family: var(--font-display);
+            font-size: 2.3rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .admin-subtitle {
+            margin: 0 0 22px;
+            color: var(--text-light);
+            font-size: 0.92rem;
+        }
+
+        .admin-back {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 20px;
+            color: var(--brand);
+            text-decoration: none;
+            font-size: 0.86rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .admin-card {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            padding: 22px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .admin-error {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: #fff3ef;
+            border: 1px solid #f0c5b6;
+            color: #8a3f24;
+            font-size: 0.9rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 0.84rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-family: var(--font-sans);
+            background: #f5f0eb;
+            font-size: 0.94rem;
+            color: var(--text);
+        }
+
+        .form-group textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            accent-color: var(--brand);
+        }
+
+        .form-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .image-list img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-warm);
+        }
+
+        .submit-btn {
+            border: none;
+            border-radius: 999px;
+            background: var(--brand);
+            color: #fff;
+            min-height: 50px;
+            padding: 0 24px;
+            font-family: var(--font-sans);
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        @media (max-width: 760px) {
+            .admin-form-page {
+                padding: 22px 16px 40px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/admin/orders">Admin Orders</a>
+        <a class="nav-link" href="/admin/products">Admin Products</a>
+        <a class="nav-link" href="/">Storefront</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/admin/orders">Admin Orders</a>
+        <a href="/admin/products">Admin Products</a>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="admin-form-page">
+        <a class="admin-back" href="/admin/products">← Back to Products</a>
+        <h1>{{ .title }}</h1>
+        <p class="admin-subtitle">{{ .subtitle }}</p>
+
+        <section class="admin-card">
+            {{ if .error }}
+            <div class="admin-error">{{ .error }}</div>
+            {{ end }}
+
+            <form method="post" action="{{ .formAction }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="name">Name</label>
+                        <input id="name" name="name" type="text" value="{{ .product.Name }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="card" {{ if eq .product.Category "card" }}selected{{ end }}>Card</option>
+                            <option value="bid_box" {{ if eq .product.Category "bid_box" }}selected{{ end }}>Bid Box</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="price">Price</label>
+                        <input id="price" name="price" type="number" min="1" step="1" value="{{ .product.Price }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="card_id">Linked Card</label>
+                        <select id="card_id" name="card_id" required>
+                            <option value="">Select card</option>
+                            {{ range .cards }}
+                            <option value="{{ .ID }}" {{ if eq .ID $.product.CardID }}selected{{ end }}>{{ .Name }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="image_url">Image URL</label>
+                        <input id="image_url" name="image_url" type="text" value="{{ .product.ImageURL }}">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="images">Upload Images</label>
+                        <input id="images" name="images" type="file" multiple accept="image/*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dimensions">Dimensions</label>
+                        <input id="dimensions" name="dimensions" type="text" value="{{ .product.Dimensions }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="is_active">Status</label>
+                        <div class="checkbox-row">
+                            <input id="is_active" name="is_active" type="checkbox" {{ if .product.IsActive }}checked{{ end }}>
+                            <span>Active product</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description">{{ .product.Description }}</textarea>
+                    </div>
+                </div>
+
+                {{ if .images }}
+                <div class="form-group full-width" style="margin-top: 18px;">
+                    <label>Current Gallery</label>
+                    <div class="image-list">
+                        {{ range .images }}
+                        <img src="{{ . }}" alt="Product image">
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+
+                <div class="form-actions">
+                    <button class="submit-btn" type="submit">{{ .submitLabel }}</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+
+<script>
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+</script>
+
+</body>
+</html>

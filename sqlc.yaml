@@ -105,3 +105,53 @@ sql:
         <<: *go-default
         out: "order/orderinfrastructure/postgres/writer"
         package: "orderwriter"
+  - name: "product-reader"
+    engine: "postgresql"
+    queries: "product/productinfrastructure/postgres/reader/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        out: "product/productinfrastructure/postgres/reader"
+        package: "productreader"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false
+  - name: "product-writer"
+    engine: "postgresql"
+    queries: "product/productinfrastructure/postgres/writer/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        out: "product/productinfrastructure/postgres/writer"
+        package: "productwriter"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false

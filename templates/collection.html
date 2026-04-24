@@ -52,6 +52,40 @@
             fill: #e25555;
             stroke: #e25555;
         }
+
+        .collection-search-form {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
+            gap: 8px;
+        }
+
+        .collection-search-input {
+            width: 220px;
+            height: 40px;
+            padding: 0 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.86);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .collection-search-input::placeholder {
+            color: var(--text-light);
+        }
+
+        .collection-search-input:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(139, 105, 20, 0.12);
+        }
+
+        @media (max-width: 760px) {
+            .collection-search-form {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -67,8 +101,11 @@
     <div class="header-right">
         <a class="nav-link" href="/about">About</a>
         <a class="nav-link" href="/contact">Contact</a>
+        <form id="collection-search-form" class="collection-search-form" action="/collections/{{ .category }}" method="GET">
+            <input class="collection-search-input" type="text" name="q" placeholder="Search..." value="{{ .query }}">
+        </form>
         <div class="header-icons">
-            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <button class="header-icon" type="submit" form="collection-search-form" aria-label="Search">⌕</button>
             <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
             <button class="header-icon" aria-label="Cart">⊡</button>
         </div>
@@ -98,33 +135,29 @@
             <p>Explore handcrafted designs from our {{ .categoryName }} collection.</p>
         </div>
 
-        {{ if .cards }}
+        {{ if .products }}
         <div class="card-grid">
-            {{ range $i, $c := .cards }}
+            {{ range $i, $p := .products }}
             <article class="card-item animate-in delay-{{ add $i 2 }}">
                 <div class="card-img-wrap">
-                    <img src="{{ safeImagePath $c.Image }}" alt="{{ $c.Name }}">
-                    <button class="fav-btn" data-id="{{ $c.ID }}" onclick="toggleFav(this)" aria-label="Add to favorites">
+                    <img src="{{ safeImagePath $p.ImageURL }}" alt="{{ $p.Name }}">
+                    <button class="fav-btn" data-id="{{ $p.ID }}" onclick="toggleFav(this)" aria-label="Add to favorites">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
                     </button>
                 </div>
                 <div class="card-body">
-                    <h2>{{ $c.Name }}</h2>
-                    {{ if eq $c.Name "Vibrant Dholki Booklet" }}
-                    <p class="price">PKR 1,500 each</p>
-                    {{ else }}
-                    <p class="price">From PKR {{ $c.PriceNofoilPKR }}</p>
-                    {{ end }}
-                    <a class="btn" href="/card/{{ $c.ID }}">View Details →</a>
+                    <h2>{{ $p.Name }}</h2>
+                    <p class="price">PKR {{ $p.Price }}</p>
+                    <a class="btn" href="{{ $p.DetailURL }}">View Details →</a>
                 </div>
             </article>
             {{ end }}
         </div>
         {{ else }}
         <div class="page-header animate-in delay-2">
-            <p>Coming soon — check back shortly!</p>
+            <p>{{ if .query }}No products found.{{ else }}No products available.{{ end }}</p>
         </div>
         {{ end }}
     </section>

@@ -12,6 +12,7 @@ type Config struct {
 	Port            string
 	ResendAPIKey    string
 	ResendFromEmail string
+	AdminEmail      string
 	AdminUser       string
 	AdminPass       string
 }
@@ -36,6 +37,7 @@ func Load() Config {
 		Port:            getEnv("PORT", "8080"),
 		ResendAPIKey:    getEnv("RESEND_API_KEY", ""),
 		ResendFromEmail: getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
+		AdminEmail:      strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
 		AdminUser:       strings.TrimSpace(os.Getenv("ADMIN_USER")),
 		AdminPass:       strings.TrimSpace(os.Getenv("ADMIN_PASS")),
 	}

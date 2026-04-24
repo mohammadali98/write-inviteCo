@@ -3,6 +3,7 @@ package notification
 import (
 	"context"
 	"fmt"
+	"html"
 	"log"
 	"strings"
 
@@ -24,7 +25,16 @@ func NewResendSender(apiKey string, fromEmail string) *ResendSender {
 	}
 }
 
-func (s *ResendSender) SendOrderConfirmationEmail(ctx context.Context, customerEmail string, orderID int64) error {
+// NOTE:
+// In Resend free/testing mode, emails only go to verified email.
+// To send to real users:
+// - Verify domain in Resend dashboard
+// - Use domain email like: orders@yourdomain.com
+func (s *ResendSender) SendOrderEmail(ctx context.Context, to string, subject string, body string) error {
+	return s.sendOrderEmail(ctx, to, subject, body)
+}
+
+func (s *ResendSender) sendOrderEmail(ctx context.Context, to string, subject string, body string) error {
 	if s.apiKey == "" {
 		return fmt.Errorf("resend api key is not configured")
 	}
@@ -38,9 +48,19 @@ func (s *ResendSender) SendOrderConfirmationEmail(ctx context.Context, customerE
 	default:
 	}
 
-	email := strings.TrimSpace(customerEmail)
+	email := strings.TrimSpace(to)
 	if email == "" {
-		return fmt.Errorf("customer email is empty")
+		return fmt.Errorf("recipient email is empty")
+	}
+
+	subject = strings.TrimSpace(subject)
+	if subject == "" {
+		return fmt.Errorf("email subject is empty")
+	}
+
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return fmt.Errorf("email body is empty")
 	}
 
 	from := s.fromEmail
@@ -51,19 +71,20 @@ func (s *ResendSender) SendOrderConfirmationEmail(ctx context.Context, customerE
 	params := &resend.SendEmailRequest{
 		From:    from,
 		To:      []string{email},
-		Subject: fmt.Sprintf("Order Confirmed #%d", orderID),
+		Subject: subject,
+		Text:    body,
 		Html: fmt.Sprintf(
-			"<strong>Your order #%d is confirmed.</strong><p>Thank you for choosing Write&InviteCo.</p>",
-			orderID,
+			"<div style=\"font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6;\">%s</div>",
+			html.EscapeString(body),
 		),
 	}
 
 	sent, err := s.client.Emails.Send(params)
 	if err != nil {
-		log.Println("RESEND ERROR:", err)
+		log.Println("Email send failed:", err)
 		return err
 	}
 
-	log.Println("EMAIL SENT SUCCESS:", sent.Id)
+	log.Println("Email sent successfully:", sent.Id)
 	return nil
 }

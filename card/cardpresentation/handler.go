@@ -1,6 +1,7 @@
 package cardpresentation
 
 import (
+	"context"
 	"errors"
 	"math"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"writeandinviteco/inviteandco/card/carddomain"
+	"writeandinviteco/inviteandco/product/productapplication"
 	"writeandinviteco/inviteandco/webui"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +17,8 @@ import (
 )
 
 type CardHandler struct {
-	repo carddomain.CardRepo
+	repo           carddomain.CardRepo
+	productService *productapplication.Service
 }
 
 const (
@@ -24,8 +27,11 @@ const (
 	maxSearchQueryLength    = 100
 )
 
-func NewCardHandler(repo carddomain.CardRepo) *CardHandler {
-	return &CardHandler{repo: repo}
+func NewCardHandler(repo carddomain.CardRepo, productService *productapplication.Service) *CardHandler {
+	return &CardHandler{
+		repo:           repo,
+		productService: productService,
+	}
 }
 
 func (h *CardHandler) ListCards(c *gin.Context) {
@@ -48,17 +54,23 @@ func (h *CardHandler) ListCardsByCategory(c *gin.Context) {
 		webui.RenderError(c, http.StatusNotFound, "Collection Not Found", "The requested collection does not exist.")
 		return
 	}
+	query := strings.TrimSpace(c.Query("q"))
+	if len([]rune(query)) > maxSearchQueryLength {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Search", "Search terms must be shorter than 100 characters.")
+		return
+	}
 
-	cards, err := h.repo.GetCardsByCategory(c.Request.Context(), category)
+	products, err := h.frontendProducts(c.Request.Context(), category, query)
 	if err != nil {
 		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the collection right now.")
 		return
 	}
 
 	c.HTML(http.StatusOK, "collection.html", gin.H{
-		"cards":        cards,
+		"products":     products,
 		"category":     category,
 		"categoryName": validCategoryNames()[category],
+		"query":        query,
 	})
 }
 
@@ -289,6 +301,104 @@ func validCategoryNames() map[string]string {
 		"nikkah-certificate":  "Nikkah Certificate",
 		"wedding-accessories": "Wedding Accessories",
 	}
+}
+
+type frontendProduct struct {
+	ID        int64
+	Name      string
+	ImageURL  string
+	Price     int64
+	DetailURL string
+}
+
+func (h *CardHandler) frontendProducts(ctx context.Context, category string, query string) ([]frontendProduct, error) {
+	productCategory := routeCategoryToProductCategory(category)
+	if productCategory != "" && h.productService != nil {
+		items, err := h.productService.ListProducts(ctx)
+		if err == nil {
+			filtered := make([]frontendProduct, 0, len(items))
+			hasProductCollection := false
+			for _, item := range items {
+				if item == nil || !item.IsActive || item.Category != productCategory || item.CardID <= 0 {
+					continue
+				}
+				hasProductCollection = true
+				if !matchesTextSearch(item.Name, item.Description, query) {
+					continue
+				}
+				filtered = append(filtered, frontendProduct{
+					ID:        item.ID,
+					Name:      item.Name,
+					ImageURL:  imageOrFallback(item.ImageURL),
+					Price:     item.Price,
+					DetailURL: "/product/" + strconv.FormatInt(item.ID, 10),
+				})
+			}
+			if hasProductCollection {
+				return filtered, nil
+			}
+		}
+	}
+
+	var cards []*carddomain.Card
+	var err error
+	if strings.TrimSpace(query) != "" {
+		cards, err = h.repo.SearchCards(ctx, query)
+	} else {
+		cards, err = h.repo.GetCardsByCategory(ctx, category)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]frontendProduct, 0, len(cards))
+	for _, card := range cards {
+		if card == nil || card.Category != category {
+			continue
+		}
+		price := card.PriceNofoilPKR
+		if price <= 0 {
+			price = card.PriceFoilPKR
+		}
+		filtered = append(filtered, frontendProduct{
+			ID:        card.ID,
+			Name:      card.Name,
+			ImageURL:  imageOrFallback(card.Image),
+			Price:     price,
+			DetailURL: "/card/" + strconv.FormatInt(card.ID, 10),
+		})
+	}
+
+	return filtered, nil
+}
+
+func matchesTextSearch(name string, description string, query string) bool {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return true
+	}
+
+	query = strings.ToLower(query)
+	return strings.Contains(strings.ToLower(name), query) ||
+		strings.Contains(strings.ToLower(description), query)
+}
+
+func routeCategoryToProductCategory(category string) string {
+	switch category {
+	case "wedding-cards":
+		return "card"
+	case "bid-boxes":
+		return "bid_box"
+	default:
+		return ""
+	}
+}
+
+func imageOrFallback(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return "/static/sample.jpg"
+	}
+	return raw
 }
 
 func safeAddInt64(a int64, b int64) (int64, bool) {

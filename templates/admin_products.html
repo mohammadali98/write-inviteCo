@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Products — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .admin-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 22px;
+        }
+
+        .admin-page h1 {
+            margin: 0 0 8px;
+            font-family: var(--font-display);
+            font-size: 2.3rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .admin-subtitle {
+            margin: 0;
+            color: var(--text-light);
+            font-size: 0.92rem;
+        }
+
+        .admin-link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 22px;
+            border-radius: 999px;
+            background: var(--brand);
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .admin-link-btn:hover {
+            background: var(--brand-dark);
+        }
+
+        .admin-table-wrap {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .admin-table th {
+            background: var(--bg-warm);
+            color: var(--text-light);
+            font-size: 0.78rem;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .thumb-cell {
+            width: 88px;
+        }
+
+        .product-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid var(--border-light);
+            background: var(--bg-warm);
+        }
+
+        .product-thumb-placeholder {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            background: var(--bg-warm);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 0.76rem;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .status-pill.active {
+            background: var(--accent-cream);
+            color: var(--brand-dark);
+        }
+
+        .status-pill.inactive {
+            background: #f6efea;
+            color: var(--muted);
+        }
+
+        .view-link {
+            text-decoration: none;
+            font-size: 0.82rem;
+            color: var(--brand);
+            font-weight: 500;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .view-link:hover {
+            color: var(--brand-dark);
+        }
+
+        .action-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .delete-form {
+            display: inline;
+            margin: 0;
+        }
+
+        .btn-danger {
+            border: 1px solid #d58d73;
+            border-radius: 999px;
+            background: #fff4ef;
+            color: #9b4e30;
+            min-height: 38px;
+            padding: 0 14px;
+            font-family: var(--font-sans);
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .btn-danger:hover {
+            background: #f9e6dc;
+            color: #7f3e24;
+        }
+
+        .admin-empty {
+            padding: 30px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        @media (max-width: 760px) {
+            .admin-page {
+                padding: 22px 16px 40px;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .admin-table-wrap {
+                overflow-x: auto;
+            }
+
+            .admin-table {
+                min-width: 720px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/admin/orders">Admin Orders</a>
+        <a class="nav-link" href="/admin/products">Admin Products</a>
+        <a class="nav-link" href="/">Storefront</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/admin/orders">Admin Orders</a>
+        <a href="/admin/products">Admin Products</a>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <h1>Products Dashboard</h1>
+                <p class="admin-subtitle">Manage standalone admin product records for cards and bid boxes.</p>
+            </div>
+            <a class="admin-link-btn" href="/admin/products/new">Add Product</a>
+        </div>
+
+        <div class="admin-table-wrap">
+            {{ if .products }}
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .products }}
+                <tr>
+                    <td>#{{ .ID }}</td>
+                    <td class="thumb-cell">
+                        {{ if .ImageURL }}
+                        <img class="product-thumb" src="{{ .ImageURL }}" alt="{{ .Name }}">
+                        {{ else }}
+                        <div class="product-thumb-placeholder" aria-hidden="true"></div>
+                        {{ end }}
+                    </td>
+                    <td>{{ .Name }}</td>
+                    <td>{{ .Category }}</td>
+                    <td>PKR {{ .Price }}</td>
+                    <td>
+                        <span class="status-pill {{ if .IsActive }}active{{ else }}inactive{{ end }}">
+                            {{ if .IsActive }}Active{{ else }}Inactive{{ end }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-group">
+                            <a class="view-link" href="/admin/products/{{ .ID }}/edit">Edit →</a>
+                            <form class="delete-form" action="/admin/products/{{ .ID }}/delete" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ $.csrfToken }}">
+                                <button type="submit" onclick="return confirm('Are you sure you want to delete this product?')" class="btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+            {{ else }}
+            <div class="admin-empty">No products found.</div>
+            {{ end }}
+        </div>
+    </div>
+</main>
+
+<script>
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+</script>
+
+</body>
+</html>
