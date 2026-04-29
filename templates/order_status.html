@@ -119,15 +119,40 @@
     </div>
 
     <div class="message">
-        {{ if eq $status "pending" }}
-            Your order is being reviewed.
-        {{ else if eq $status "confirmed" }}
-            Your order has been confirmed.
-        {{ else if eq $status "completed" }}
-            Your order is completed and ready.
-        {{ else }}
-            Your order status has been updated.
-        {{ end }}
+        {{ .statusMessage }}
+    </div>
+
+    <div class="section">
+        <h3>Payment Details</h3>
+        <div class="info">
+            Payment Status:
+            <span class="highlight">
+                {{ if .payment }}{{ .payment.PaymentStatus }}{{ else }}not_recorded{{ end }}
+            </span><br>
+            Expected Amount:
+            <span class="highlight">
+                {{ if .payment }}PKR {{ .payment.ExpectedAmount }}{{ else }}PKR {{ .order.TotalPrice }}{{ end }}
+            </span><br>
+            {{ if and .payment .payment.SubmittedAmount }}
+            Submitted Amount: PKR {{ .payment.SubmittedAmount }}<br>
+            {{ end }}
+            {{ if and .payment .payment.TransactionReference }}
+            Transaction Reference: {{ .payment.TransactionReference }}<br>
+            {{ end }}
+            {{ if and .payment .payment.SubmittedAt }}
+            Submitted At: {{ .payment.SubmittedAt.Format "02 Jan 2006 15:04" }}<br>
+            {{ end }}
+            {{ if and .payment .payment.VerifiedAt }}
+            Verified At: {{ .payment.VerifiedAt.Format "02 Jan 2006 15:04" }}<br>
+            {{ end }}
+            {{ if and .payment .payment.RejectedAt }}
+            Rejected At: {{ .payment.RejectedAt.Format "02 Jan 2006 15:04" }}<br>
+            {{ end }}
+        </div>
+        <p class="message">{{ .paymentMessage }}</p>
+        <p style="text-align:center; margin-top: 18px;">
+            <a href="/order/{{ .order.ID }}/payment">View bank transfer instructions and proof upload</a>
+        </p>
     </div>
 
     <div class="section">

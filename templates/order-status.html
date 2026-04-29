@@ -155,6 +155,16 @@
             font-size: 0.92rem;
         }
 
+        .status-link {
+            color: var(--brand);
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .status-link:hover {
+            color: var(--brand-dark);
+        }
+
         @media (max-width: 760px) {
             .order-status-page {
                 padding: 20px 18px 40px;
@@ -195,6 +205,7 @@
         <a href="/collections/bid-boxes">Bid Boxes</a>
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -227,6 +238,38 @@
                     <div class="row-value">{{ if .customer }}{{ .customer.Name }}{{ else }}-{{ end }}</div>
                 </div>
             </div>
+        </section>
+
+        <section class="status-card">
+            <h2>Advance Payment</h2>
+            <div class="status-grid">
+                <div>
+                    <div class="row-label">Advance Payment Status</div>
+                    <div class="row-value">{{ .paymentStatusDisplay }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Order Total</div>
+                    <div class="row-value">PKR {{ .amountSummary.TotalAmount }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Advance Payment Required Now</div>
+                    <div class="row-value">PKR {{ .amountSummary.AdvanceAmount }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Remaining Balance</div>
+                    <div class="row-value">PKR {{ .amountSummary.RemainingBalance }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Final Payment Status</div>
+                    <div class="row-value">{{ .remainingStatus }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Advance Submitted Amount</div>
+                    <div class="row-value">{{ if and .payment .payment.SubmittedAmount }}PKR {{ .payment.SubmittedAmount }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+            <p class="status-message" style="margin-top: 16px;">{{ .paymentMessage }}</p>
+            <p class="empty-text" style="margin-top: 12px;"><a class="status-link" href="/order/{{ .order.ID }}/payment">View bank transfer instructions and advance payment proof upload</a></p>
         </section>
 
         <section class="status-card">
@@ -340,7 +383,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/track-order">Track an Order</a>
+                <a href="/track-order">Track Order & Payment</a>
                 <a href="/shipping-info">Shipping Info</a>
                 <a href="/returns-exchanges">Returns & Exchanges</a>
             </div>

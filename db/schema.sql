@@ -1,4 +1,4 @@
-\restrict A9DJXG9WaQpmjK9Mohnf2LANteCrErmH7LN5Aj4TI5pS05m9clfhSnaEVCUEP2k
+\restrict HMhOWLHqGsGiADbHBHI7i3lhiUtecdEhm1L0GIlltq67aa7zBZd1xcUNj7X0CRF
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -205,6 +205,53 @@ ALTER SEQUENCE public.order_details_id_seq OWNED BY public.order_details.id;
 
 
 --
+-- Name: order_payments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_payments (
+    id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    payment_method text DEFAULT 'bank_transfer'::text NOT NULL,
+    payment_status text DEFAULT 'pending_payment'::text NOT NULL,
+    expected_amount bigint NOT NULL,
+    submitted_amount bigint,
+    sender_name text,
+    transaction_reference text,
+    proof_file_path text,
+    customer_note text,
+    submitted_at timestamp with time zone,
+    verified_at timestamp with time zone,
+    rejected_at timestamp with time zone,
+    admin_note text,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_order_payments_expected_amount CHECK ((expected_amount >= 0)),
+    CONSTRAINT chk_order_payments_method CHECK ((payment_method = 'bank_transfer'::text)),
+    CONSTRAINT chk_order_payments_status CHECK ((payment_status = ANY (ARRAY['pending_payment'::text, 'awaiting_verification'::text, 'payment_verified'::text, 'payment_rejected'::text]))),
+    CONSTRAINT chk_order_payments_submitted_amount CHECK (((submitted_amount IS NULL) OR (submitted_amount >= 0)))
+);
+
+
+--
+-- Name: order_payments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.order_payments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: order_payments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.order_payments_id_seq OWNED BY public.order_payments.id;
+
+
+--
 -- Name: orders; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -238,6 +285,78 @@ CREATE SEQUENCE public.orders_id_seq
 --
 
 ALTER SEQUENCE public.orders_id_seq OWNED BY public.orders.id;
+
+
+--
+-- Name: product_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_images (
+    id integer NOT NULL,
+    product_id integer NOT NULL,
+    image_url text NOT NULL,
+    sort_order integer DEFAULT 0,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: product_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.product_images_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: product_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.product_images_id_seq OWNED BY public.product_images.id;
+
+
+--
+-- Name: products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.products (
+    id integer NOT NULL,
+    name text NOT NULL,
+    category text NOT NULL,
+    price integer NOT NULL,
+    image_url text,
+    description text,
+    dimensions text,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
+    card_id bigint
+);
+
+
+--
+-- Name: products_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.products_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: products_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.products_id_seq OWNED BY public.products.id;
 
 
 --
@@ -278,10 +397,31 @@ ALTER TABLE ONLY public.order_details ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: order_payments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_payments ALTER COLUMN id SET DEFAULT nextval('public.order_payments_id_seq'::regclass);
+
+
+--
 -- Name: orders id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.orders ALTER COLUMN id SET DEFAULT nextval('public.orders_id_seq'::regclass);
+
+
+--
+-- Name: product_images id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_images ALTER COLUMN id SET DEFAULT nextval('public.product_images_id_seq'::regclass);
+
+
+--
+-- Name: products id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products ALTER COLUMN id SET DEFAULT nextval('public.products_id_seq'::regclass);
 
 
 --
@@ -317,11 +457,43 @@ ALTER TABLE ONLY public.order_details
 
 
 --
+-- Name: order_payments order_payments_order_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_payments
+    ADD CONSTRAINT order_payments_order_id_key UNIQUE (order_id);
+
+
+--
+-- Name: order_payments order_payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_payments
+    ADD CONSTRAINT order_payments_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_images product_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_images
+    ADD CONSTRAINT product_images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
 
 
 --
@@ -361,6 +533,13 @@ CREATE INDEX idx_order_details_order_id ON public.order_details USING btree (ord
 
 
 --
+-- Name: idx_order_payments_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_order_payments_status ON public.order_payments USING btree (payment_status);
+
+
+--
 -- Name: idx_orders_card_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -382,6 +561,13 @@ CREATE INDEX idx_orders_status ON public.orders USING btree (status);
 
 
 --
+-- Name: idx_products_card_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_card_id ON public.products USING btree (card_id);
+
+
+--
 -- Name: card_images card_images_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -395,6 +581,14 @@ ALTER TABLE ONLY public.card_images
 
 ALTER TABLE ONLY public.order_details
     ADD CONSTRAINT order_details_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: order_payments order_payments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_payments
+    ADD CONSTRAINT order_payments_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
 
 
 --
@@ -414,10 +608,18 @@ ALTER TABLE ONLY public.orders
 
 
 --
+-- Name: product_images product_images_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_images
+    ADD CONSTRAINT product_images_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A9DJXG9WaQpmjK9Mohnf2LANteCrErmH7LN5Aj4TI5pS05m9clfhSnaEVCUEP2k
+\unrestrict HMhOWLHqGsGiADbHBHI7i3lhiUtecdEhm1L0GIlltq67aa7zBZd1xcUNj7X0CRF
 
 
 --
@@ -439,4 +641,8 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260405111718'),
     ('20260405190000'),
     ('20260406000001'),
-    ('20260413000001');
+    ('20260413000001'),
+    ('20260418000001'),
+    ('20260418000002'),
+    ('20260418000003'),
+    ('20260429000001');

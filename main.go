@@ -96,16 +96,21 @@ func main() {
 		emailSender,
 		cfg.AdminEmail,
 	)
-	orderHandler := orderpresentation.NewOrderHandler(orderService)
+	orderHandler := orderpresentation.NewOrderHandler(orderService, filepath.Join(appRoot, "static", "payment-proofs"))
 	cardHandler := cardpresentation.NewCardHandler(cardRepo, productService)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
 
 	// router
 	router := gin.Default()
 	router.MaxMultipartMemory = 20 << 20
+	safeStaticPath := makeSafeStaticPathFunc(appRoot)
 	router.SetFuncMap(template.FuncMap{
-		"add":           func(a, b int) int { return a + b },
-		"safeImagePath": makeSafeImagePathFunc(appRoot),
+		"add":            func(a, b int) int { return a + b },
+		"safeImagePath":  makeSafeImagePathFunc(appRoot),
+		"safeStaticPath": safeStaticPath,
+		"isPDFPath": func(raw string) bool {
+			return strings.HasSuffix(strings.ToLower(strings.TrimSpace(raw)), ".pdf")
+		},
 	})
 	router.LoadHTMLGlob(filepath.Join(appRoot, "templates", "*"))
 	router.Static("/static", filepath.Join(appRoot, "static"))
@@ -133,6 +138,8 @@ func main() {
 	router.POST("/review", orderHandler.ReviewPage)
 	router.GET("/order-confirmation/:id", orderHandler.OrderConfirmation)
 	router.GET("/order/:id", orderHandler.OrderStatus)
+	router.GET("/order/:id/payment", orderHandler.BankTransferPage)
+	router.POST("/order/:id/payment-proof", orderHandler.SubmitPaymentProof)
 	router.GET("/track-order", orderHandler.TrackOrderPage)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
@@ -148,6 +155,7 @@ func main() {
 	admin.GET("/orders", orderHandler.AdminOrders)
 	admin.GET("/orders/:id", orderHandler.AdminOrderDetail)
 	admin.POST("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
+	admin.POST("/orders/:id/payment", orderHandler.AdminPaymentAction)
 	admin.GET("/products", productHandler.List)
 	admin.GET("/products/new", productHandler.NewForm)
 	admin.POST("/products", productHandler.Create)
@@ -185,6 +193,7 @@ func dirExists(path string) bool {
 }
 
 func makeSafeImagePathFunc(appRoot string) func(string) string {
+	safeStaticPath := makeSafeStaticPathFunc(appRoot)
 	return func(raw string) string {
 		fallback := "/static/sample.jpg"
 		clean := strings.TrimSpace(raw)
@@ -194,18 +203,35 @@ func makeSafeImagePathFunc(appRoot string) func(string) string {
 		if strings.HasPrefix(clean, "https://") || strings.HasPrefix(clean, "http://") {
 			return clean
 		}
-		if !strings.HasPrefix(clean, "/static/") {
+		safePath := safeStaticPath(raw)
+		if safePath == "" {
 			return fallback
+		}
+		return safePath
+	}
+}
+
+func makeSafeStaticPathFunc(appRoot string) func(string) string {
+	return func(raw string) string {
+		clean := strings.TrimSpace(raw)
+		if clean == "" {
+			return ""
+		}
+		if strings.HasPrefix(clean, "https://") || strings.HasPrefix(clean, "http://") {
+			return ""
+		}
+		if !strings.HasPrefix(clean, "/static/") {
+			return ""
 		}
 
 		relative := filepath.Clean(strings.TrimPrefix(clean, "/"))
 		staticPrefix := "static" + string(os.PathSeparator)
 		if relative != "static" && !strings.HasPrefix(relative, staticPrefix) {
-			return fallback
+			return ""
 		}
 
 		if _, err := os.Stat(filepath.Join(appRoot, relative)); err != nil {
-			return fallback
+			return ""
 		}
 
 		return "/" + filepath.ToSlash(relative)

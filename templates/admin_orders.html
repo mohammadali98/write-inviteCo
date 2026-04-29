@@ -149,7 +149,7 @@
 <main class="main-content">
     <div class="admin-page">
         <h1>Orders Dashboard</h1>
-        <p class="admin-subtitle">All orders with customer name, total amount, status, and timestamp.</p>
+        <p class="admin-subtitle">All orders with their current order status and 50% advance bank transfer payment status.</p>
 
         <div class="admin-table-wrap">
             {{ if .orders }}
@@ -159,7 +159,9 @@
                     <th>Order ID</th>
                     <th>Customer</th>
                     <th>Total</th>
-                    <th>Status</th>
+                    <th>Advance Status</th>
+                    <th>Advance Submitted</th>
+                    <th>Order Status</th>
                     <th>Created</th>
                     <th>Action</th>
                 </tr>
@@ -170,6 +172,15 @@
                     <td>#{{ .ID }}</td>
                     <td>{{ .CustomerName }}</td>
                     <td>{{ if .Currency }}{{ .Currency }}{{ else }}PKR{{ end }} {{ .TotalPrice }}</td>
+                    <td>
+                        <span class="status-pill">
+                            {{ if eq .PaymentStatus "pending_payment" }}Advance Payment Pending{{ else if eq .PaymentStatus "awaiting_verification" }}Advance Awaiting Verification{{ else if eq .PaymentStatus "payment_verified" }}Advance Payment Verified{{ else if eq .PaymentStatus "payment_rejected" }}Advance Payment Rejected{{ else }}Not Recorded{{ end }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ if .SubmittedAmount }}PKR {{ .SubmittedAmount }}{{ else }}-{{ end }}
+                        {{ if .SubmittedAt }}<br><span style="font-size: 0.78rem; color: var(--muted);">{{ .SubmittedAt.Format "02 Jan 2006 15:04" }}</span>{{ end }}
+                    </td>
                     <td><span class="status-pill">{{ .Status }}</span></td>
                     <td>{{ if .CreatedAt }}{{ .CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</td>
                     <td><a class="view-link" href="/admin/orders/{{ .ID }}">View →</a></td>

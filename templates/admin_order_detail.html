@@ -184,6 +184,61 @@
             background: var(--brand-dark);
         }
 
+        .status-btn-secondary {
+            background: #6c7a89;
+        }
+
+        .status-btn-secondary:hover {
+            background: #586574;
+        }
+
+        .status-btn-danger {
+            background: #7a4b4b;
+        }
+
+        .status-btn-danger:hover {
+            background: #653d3d;
+        }
+
+        .admin-notice {
+            margin-top: 16px;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border: 1px solid var(--border-light);
+        }
+
+        .admin-notice-warning {
+            background: #fff6df;
+            border-color: #ead8a4;
+            color: #70561e;
+        }
+
+        .admin-notice-success {
+            background: #edf8ef;
+            border-color: #c8e4cf;
+            color: #215a34;
+        }
+
+        .status-help {
+            margin: 8px 2px 0;
+            color: var(--text-light);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        .proof-wrap {
+            margin-top: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .proof-wrap img {
+            max-width: 320px;
+            aspect-ratio: auto;
+        }
+
         @media (max-width: 760px) {
             .admin-detail-page {
                 padding: 22px 16px 40px;
@@ -262,17 +317,129 @@
                 </div>
             </div>
 
+            {{ if .adminAlertMessage }}
+            <div class="admin-notice {{ if eq .adminAlertTone "success" }}admin-notice-success{{ else }}admin-notice-warning{{ end }}">{{ .adminAlertMessage }}</div>
+            {{ end }}
+
             <form class="status-form" method="post" action="/admin/orders/{{ .order.ID }}/status">
                 <label for="order-status">Update Status</label>
                 <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
                 <select id="order-status" class="status-select" name="status">
                     <option value="pending" {{ if eq .statusStr "pending" }}selected{{ end }}>Pending</option>
-                    <option value="confirmed" {{ if eq .statusStr "confirmed" }}selected{{ end }}>Confirmed</option>
+                    <option value="confirmed" {{ if eq .statusStr "confirmed" }}selected{{ end }} {{ if and (not .canConfirmOrder) (ne .statusStr "confirmed") }}disabled{{ end }}>Confirmed</option>
                     <option value="cancelled" {{ if eq .statusStr "cancelled" }}selected{{ end }}>Cancelled</option>
-                    <option value="completed" {{ if eq .statusStr "completed" }}selected{{ end }}>Completed</option>
+                    <option value="completed" {{ if eq .statusStr "completed" }}selected{{ end }} {{ if and (not .canConfirmOrder) (ne .statusStr "completed") }}disabled{{ end }}>Completed</option>
                 </select>
                 <button class="status-btn" type="submit">Save</button>
             </form>
+            {{ if .paymentNeedsReview }}
+            <p class="status-help">Advance payment must be verified before confirming or completing this order.</p>
+            {{ end }}
+        </section>
+
+        <section class="admin-card">
+            <h2>Advance Payment Verification</h2>
+            {{ if .payment }}
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Payment Method</div>
+                    <div class="row-value">{{ .payment.PaymentMethod }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Advance Payment Status</div>
+                    <div class="row-value">{{ .paymentStatusDisplay }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Order Total</div>
+                    <div class="row-value">PKR {{ .amountSummary.TotalAmount }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Advance Payment Required Now</div>
+                    <div class="row-value">PKR {{ .amountSummary.AdvanceAmount }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Remaining Balance</div>
+                    <div class="row-value">PKR {{ .amountSummary.RemainingBalance }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Final Payment Status</div>
+                    <div class="row-value">{{ .remainingStatus }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Advance Submitted Amount</div>
+                    <div class="row-value">{{ if .payment.SubmittedAmount }}PKR {{ .payment.SubmittedAmount }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Sender Name</div>
+                    <div class="row-value">{{ if .payment.SenderName }}{{ .payment.SenderName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Transaction / Reference ID</div>
+                    <div class="row-value">{{ if .payment.TransactionReference }}{{ .payment.TransactionReference }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Submitted At</div>
+                    <div class="row-value">{{ if .payment.SubmittedAt }}{{ .payment.SubmittedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Verified At</div>
+                    <div class="row-value">{{ if .payment.VerifiedAt }}{{ .payment.VerifiedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Rejected At</div>
+                    <div class="row-value">{{ if .payment.RejectedAt }}{{ .payment.RejectedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Admin Note</div>
+                    <div class="row-value">{{ if .payment.AdminNote }}{{ .payment.AdminNote }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+
+            {{ if .paymentNeedsReview }}
+            <div class="admin-notice admin-notice-warning">Verify the submitted 50% advance bank transfer before setting this order to Confirmed or Completed.</div>
+            {{ else }}
+            <div class="admin-notice admin-notice-success">Advance payment has been verified. The remaining balance will be collected after completion and before delivery.</div>
+            {{ end }}
+
+            {{ if .payment.ProofFilePath }}
+            <div class="proof-wrap">
+                <div class="row-label">Advance Payment Proof</div>
+                <div class="row-value">
+                    {{ if isPDFPath .payment.ProofFilePath }}
+                    <a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open uploaded PDF proof</a>
+                    {{ else }}
+                    <div class="proof-wrap">
+                        <img class="product-image" style="max-width: 320px; aspect-ratio: auto;" src="{{ safeStaticPath .payment.ProofFilePath }}" alt="Payment proof">
+                        <a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open full-size proof</a>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+            {{ end }}
+
+            <div style="margin-top: 14px;">
+                <div class="row-label">Customer Note</div>
+                <div class="notes-box">{{ if .payment.CustomerNote }}{{ .payment.CustomerNote }}{{ else }}No payment note provided.{{ end }}</div>
+            </div>
+
+            {{ if .paymentCanBeReviewed }}
+            <form class="status-form" method="post" action="/admin/orders/{{ .order.ID }}/payment">
+                <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+                <label for="admin-payment-note">Admin Note</label>
+                <textarea id="admin-payment-note" name="admin_note" style="width:100%; min-height:96px; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-family:var(--font-body);">{{ if .payment.AdminNote }}{{ .payment.AdminNote }}{{ end }}</textarea>
+                <button class="status-btn" type="submit" name="action" value="verify">Verify Advance Payment</button>
+                <button class="status-btn status-btn-danger" type="submit" name="action" value="reject">Reject Advance Payment</button>
+                <button class="status-btn status-btn-secondary" type="submit" name="action" value="request_reupload">Request Re-upload</button>
+            </form>
+            <p class="status-help">Request Re-upload will mark the advance payment as rejected and let the customer submit a new receipt from their order payment page.</p>
+            {{ else if eq .payment.PaymentStatus "payment_rejected" }}
+            <p class="status-help">This advance payment is rejected. The customer can re-upload proof from their bank transfer page.</p>
+            {{ else if eq .payment.PaymentStatus "pending_payment" }}
+            <p class="status-help">Waiting for the customer to complete the 50% advance bank transfer and upload proof.</p>
+            {{ end }}
+            {{ else }}
+            <p class="row-value">No payment record found for this order.</p>
+            {{ end }}
         </section>
 
         <section class="admin-card">

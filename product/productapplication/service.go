@@ -3,7 +3,6 @@ package productapplication
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 	"unicode/utf8"
 
@@ -40,19 +39,7 @@ func NewService(repo productdomain.ProductRepo) *Service {
 }
 
 func (s *Service) ListProducts(ctx context.Context) ([]*productdomain.Product, error) {
-	products, err := s.repo.ListProducts(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range products {
-		if item == nil {
-			continue
-		}
-		log.Printf("LIST PRODUCT id=%d name=%s image_url=%q", item.ID, item.Name, item.ImageURL)
-	}
-
-	return products, nil
+	return s.repo.ListProducts(ctx)
 }
 
 func (s *Service) GetProduct(ctx context.Context, id int64) (*productdomain.Product, error) {

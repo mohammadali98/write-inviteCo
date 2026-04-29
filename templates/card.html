@@ -194,6 +194,7 @@
         <a href="/collections/bid-boxes">Bid Boxes</a>
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -229,9 +230,6 @@
 
                 <form class="order-form" action="/checkout" method="get">
                     <input type="hidden" name="card_id" value="{{ .card.ID }}">
-                    <input type="hidden" name="card_name" value="{{ .card.Name }}">
-                    <input type="hidden" name="card_image" value="{{ .card.Image }}">
-                    <input type="hidden" name="currency" value="PKR">
                     <input type="hidden" id="price-foil" name="price_foil" value="{{ .card.PriceFoilPKR }}">
                     <input type="hidden" id="price-nofoil" name="price_nofoil" value="{{ .card.PriceNofoilPKR }}">
                     <input type="hidden" id="insert-price" name="insert_price" value="{{ .card.InsertPricePKR }}">
@@ -273,6 +271,7 @@
 
                     <button type="submit">Proceed to Checkout →</button>
                 </form>
+                <p class="insert-info">Payment is currently collected by manual bank transfer after the final order review, with a 50% advance due first and the remaining balance collected before delivery.</p>
             </div>
         </section>
     </div>
@@ -293,7 +292,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/track-order">Track an Order</a>
+                <a href="/track-order">Track Order & Payment</a>
                 <a href="/shipping-info">Shipping Info</a>
                 <a href="/returns-exchanges">Returns & Exchanges</a>
             </div>

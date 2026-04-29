@@ -8,6 +8,119 @@ UPDATE orders
 SET status = $2, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
+-- name: CreateOrderPayment :one
+INSERT INTO order_payments (
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount
+)
+VALUES ($1, $2, $3, $4)
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at;
+
+-- name: SubmitOrderPaymentProof :one
+UPDATE order_payments
+SET
+    payment_status = $2,
+    submitted_amount = $3,
+    sender_name = $4,
+    transaction_reference = $5,
+    proof_file_path = $6,
+    customer_note = $7,
+    submitted_at = CURRENT_TIMESTAMP,
+    verified_at = NULL,
+    rejected_at = NULL,
+    admin_note = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at;
+
+-- name: VerifyOrderPayment :one
+UPDATE order_payments
+SET
+    payment_status = 'payment_verified',
+    admin_note = $2,
+    verified_at = CURRENT_TIMESTAMP,
+    rejected_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at;
+
+-- name: RejectOrderPayment :one
+UPDATE order_payments
+SET
+    payment_status = 'payment_rejected',
+    admin_note = $2,
+    rejected_at = CURRENT_TIMESTAMP,
+    verified_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at;
+
 -- name: CreateOrderDetail :one
 INSERT INTO order_details (
     order_id,

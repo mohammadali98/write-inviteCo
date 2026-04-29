@@ -267,6 +267,7 @@
         <a href="/collections/bid-boxes">Bid Boxes</a>
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -321,9 +322,8 @@
                 <form action="/customize" method="get">
                     <input type="hidden" name="card_id" value="{{ .cardID }}">
                     <input type="hidden" name="quantity" value="{{ .quantity }}">
-                    <input type="hidden" name="currency" value="{{ .currency }}">
                     <input type="hidden" name="foil_option" value="{{ .foilOption }}">
-                    <input type="hidden" name="extra_inserts" value="{{ .extraInserts }}">
+                    <input type="hidden" name="extra_inserts" value="{{ .requestedInserts }}">
 
                     <div class="form-grid">
                         <div class="form-group full-width">
@@ -359,6 +359,7 @@
 
                     <button class="checkout-submit" type="submit">Continue to Personalization →</button>
                 </form>
+                <p class="payment-note">Payment method: manual bank transfer. The server will lock your trusted order total and show the 50% advance due now with the remaining balance on the next step.</p>
             </section>
         </div>
     </section>
@@ -381,7 +382,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/track-order">Track an Order</a>
+                <a href="/track-order">Track Order & Payment</a>
                 <a href="/shipping-info">Shipping Info</a>
                 <a href="/returns-exchanges">Returns & Exchanges</a>
                 <a href="/my-account">My Account</a>

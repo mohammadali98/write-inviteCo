@@ -72,12 +72,15 @@ func (r *OrderRepository) GetAdminOrders(ctx context.Context) ([]*orderdomain.Ad
 	orders := make([]*orderdomain.AdminOrder, len(rows))
 	for i, row := range rows {
 		orders[i] = &orderdomain.AdminOrder{
-			ID:           row.ID,
-			CustomerName: row.CustomerName,
-			TotalPrice:   row.TotalPrice,
-			Status:       toOrderStatus(row.Status),
-			Currency:     row.Currency,
-			CreatedAt:    toTimePtr(row.CreatedAt),
+			ID:              row.ID,
+			CustomerName:    row.CustomerName,
+			TotalPrice:      row.TotalPrice,
+			Status:          toOrderStatus(row.Status),
+			PaymentStatus:   toPaymentStatus(row.PaymentStatus),
+			SubmittedAmount: row.SubmittedAmount,
+			SubmittedAt:     toTimePtr(row.SubmittedAt),
+			Currency:        row.Currency,
+			CreatedAt:       toTimePtr(row.CreatedAt),
 		}
 	}
 	return orders, nil
@@ -140,6 +143,32 @@ func (r *OrderRepository) GetOrderDetailByOrderID(ctx context.Context, orderID i
 		RsvpPhone:          row.RsvpPhone,
 		Notes:              row.Notes,
 		CreatedAt:          toTimePtr(row.CreatedAt),
+	}, nil
+}
+
+func (r *OrderRepository) GetOrderPaymentByOrderID(ctx context.Context, orderID int64) (*orderdomain.OrderPayment, error) {
+	row, err := r.reader.GetOrderPaymentByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &orderdomain.OrderPayment{
+		ID:                   row.ID,
+		OrderID:              row.OrderID,
+		PaymentMethod:        toPaymentMethod(row.PaymentMethod),
+		PaymentStatus:        toPaymentStatus(&row.PaymentStatus),
+		ExpectedAmount:       row.ExpectedAmount,
+		SubmittedAmount:      row.SubmittedAmount,
+		SenderName:           row.SenderName,
+		TransactionReference: row.TransactionReference,
+		ProofFilePath:        row.ProofFilePath,
+		CustomerNote:         row.CustomerNote,
+		SubmittedAt:          toTimePtr(row.SubmittedAt),
+		VerifiedAt:           toTimePtr(row.VerifiedAt),
+		RejectedAt:           toTimePtr(row.RejectedAt),
+		AdminNote:            row.AdminNote,
+		CreatedAt:            toTimePtr(row.CreatedAt),
+		UpdatedAt:            toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
@@ -296,6 +325,20 @@ func toOrderStatus(s *string) orderdomain.OrderStatus {
 		return orderdomain.PendingOrderStatus
 	}
 	return orderdomain.OrderStatus(*s)
+}
+
+func toPaymentMethod(s string) orderdomain.PaymentMethod {
+	if s == "" {
+		return orderdomain.BankTransferPaymentMethod
+	}
+	return orderdomain.PaymentMethod(s)
+}
+
+func toPaymentStatus(s *string) orderdomain.PaymentStatus {
+	if s == nil {
+		return ""
+	}
+	return orderdomain.PaymentStatus(*s)
 }
 
 func stringOrEmpty(value *string) string {

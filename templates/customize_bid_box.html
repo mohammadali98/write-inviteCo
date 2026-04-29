@@ -256,6 +256,7 @@
         <a href="/collections/bid-boxes">Bid Boxes</a>
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -277,12 +278,11 @@
 
             <section class="customize-form">
                 <h1>Customize Your Bid Box</h1>
-                <p class="customize-subtitle">Add the wording and event details now. You will review the full order and choose a payment method on the final step.</p>
+                <p class="customize-subtitle">Add the wording and event details now. You will review the full order before creating it, and bank transfer instructions will be shown on the next step.</p>
 
                 <form id="review-form" action="/review" method="POST">
                     <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
                     <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
-                    <input type="hidden" name="currency" value="{{ .summary.Currency }}">
                     <input type="hidden" name="foil_option" value="{{ .summary.FoilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .summary.RequestedInserts }}">
                     <input type="hidden" name="side" value="bride">
@@ -339,7 +339,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/track-order">Track an Order</a>
+                <a href="/track-order">Track Order & Payment</a>
                 <a href="/shipping-info">Shipping Info</a>
                 <a href="/returns-exchanges">Returns & Exchanges</a>
             </div>

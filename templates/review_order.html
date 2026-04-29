@@ -324,6 +324,7 @@
         <a href="/collections/bid-boxes">Bid Boxes</a>
         <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
         <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -349,13 +350,12 @@
             </aside>
 
             <section class="review-content">
-                <h1>Final Review & Payment</h1>
-                <p class="review-subtitle">Review your customer information, personalization details, and preferred payment method before placing the order.</p>
+                <h1>Final Review</h1>
+                <p class="review-subtitle">Review your customer information and personalization details before creating the order. Bank transfer instructions will be shown on the next page.</p>
 
                 <form id="order-form" action="/order" method="POST">
                     <input type="hidden" name="card_id" value="{{ .review.Input.CardID }}">
                     <input type="hidden" name="quantity" value="{{ .review.Input.Quantity }}">
-                    <input type="hidden" name="currency" value="{{ .review.Input.Currency }}">
                     <input type="hidden" name="foil_option" value="{{ .review.Input.FoilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .review.Input.RequestedInserts }}">
                     <input type="hidden" name="side" value="{{ .review.Input.Side }}">
@@ -582,35 +582,16 @@
 
                     <section class="review-card">
                         <h2>Payment Method</h2>
-                        <div class="payment-grid">
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="bank-transfer" required>
-                                <span class="payment-card">
-                                    <span class="payment-title">Bank Transfer</span>
-                                    <span class="payment-copy">Best for local orders. We will share transfer details after confirmation.</span>
-                                </span>
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="jazzcash-easypaisa" required>
-                                <span class="payment-card">
-                                    <span class="payment-title">JazzCash / EasyPaisa</span>
-                                    <span class="payment-copy">Choose this if you prefer a mobile wallet transfer after review.</span>
-                                </span>
-                            </label>
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="card-gateway" required>
-                                <span class="payment-card">
-                                    <span class="payment-title">Card Payment</span>
-                                    <span class="payment-copy">Card checkout is being finalized. We will coordinate the next step with you.</span>
-                                </span>
-                            </label>
+                        <div class="payment-card">
+                            <span class="payment-title">Bank Transfer Only</span>
+                            <span class="payment-copy">Your trusted order total is {{ .review.Summary.Currency }} {{ .review.Summary.TotalPrice }}. After you create the order, we will show the Meezan Bank details, your trusted 50% advance payment due now, the remaining balance, and the payment proof upload form.</span>
                         </div>
-                        <p class="payment-note">Your order total is {{ .review.Summary.Currency }} {{ .review.Summary.TotalPrice }}. We only ask for the preferred payment method at this stage so the order is fully defined before payment is discussed.</p>
+                        <p class="payment-note">The frontend display is only for review. The final payable amount is recalculated and saved by the server when the order is created.</p>
                     </section>
 
                     <div class="review-actions">
                         <button class="secondary-btn" type="button" onclick="window.history.back()">Edit Details</button>
-                        <button class="review-submit submit-btn" id="order-submit-btn" type="button">Place Order</button>
+                        <button class="review-submit submit-btn" id="order-submit-btn" type="button">Create Order & View Bank Transfer Instructions</button>
                     </div>
                 </form>
             </section>
@@ -633,7 +614,7 @@
             </div>
             <div class="footer-col">
                 <h4>Help</h4>
-                <a href="/track-order">Track an Order</a>
+                <a href="/track-order">Track Order & Payment</a>
                 <a href="/shipping-info">Shipping Info</a>
                 <a href="/returns-exchanges">Returns & Exchanges</a>
             </div>

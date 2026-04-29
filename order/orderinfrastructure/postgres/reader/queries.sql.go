@@ -17,20 +17,27 @@ SELECT
     COALESCE(c.name, 'Unknown Customer') AS customer_name,
     o.total_price,
     o.status,
+    op.payment_status,
+    op.submitted_amount,
+    op.submitted_at,
     o.currency,
     o.created_at
 FROM orders o
 LEFT JOIN customers c ON c.id = o.customer_id
+LEFT JOIN order_payments op ON op.order_id = o.id
 ORDER BY o.created_at DESC
 `
 
 type GetAdminOrdersRow struct {
-	ID           int64
-	CustomerName string
-	TotalPrice   int64
-	Status       *string
-	Currency     string
-	CreatedAt    pgtype.Timestamptz
+	ID              int64
+	CustomerName    string
+	TotalPrice      int64
+	Status          *string
+	PaymentStatus   *string
+	SubmittedAmount *int64
+	SubmittedAt     pgtype.Timestamptz
+	Currency        string
+	CreatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) GetAdminOrders(ctx context.Context) ([]GetAdminOrdersRow, error) {
@@ -47,6 +54,9 @@ func (q *Queries) GetAdminOrders(ctx context.Context) ([]GetAdminOrdersRow, erro
 			&i.CustomerName,
 			&i.TotalPrice,
 			&i.Status,
+			&i.PaymentStatus,
+			&i.SubmittedAmount,
+			&i.SubmittedAt,
 			&i.Currency,
 			&i.CreatedAt,
 		); err != nil {
@@ -280,6 +290,52 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, 
 		&i.CardName,
 		&i.CardImage,
 		&i.CardCategory,
+	)
+	return i, err
+}
+
+const getOrderPaymentByOrderID = `-- name: GetOrderPaymentByOrderID :one
+SELECT
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+FROM order_payments
+WHERE order_id = $1
+`
+
+func (q *Queries) GetOrderPaymentByOrderID(ctx context.Context, orderID int64) (OrderPayment, error) {
+	row := q.db.QueryRow(ctx, getOrderPaymentByOrderID, orderID)
+	var i OrderPayment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.ExpectedAmount,
+		&i.SubmittedAmount,
+		&i.SenderName,
+		&i.TransactionReference,
+		&i.ProofFilePath,
+		&i.CustomerNote,
+		&i.SubmittedAt,
+		&i.VerifiedAt,
+		&i.RejectedAt,
+		&i.AdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

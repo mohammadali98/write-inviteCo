@@ -30,12 +30,15 @@ type Order struct {
 }
 
 type AdminOrder struct {
-	ID           int64
-	CustomerName string
-	TotalPrice   int64
-	Status       OrderStatus
-	Currency     string
-	CreatedAt    *time.Time
+	ID              int64
+	CustomerName    string
+	TotalPrice      int64
+	Status          OrderStatus
+	PaymentStatus   PaymentStatus
+	SubmittedAmount *int64
+	SubmittedAt     *time.Time
+	Currency        string
+	CreatedAt       *time.Time
 }
 
 type OrderDetail struct {
@@ -103,4 +106,5 @@ type OrderReader interface {
 	GetOrdersByCustomerID(ctx context.Context, customerID int64) ([]*Order, error)
 	GetAdminOrders(ctx context.Context) ([]*AdminOrder, error)
 	GetOrderDetailByOrderID(ctx context.Context, orderID int64) (*OrderDetail, error)
+	GetOrderPaymentByOrderID(ctx context.Context, orderID int64) (*OrderPayment, error)
 }

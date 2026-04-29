@@ -1,6 +1,7 @@
 package orderpresentation
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -16,12 +17,28 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type OrderHandler struct {
-	service *orderapplication.Service
+type orderService interface {
+	PrepareCustomization(ctx context.Context, input orderapplication.CustomizationInput) (*orderapplication.CustomizationSummary, error)
+	PrepareOrderReview(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.OrderReview, error)
+	PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error)
+	GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
+	ListAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error)
+	GetAdminOrderDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
+	AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error
+	SubmitBankTransferProof(ctx context.Context, orderID int64, input orderapplication.PaymentProofInput) error
+	AdminProcessPayment(ctx context.Context, orderID int64, action string, adminNote string) error
 }
 
-func NewOrderHandler(service *orderapplication.Service) *OrderHandler {
-	return &OrderHandler{service: service}
+type OrderHandler struct {
+	service         orderService
+	paymentProofDir string
+}
+
+func NewOrderHandler(service orderService, paymentProofDir string) *OrderHandler {
+	return &OrderHandler{
+		service:         service,
+		paymentProofDir: paymentProofDir,
+	}
 }
 
 func (h *OrderHandler) CustomizePage(c *gin.Context) {
@@ -46,7 +63,6 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	summary, err := h.service.PrepareCustomization(c.Request.Context(), orderapplication.CustomizationInput{
 		CardID:           cardID,
 		Quantity:         quantity,
-		Currency:         c.Query("currency"),
 		FoilOption:       c.Query("foil_option"),
 		RequestedInserts: requestedInserts,
 		Name:             c.Query("name"),
@@ -78,13 +94,6 @@ func (h *OrderHandler) ReviewPage(c *gin.Context) {
 		return
 	}
 
-	log.Println("DEBUG: ReviewPage hit")
-	log.Printf("DEBUG: method=%s action=%s", c.Request.Method, c.Request.URL.Path)
-	log.Printf("DEBUG: raw query=%s", c.Request.URL.RawQuery)
-	if err := c.Request.ParseForm(); err == nil {
-		log.Printf("DEBUG: post form=%+v", c.Request.PostForm)
-	}
-
 	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing.")
@@ -106,7 +115,6 @@ func (h *OrderHandler) ReviewPage(c *gin.Context) {
 	review, err := h.service.PrepareOrderReview(c.Request.Context(), orderapplication.PlaceOrderInput{
 		CardID:             cardID,
 		Quantity:           quantity,
-		Currency:           c.PostForm("currency"),
 		FoilOption:         c.PostForm("foil_option"),
 		RequestedInserts:   requestedInserts,
 		Name:               c.PostForm("name"),
@@ -197,7 +205,6 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	result, err := h.service.PlaceOrder(c.Request.Context(), orderapplication.PlaceOrderInput{
 		CardID:             cardID,
 		Quantity:           quantity,
-		Currency:           c.PostForm("currency"),
 		FoilOption:         c.PostForm("foil_option"),
 		RequestedInserts:   requestedInserts,
 		Name:               c.PostForm("name"),
@@ -255,7 +262,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order-confirmation/%d", result.OrderID))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%d/payment", result.OrderID))
 }
 
 func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
@@ -265,43 +272,7 @@ func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
 		return
 	}
 
-	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
-	if err != nil {
-		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
-			return
-		}
-		if errors.Is(err, pgx.ErrNoRows) {
-			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
-			return
-		}
-
-		log.Println("ORDER CONFIRMATION ERROR:", err)
-		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the confirmation page right now.")
-		return
-	}
-
-	customerName := "Customer"
-	if payload.Customer != nil && strings.TrimSpace(payload.Customer.Name) != "" {
-		customerName = payload.Customer.Name
-	}
-	cardName := strings.TrimSpace(payload.Order.CardName)
-	if cardName == "" {
-		cardName = "Selected Product"
-	}
-	currency := strings.TrimSpace(payload.Order.Currency)
-	if currency == "" {
-		currency = "PKR"
-	}
-
-	c.HTML(http.StatusOK, "order-confirmation.html", gin.H{
-		"customerName": customerName,
-		"quantity":     payload.Order.Quantity,
-		"totalPrice":   payload.Order.TotalPrice,
-		"currency":     currency,
-		"cardName":     cardName,
-		"orderID":      payload.Order.ID,
-	})
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%d/payment", orderID))
 }
 
 func (h *OrderHandler) OrderStatus(c *gin.Context) {
@@ -328,11 +299,16 @@ func (h *OrderHandler) OrderStatus(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "order-status.html", gin.H{
-		"order":         payload.Order,
-		"customer":      payload.Customer,
-		"details":       payload.Details,
-		"isBidBox":      isBidBoxOrder(payload.Order, payload.Details),
-		"statusMessage": orderStatusMessage(payload.Order.Status),
+		"order":                payload.Order,
+		"customer":             payload.Customer,
+		"details":              payload.Details,
+		"payment":              payload.Payment,
+		"isBidBox":             isBidBoxOrder(payload.Order, payload.Details),
+		"statusMessage":        orderStatusMessage(payload.Order.Status),
+		"paymentMessage":       orderapplication.PaymentStatusMessage(payload.Payment, payload.Order.TotalPrice),
+		"amountSummary":        paymentAmountSummary(payload.Order, payload.Payment),
+		"paymentStatusDisplay": paymentStatusDisplay(payload.Payment),
+		"remainingStatus":      remainingBalanceStatus(payload.Order, payload.Payment),
 	})
 }
 
@@ -406,15 +382,33 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		return
 	}
 
+	canConfirmOrder := canConfirmOrderFromPayment(payload.Payment)
+	alertTone, alertMessage := adminOrderDetailAlert(c)
+	paymentStatusLabel := paymentStatusDisplay(payload.Payment)
+	paymentCanBeReviewed := false
+	if payload.Payment != nil {
+		paymentCanBeReviewed = payload.Payment.PaymentStatus == orderdomain.AwaitingVerificationPaymentStatus
+	}
+	amountSummary := paymentAmountSummary(payload.Order, payload.Payment)
+
 	c.HTML(http.StatusOK, "admin_order_detail.html", gin.H{
-		"order":      payload.Order,
-		"statusStr":  string(payload.Order.Status),
-		"customer":   payload.Customer,
-		"details":    payload.Details,
-		"card_name":  payload.Order.CardName,
-		"card_image": payload.Order.CardImage,
-		"isBidBox":   isBidBoxOrder(payload.Order, payload.Details),
-		"csrfToken":  webui.EnsureCSRFToken(c),
+		"order":                payload.Order,
+		"statusStr":            string(payload.Order.Status),
+		"customer":             payload.Customer,
+		"details":              payload.Details,
+		"payment":              payload.Payment,
+		"card_name":            payload.Order.CardName,
+		"card_image":           payload.Order.CardImage,
+		"isBidBox":             isBidBoxOrder(payload.Order, payload.Details),
+		"csrfToken":            webui.EnsureCSRFToken(c),
+		"canConfirmOrder":      canConfirmOrder,
+		"paymentNeedsReview":   !canConfirmOrder,
+		"paymentCanBeReviewed": paymentCanBeReviewed,
+		"paymentStatusDisplay": paymentStatusLabel,
+		"amountSummary":        amountSummary,
+		"remainingStatus":      remainingBalanceStatus(payload.Order, payload.Payment),
+		"adminAlertTone":       alertTone,
+		"adminAlertMessage":    alertMessage,
 	})
 }
 
@@ -437,6 +431,10 @@ func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
 
 	if err := h.service.AdminUpdateOrderStatus(c.Request.Context(), orderID, requestedStatus); err != nil {
 		log.Printf("ADMIN STATUS UPDATE ERROR: order_id=%d requested_status=%q err=%v", orderID, requestedStatus, err)
+		if errors.Is(err, orderapplication.ErrPaymentVerificationRequired) {
+			c.Redirect(http.StatusSeeOther, adminOrderDetailRedirect(orderID, "status_notice=payment_verification_required"))
+			return
+		}
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
 			webui.RenderError(c, http.StatusBadRequest, "Invalid Status", "Please choose a valid order status.")
 			return
@@ -496,4 +494,68 @@ func isBidBoxOrder(order *orderdomain.Order, details *orderdomain.OrderDetail) b
 		details.BidBoxCoupleName != nil ||
 		details.BidBoxEventDate != nil ||
 		details.BidBoxDetails != nil
+}
+
+func canConfirmOrderFromPayment(payment *orderdomain.OrderPayment) bool {
+	return payment != nil && payment.PaymentStatus == orderdomain.VerifiedPaymentStatus
+}
+
+func paymentAmountSummary(order *orderdomain.Order, payment *orderdomain.OrderPayment) orderapplication.PaymentAmountSummary {
+	totalAmount := int64(0)
+	expectedAdvanceAmount := int64(0)
+	if order != nil {
+		totalAmount = order.TotalPrice
+	}
+	if payment != nil {
+		expectedAdvanceAmount = payment.ExpectedAmount
+	}
+	return orderapplication.BuildPaymentAmountSummary(totalAmount, expectedAdvanceAmount)
+}
+
+func remainingBalanceStatus(order *orderdomain.Order, payment *orderdomain.OrderPayment) string {
+	summary := paymentAmountSummary(order, payment)
+	if summary.RemainingBalance <= 0 {
+		return "No Remaining Balance"
+	}
+	return "Pending Remaining Balance"
+}
+
+func paymentStatusDisplay(payment *orderdomain.OrderPayment) string {
+	if payment == nil {
+		return orderapplication.PaymentStatusDisplay(orderdomain.PaymentStatus(""))
+	}
+	return orderapplication.PaymentStatusDisplay(payment.PaymentStatus)
+}
+
+func adminOrderDetailRedirect(orderID int64, rawQuery string) string {
+	path := "/admin/orders/" + strconv.FormatInt(orderID, 10)
+	if strings.TrimSpace(rawQuery) == "" {
+		return path
+	}
+	return path + "?" + rawQuery
+}
+
+func adminOrderDetailAlert(c *gin.Context) (string, string) {
+	switch strings.TrimSpace(c.Query("status_notice")) {
+	case "payment_verification_required":
+		return "warning", "Payment must be verified before confirming this order."
+	}
+
+	switch strings.TrimSpace(c.Query("payment_notice")) {
+	case "payment_verified":
+		return "success", "Advance payment verified. The order can now proceed normally."
+	case "payment_rejected":
+		return "warning", "Advance payment was rejected. The customer can re-upload payment proof."
+	case "payment_reupload_requested":
+		return "warning", "Re-upload requested. The customer can submit a new advance payment proof."
+	}
+
+	switch strings.TrimSpace(c.Query("payment_error")) {
+	case "action_not_allowed":
+		return "warning", "This payment is not currently awaiting verification."
+	case "invalid_action":
+		return "warning", "Choose a valid payment action for this order."
+	}
+
+	return "", ""
 }

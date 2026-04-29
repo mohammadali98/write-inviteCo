@@ -399,6 +399,202 @@ func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailPa
 	return i, err
 }
 
+const createOrderPayment = `-- name: CreateOrderPayment :one
+INSERT INTO order_payments (
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount
+)
+VALUES ($1, $2, $3, $4)
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+`
+
+type CreateOrderPaymentParams struct {
+	OrderID        int64
+	PaymentMethod  string
+	PaymentStatus  string
+	ExpectedAmount int64
+}
+
+func (q *Queries) CreateOrderPayment(ctx context.Context, arg CreateOrderPaymentParams) (OrderPayment, error) {
+	row := q.db.QueryRow(ctx, createOrderPayment,
+		arg.OrderID,
+		arg.PaymentMethod,
+		arg.PaymentStatus,
+		arg.ExpectedAmount,
+	)
+	var i OrderPayment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.ExpectedAmount,
+		&i.SubmittedAmount,
+		&i.SenderName,
+		&i.TransactionReference,
+		&i.ProofFilePath,
+		&i.CustomerNote,
+		&i.SubmittedAt,
+		&i.VerifiedAt,
+		&i.RejectedAt,
+		&i.AdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const rejectOrderPayment = `-- name: RejectOrderPayment :one
+UPDATE order_payments
+SET
+    payment_status = 'payment_rejected',
+    admin_note = $2,
+    rejected_at = CURRENT_TIMESTAMP,
+    verified_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+`
+
+type RejectOrderPaymentParams struct {
+	OrderID   int64
+	AdminNote *string
+}
+
+func (q *Queries) RejectOrderPayment(ctx context.Context, arg RejectOrderPaymentParams) (OrderPayment, error) {
+	row := q.db.QueryRow(ctx, rejectOrderPayment, arg.OrderID, arg.AdminNote)
+	var i OrderPayment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.ExpectedAmount,
+		&i.SubmittedAmount,
+		&i.SenderName,
+		&i.TransactionReference,
+		&i.ProofFilePath,
+		&i.CustomerNote,
+		&i.SubmittedAt,
+		&i.VerifiedAt,
+		&i.RejectedAt,
+		&i.AdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const submitOrderPaymentProof = `-- name: SubmitOrderPaymentProof :one
+UPDATE order_payments
+SET
+    payment_status = $2,
+    submitted_amount = $3,
+    sender_name = $4,
+    transaction_reference = $5,
+    proof_file_path = $6,
+    customer_note = $7,
+    submitted_at = CURRENT_TIMESTAMP,
+    verified_at = NULL,
+    rejected_at = NULL,
+    admin_note = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+`
+
+type SubmitOrderPaymentProofParams struct {
+	OrderID              int64
+	PaymentStatus        string
+	SubmittedAmount      *int64
+	SenderName           *string
+	TransactionReference *string
+	ProofFilePath        *string
+	CustomerNote         *string
+}
+
+func (q *Queries) SubmitOrderPaymentProof(ctx context.Context, arg SubmitOrderPaymentProofParams) (OrderPayment, error) {
+	row := q.db.QueryRow(ctx, submitOrderPaymentProof,
+		arg.OrderID,
+		arg.PaymentStatus,
+		arg.SubmittedAmount,
+		arg.SenderName,
+		arg.TransactionReference,
+		arg.ProofFilePath,
+		arg.CustomerNote,
+	)
+	var i OrderPayment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.ExpectedAmount,
+		&i.SubmittedAmount,
+		&i.SenderName,
+		&i.TransactionReference,
+		&i.ProofFilePath,
+		&i.CustomerNote,
+		&i.SubmittedAt,
+		&i.VerifiedAt,
+		&i.RejectedAt,
+		&i.AdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateOrderStatus = `-- name: UpdateOrderStatus :exec
 UPDATE orders
 SET status = $2, updated_at = CURRENT_TIMESTAMP
@@ -413,4 +609,61 @@ type UpdateOrderStatusParams struct {
 func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) error {
 	_, err := q.db.Exec(ctx, updateOrderStatus, arg.ID, arg.Status)
 	return err
+}
+
+const verifyOrderPayment = `-- name: VerifyOrderPayment :one
+UPDATE order_payments
+SET
+    payment_status = 'payment_verified',
+    admin_note = $2,
+    verified_at = CURRENT_TIMESTAMP,
+    rejected_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE order_id = $1
+RETURNING
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+`
+
+type VerifyOrderPaymentParams struct {
+	OrderID   int64
+	AdminNote *string
+}
+
+func (q *Queries) VerifyOrderPayment(ctx context.Context, arg VerifyOrderPaymentParams) (OrderPayment, error) {
+	row := q.db.QueryRow(ctx, verifyOrderPayment, arg.OrderID, arg.AdminNote)
+	var i OrderPayment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.PaymentMethod,
+		&i.PaymentStatus,
+		&i.ExpectedAmount,
+		&i.SubmittedAmount,
+		&i.SenderName,
+		&i.TransactionReference,
+		&i.ProofFilePath,
+		&i.CustomerNote,
+		&i.SubmittedAt,
+		&i.VerifiedAt,
+		&i.RejectedAt,
+		&i.AdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

@@ -3,3 +3,26 @@
 //   sqlc v1.30.0
 
 package orderwriter
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type OrderPayment struct {
+	ID                   int64
+	OrderID              int64
+	PaymentMethod        string
+	PaymentStatus        string
+	ExpectedAmount       int64
+	SubmittedAmount      *int64
+	SenderName           *string
+	TransactionReference *string
+	ProofFilePath        *string
+	CustomerNote         *string
+	SubmittedAt          pgtype.Timestamptz
+	VerifiedAt           pgtype.Timestamptz
+	RejectedAt           pgtype.Timestamptz
+	AdminNote            *string
+	CreatedAt            pgtype.Timestamptz
+	UpdatedAt            pgtype.Timestamptz
+}

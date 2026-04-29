@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Track an Order — Write&InviteCo</title>
+    <title>Track Order & Payment — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .menu-btn {
@@ -120,6 +120,7 @@
         <a href="/">Home</a>
         <a href="/collections/wedding-cards">Wedding Cards</a>
         <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
     </nav>
@@ -129,13 +130,13 @@
 <main class="main-content">
     <section class="track-page">
         <div class="track-card animate-in">
-            <h1>Track an Order</h1>
-            <p>Enter your order number to view the latest status, customer details, and personalization summary.</p>
+            <h1>Track Order & Payment</h1>
+            <p>Enter your order number to check order progress, view payment status, and reopen the bank transfer proof page when a re-upload is needed.</p>
 
             <form class="track-form" action="/track-order" method="get">
                 <label for="order_id">Order Number</label>
                 <input id="order_id" name="order_id" type="number" min="1" inputmode="numeric" placeholder="For example: 1024" required>
-                <button class="track-submit" type="submit">View Order Status</button>
+                <button class="track-submit" type="submit">View Order & Payment</button>
             </form>
         </div>
     </section>

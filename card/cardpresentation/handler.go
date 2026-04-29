@@ -139,11 +139,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		return
 	}
 
-	currency, err := parseCheckoutCurrency(c.Query("currency"))
-	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Currency", "Please choose a supported currency.")
-		return
-	}
+	currency := "PKR"
 
 	foilOption, err := parseCheckoutFoilOption(c.Query("foil_option"))
 	if err != nil {
@@ -154,11 +150,6 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 	priceFoil := card.PriceFoilPKR
 	priceNofoil := card.PriceNofoilPKR
 	insertPrice := card.InsertPricePKR
-	if currency == "NOK" {
-		priceFoil = card.PriceFoilNOK
-		priceNofoil = card.PriceNofoilNOK
-		insertPrice = card.InsertPriceNOK
-	}
 	if priceFoil < 0 || priceNofoil < 0 || insertPrice < 0 {
 		webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected product has invalid pricing data.")
 		return
@@ -209,6 +200,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"cardCategory":           card.Category,
 		"quantity":               quantity,
 		"currency":               currency,
+		"requestedInserts":       requestedInserts,
 		"priceFoil":              priceFoil,
 		"priceNofoil":            priceNofoil,
 		"insertPrice":            insertPrice,

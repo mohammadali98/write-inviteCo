@@ -28,10 +28,14 @@ SELECT
     COALESCE(c.name, 'Unknown Customer') AS customer_name,
     o.total_price,
     o.status,
+    op.payment_status,
+    op.submitted_amount,
+    op.submitted_at,
     o.currency,
     o.created_at
 FROM orders o
 LEFT JOIN customers c ON c.id = o.customer_id
+LEFT JOIN order_payments op ON op.order_id = o.id
 ORDER BY o.created_at DESC;
 
 -- name: GetLatestOrderDetailByOrderID :many
@@ -86,3 +90,24 @@ FROM order_details
 WHERE order_id = $1
 ORDER BY created_at DESC
 LIMIT 1;
+
+-- name: GetOrderPaymentByOrderID :one
+SELECT
+    id,
+    order_id,
+    payment_method,
+    payment_status,
+    expected_amount,
+    submitted_amount,
+    sender_name,
+    transaction_reference,
+    proof_file_path,
+    customer_note,
+    submitted_at,
+    verified_at,
+    rejected_at,
+    admin_note,
+    created_at,
+    updated_at
+FROM order_payments
+WHERE order_id = $1;

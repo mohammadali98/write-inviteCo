@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Transfer Payment — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .payment-page {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 34px 40px 60px;
+        }
+
+        .payment-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .payment-card {
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .payment-card h1,
+        .payment-card h2 {
+            margin: 0 0 14px;
+            font-family: var(--font-display);
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .payment-card h1 {
+            font-size: 2.3rem;
+        }
+
+        .payment-card h2 {
+            font-size: 1.6rem;
+        }
+
+        .payment-copy,
+        .status-copy,
+        .instruction-copy {
+            color: var(--text-light);
+            line-height: 1.7;
+            font-size: 0.94rem;
+        }
+
+        .status-banner {
+            margin: 16px 0 0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: var(--bg-warm);
+            border: 1px solid var(--border);
+        }
+
+        .status-success {
+            background: #eef6ec;
+            border-color: #cfe2cc;
+            color: #2c5a2a;
+        }
+
+        .payment-meta {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .meta-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .meta-label {
+            color: var(--muted);
+            font-size: 0.82rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            color: var(--text);
+            font-weight: 500;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .proof-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .proof-grid label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-light);
+            font-size: 0.84rem;
+            font-weight: 500;
+        }
+
+        .proof-grid input,
+        .proof-grid textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .proof-grid textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .proof-submit {
+            border: none;
+            border-radius: 999px;
+            background: var(--brand);
+            color: #fff;
+            padding: 14px 22px;
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .proof-submit:hover {
+            background: var(--brand-dark);
+        }
+
+        .proof-preview {
+            margin-top: 16px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .proof-preview img {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 14px;
+            border: 1px solid var(--border-light);
+            background: var(--bg);
+        }
+
+        .actions-row {
+            margin-top: 18px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 820px) {
+            .payment-page {
+                padding: 22px 16px 40px;
+            }
+
+            .payment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .meta-row {
+                flex-direction: column;
+            }
+
+            .meta-value {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/track-order">Track Order & Payment</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="payment-page animate-in">
+        <div class="payment-grid">
+            <section class="payment-card">
+                <h1>Bank Transfer Instructions</h1>
+                <p class="payment-copy">To confirm your order, please transfer 50% of the total amount as advance payment. The remaining 50% will be collected after your order is completed and before delivery.</p>
+
+                {{ if .proofSubmitted }}
+                <div class="status-banner status-success">
+                    <div class="status-copy">Your advance payment proof has been submitted. Our team will verify it shortly.</div>
+                </div>
+                {{ end }}
+
+                <div class="status-banner">
+                    <div class="status-copy">{{ .paymentMessage }}</div>
+                </div>
+
+                <div class="payment-meta">
+                    <div class="meta-row">
+                        <div class="meta-label">Order ID / Reference</div>
+                        <div class="meta-value">#{{ .order.ID }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Order Total</div>
+                        <div class="meta-value">PKR {{ .amountSummary.TotalAmount }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Advance Payment Required Now</div>
+                        <div class="meta-value">PKR {{ .amountSummary.AdvanceAmount }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Remaining Balance</div>
+                        <div class="meta-value">PKR {{ .amountSummary.RemainingBalance }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Payment Method</div>
+                        <div class="meta-value">Bank Transfer</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Account Title</div>
+                        <div class="meta-value">{{ .bankDetails.AccountTitle }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Bank</div>
+                        <div class="meta-value">{{ .bankDetails.BankName }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Branch</div>
+                        <div class="meta-value">{{ .bankDetails.BranchName }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">Account Number</div>
+                        <div class="meta-value">{{ .bankDetails.AccountNumber }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="meta-label">IBAN</div>
+                        <div class="meta-value">{{ .bankDetails.IBAN }}</div>
+                    </div>
+                </div>
+
+                <div class="proof-preview">
+                    <p class="instruction-copy">Use your Order ID as the payment reference if your banking app allows it.</p>
+                    <p class="instruction-copy">After making the advance payment, upload your receipt or screenshot along with your transaction reference number. Our team will verify your payment and confirm your order shortly.</p>
+                    <p class="instruction-copy">Advance Payment Status: {{ .paymentStatusDisplay }}</p>
+
+                    {{ if and .payment .payment.AdminNote }}
+                    <div class="status-banner">
+                        <div class="meta-label">Admin Note</div>
+                        <div class="status-copy">{{ .payment.AdminNote }}</div>
+                    </div>
+                    {{ end }}
+
+                    {{ if and .payment .payment.ProofFilePath }}
+                    <div>
+                        <div class="meta-label">Latest Advance Payment Proof</div>
+                        {{ if isPDFPath .payment.ProofFilePath }}
+                        <p><a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open uploaded PDF proof</a></p>
+                        {{ else }}
+                        <img src="{{ safeStaticPath .payment.ProofFilePath }}" alt="Uploaded advance payment proof">
+                        <p><a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open full-size proof</a></p>
+                        {{ end }}
+                    </div>
+                    {{ end }}
+                </div>
+
+                <div class="actions-row">
+                    <a class="pill-btn" href="/order/{{ .order.ID }}">Track Order & Payment <span class="arrow">→</span></a>
+                </div>
+            </section>
+
+            <section class="payment-card">
+                <h2>Advance Payment Proof</h2>
+                {{ if .canUploadProof }}
+                <form class="proof-grid" method="post" action="/order/{{ .order.ID }}/payment-proof" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+
+                    <div>
+                        <label for="sender_name">Sender Name</label>
+                        <input id="sender_name" name="sender_name" type="text" value="{{ if and .payment .payment.SenderName }}{{ .payment.SenderName }}{{ end }}" required>
+                    </div>
+
+                    <div>
+                        <label for="submitted_amount">Advance Amount Transferred</label>
+                        <input id="submitted_amount" name="submitted_amount" type="number" min="1" value="{{ if and .payment .payment.SubmittedAmount }}{{ .payment.SubmittedAmount }}{{ else }}{{ .amountSummary.AdvanceAmount }}{{ end }}" required>
+                    </div>
+
+                    <div>
+                        <label for="transaction_reference">Transaction / Reference ID</label>
+                        <input id="transaction_reference" name="transaction_reference" type="text" value="{{ if and .payment .payment.TransactionReference }}{{ .payment.TransactionReference }}{{ end }}" required>
+                    </div>
+
+                    <div>
+                        <label for="payment_proof">Advance Payment Receipt Screenshot or PDF</label>
+                        <input id="payment_proof" name="payment_proof" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+                    </div>
+
+                    <div>
+                        <label for="payment_note">Optional Note</label>
+                        <textarea id="payment_note" name="payment_note">{{ if and .payment .payment.CustomerNote }}{{ .payment.CustomerNote }}{{ end }}</textarea>
+                    </div>
+
+                    <button class="proof-submit" type="submit">Submit Advance Payment Proof</button>
+                </form>
+                {{ else }}
+                <p class="status-copy">No new upload is required right now. We will keep this page updated as your advance payment status changes.</p>
+                {{ if and .payment .payment.SubmittedAmount }}
+                <div class="payment-meta">
+                    <div class="meta-row">
+                        <div class="meta-label">Advance Submitted Amount</div>
+                        <div class="meta-value">PKR {{ .payment.SubmittedAmount }}</div>
+                    </div>
+                    {{ if .payment.SenderName }}
+                    <div class="meta-row">
+                        <div class="meta-label">Sender Name</div>
+                        <div class="meta-value">{{ .payment.SenderName }}</div>
+                    </div>
+                    {{ end }}
+                    {{ if .payment.TransactionReference }}
+                    <div class="meta-row">
+                        <div class="meta-label">Transaction Reference</div>
+                        <div class="meta-value">{{ .payment.TransactionReference }}</div>
+                    </div>
+                    {{ end }}
+                    {{ if .payment.SubmittedAt }}
+                    <div class="meta-row">
+                        <div class="meta-label">Submitted At</div>
+                        <div class="meta-value">{{ .payment.SubmittedAt.Format "02 Jan 2006 15:04" }}</div>
+                    </div>
+                    {{ end }}
+                    {{ if .payment.VerifiedAt }}
+                    <div class="meta-row">
+                        <div class="meta-label">Advance Verified At</div>
+                        <div class="meta-value">{{ .payment.VerifiedAt.Format "02 Jan 2006 15:04" }}</div>
+                    </div>
+                    {{ end }}
+                    {{ if .payment.RejectedAt }}
+                    <div class="meta-row">
+                        <div class="meta-label">Advance Rejected At</div>
+                        <div class="meta-value">{{ .payment.RejectedAt.Format "02 Jan 2006 15:04" }}</div>
+                    </div>
+                    {{ end }}
+                </div>
+                {{ end }}
+                {{ end }}
+            </section>
+        </div>
+    </section>
+</main>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>
