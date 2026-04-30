@@ -3,4 +3,4 @@ static/misc/
 *.MOV
 .DS_Store
 
-.env
+.envstatic/payment-proofs/
