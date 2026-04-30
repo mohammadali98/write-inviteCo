@@ -33,30 +33,16 @@ INSERT INTO order_payments (
     payment_method,
     payment_status,
     expected_amount,
-    verified_at,
-    rejected_at,
     created_at,
     updated_at
 )
 SELECT
     o.id,
     'bank_transfer',
-    CASE
-        WHEN o.status IN ('confirmed', 'completed') THEN 'payment_verified'
-        WHEN o.status = 'cancelled' THEN 'payment_rejected'
-        ELSE 'pending_payment'
-    END,
+    'pending_payment',
     CASE
         WHEN o.total_price < 0 THEN 0
         ELSE (o.total_price / 2) + (o.total_price % 2)
-    END,
-    CASE
-        WHEN o.status IN ('confirmed', 'completed') THEN COALESCE(o.updated_at, o.created_at, CURRENT_TIMESTAMP)
-        ELSE NULL
-    END,
-    CASE
-        WHEN o.status = 'cancelled' THEN COALESCE(o.updated_at, o.created_at, CURRENT_TIMESTAMP)
-        ELSE NULL
     END,
     COALESCE(o.created_at, CURRENT_TIMESTAMP),
     COALESCE(o.updated_at, o.created_at, CURRENT_TIMESTAMP)
@@ -68,5 +54,8 @@ WHERE NOT EXISTS (
 );
 
 -- migrate:down
-DROP INDEX IF EXISTS idx_order_payments_status;
-DROP TABLE IF EXISTS order_payments;
+DO $$
+BEGIN
+    RAISE EXCEPTION 'Forward-only migration: 20260429000001_create_order_payments_table must not be rolled back';
+END
+$$;

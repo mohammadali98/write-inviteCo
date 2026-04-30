@@ -3,5 +3,5 @@ static/misc/
 *.MOV
 .DS_Store
 
-.envstatic/payment-proofs/
+.env
 static/payment-proofs/
