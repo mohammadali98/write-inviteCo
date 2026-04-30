@@ -159,11 +159,47 @@
             background: var(--bg);
         }
 
-        .actions-row {
-            margin-top: 18px;
-            display: flex;
+        .success-state-card {
+            display: grid;
             gap: 12px;
+            margin-bottom: 18px;
+            padding: 18px;
+            border-radius: 16px;
+            background: #eef6ec;
+            border: 1px solid #cfe2cc;
+        }
+
+        .success-state-card .status-copy {
+            color: #2c5a2a;
+        }
+
+        .success-actions {
+            display: flex;
             flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .success-actions .pill-btn {
+            margin-top: 0;
+            padding: 12px 24px;
+        }
+
+        .secondary-track-wrap {
+            margin: -2px 0 0;
+        }
+
+        .secondary-track-link {
+            color: var(--text-light);
+            font-size: 0.88rem;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: color var(--transition), border-color var(--transition);
+        }
+
+        .secondary-track-link:hover,
+        .secondary-track-link:focus-visible {
+            color: var(--brand-dark);
+            border-color: var(--brand-dark);
         }
 
         @media (max-width: 820px) {
@@ -222,7 +258,7 @@
 
                 {{ if .proofSubmitted }}
                 <div class="status-banner status-success">
-                    <div class="status-copy">Your advance payment proof has been submitted. Our team will verify it shortly.</div>
+                    <div class="status-copy">Your payment proof has been submitted. Our team will verify your advance payment shortly.</div>
                 </div>
                 {{ end }}
 
@@ -297,10 +333,6 @@
                     </div>
                     {{ end }}
                 </div>
-
-                <div class="actions-row">
-                    <a class="pill-btn" href="/order/{{ .order.ID }}">Track Order & Payment <span class="arrow">→</span></a>
-                </div>
             </section>
 
             <section class="payment-card">
@@ -335,8 +367,19 @@
                     </div>
 
                     <button class="proof-submit" type="submit">Submit Advance Payment Proof</button>
+                    <p class="secondary-track-wrap">
+                        <a class="secondary-track-link" href="/order/{{ .order.ID }}">Already submitted proof? Track Order & Payment →</a>
+                    </p>
                 </form>
                 {{ else }}
+                {{ if .proofSubmitted }}
+                <div class="success-state-card">
+                    <div class="status-copy">Your payment proof has been submitted. Our team will verify your advance payment shortly.</div>
+                    <div class="success-actions">
+                        <a class="pill-btn" href="/order/{{ .order.ID }}">Track Order & Payment <span class="arrow">→</span></a>
+                    </div>
+                </div>
+                {{ end }}
                 <p class="status-copy">No new upload is required right now. We will keep this page updated as your advance payment status changes.</p>
                 {{ if and .payment .payment.SubmittedAmount }}
                 <div class="payment-meta">
@@ -381,6 +424,8 @@
         </div>
     </section>
 </main>
+
+{{ template "whatsapp_float" . }}
 
 <script>
     function toggleMenu() {
