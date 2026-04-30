@@ -46,7 +46,10 @@ SELECT
         WHEN o.status = 'cancelled' THEN 'payment_rejected'
         ELSE 'pending_payment'
     END,
-    o.total_price,
+    CASE
+        WHEN o.total_price < 0 THEN 0
+        ELSE (o.total_price / 2) + (o.total_price % 2)
+    END,
     CASE
         WHEN o.status IN ('confirmed', 'completed') THEN COALESCE(o.updated_at, o.created_at, CURRENT_TIMESTAMP)
         ELSE NULL

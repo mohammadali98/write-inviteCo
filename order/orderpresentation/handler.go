@@ -555,6 +555,8 @@ func adminOrderDetailAlert(c *gin.Context) (string, string) {
 		return "warning", "This payment is not currently awaiting verification."
 	case "invalid_action":
 		return "warning", "Choose a valid payment action for this order."
+	case "amount_too_low":
+		return "warning", "The submitted advance amount is below the trusted 50% advance due. Do not verify this payment until the customer pays the full required advance amount."
 	}
 
 	return "", ""

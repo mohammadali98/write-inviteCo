@@ -182,6 +182,8 @@ func (h *OrderHandler) AdminPaymentAction(c *gin.Context) {
 		switch {
 		case errors.Is(err, orderapplication.ErrInvalidInput):
 			c.Redirect(http.StatusSeeOther, adminOrderDetailRedirect(orderID, "payment_error=invalid_action"))
+		case errors.Is(err, orderapplication.ErrPaymentAmountTooLow):
+			c.Redirect(http.StatusSeeOther, adminOrderDetailRedirect(orderID, "payment_error=amount_too_low"))
 		case errors.Is(err, orderapplication.ErrPaymentActionNotAllowed):
 			c.Redirect(http.StatusSeeOther, adminOrderDetailRedirect(orderID, "payment_error=action_not_allowed"))
 		case errors.Is(err, pgx.ErrNoRows):

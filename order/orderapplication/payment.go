@@ -14,6 +14,7 @@ import (
 var (
 	ErrPaymentActionNotAllowed     = errors.New("payment action not allowed")
 	ErrPaymentVerificationRequired = errors.New("payment verification required")
+	ErrPaymentAmountTooLow         = errors.New("submitted payment amount is below expected advance")
 )
 
 const (
@@ -166,8 +167,10 @@ func (s *Service) AdminProcessPayment(ctx context.Context, orderID int64, action
 
 	switch action {
 	case "verify":
-		if payment.SubmittedAmount == nil ||
-			payment.TransactionReference == nil ||
+		if !canVerifySubmittedAdvance(payment) {
+			return ErrPaymentAmountTooLow
+		}
+		if payment.TransactionReference == nil ||
 			payment.ProofFilePath == nil ||
 			strings.TrimSpace(*payment.ProofFilePath) == "" {
 			return ErrPaymentActionNotAllowed
@@ -241,6 +244,16 @@ func validatePaymentProofInput(input PaymentProofInput) error {
 		return ErrInvalidInput
 	}
 	return nil
+}
+
+func canVerifySubmittedAdvance(payment *orderdomain.OrderPayment) bool {
+	if payment == nil || payment.SubmittedAmount == nil {
+		return false
+	}
+	if payment.ExpectedAmount <= 0 {
+		return *payment.SubmittedAmount > 0
+	}
+	return *payment.SubmittedAmount >= payment.ExpectedAmount
 }
 
 func paymentStatusLogValue(payment *orderdomain.OrderPayment) string {
