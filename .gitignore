@@ -4,3 +4,4 @@ static/misc/
 .DS_Store
 
 .envstatic/payment-proofs/
+static/payment-proofs/
