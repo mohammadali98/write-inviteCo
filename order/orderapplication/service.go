@@ -938,7 +938,7 @@ func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
 			log.Printf("ORDER EMAIL SKIPPED: order_id=%d admin email not configured", payload.OrderID)
 		} else {
 			if err := s.sendOrderEmail(ctx, adminEmail, newOrderAdminSubject(payload.OrderID), buildNewOrderAdminEmailBody(payload)); err != nil {
-				log.Printf("ORDER EMAIL ERROR: order_id=%d admin_email=%q err=%v", payload.OrderID, adminEmail, err)
+				log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=admin err=%v", payload.OrderID, err)
 			}
 		}
 
@@ -948,7 +948,7 @@ func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
 			return
 		}
 		if err := s.sendOrderEmail(ctx, customerEmail, newOrderCustomerSubject(payload.OrderID), buildNewOrderCustomerEmailBody(payload)); err != nil {
-			log.Printf("ORDER EMAIL ERROR: order_id=%d customer_email=%q err=%v", payload.OrderID, customerEmail, err)
+			log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=customer err=%v", payload.OrderID, err)
 		}
 	}()
 }
@@ -1019,12 +1019,12 @@ func (s *Service) sendOrderStatusEmailAsync(order *orderdomain.Order, status ord
 			log.Printf("ORDER EMAIL SKIPPED: order_id=%d admin email not configured for status update", payload.OrderID)
 		} else {
 			if err := s.sendOrderEmail(ctx, adminEmail, adminOrderStatusSubject(payload.OrderID, status), buildAdminOrderStatusEmailBody(payload)); err != nil {
-				log.Printf("ORDER EMAIL ERROR: order_id=%d admin_email=%q status=%q err=%v", payload.OrderID, adminEmail, status, err)
+				log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=admin status=%q err=%v", payload.OrderID, status, err)
 			}
 		}
 
 		if err := s.sendOrderEmail(ctx, payload.CustomerEmail, orderStatusSubject(payload.OrderID, status), buildCustomerOrderStatusEmailBody(payload)); err != nil {
-			log.Printf("ORDER EMAIL ERROR: order_id=%d customer_email=%q status=%q err=%v", payload.OrderID, payload.CustomerEmail, status, err)
+			log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=customer status=%q err=%v", payload.OrderID, status, err)
 		}
 	}()
 }

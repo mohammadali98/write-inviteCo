@@ -134,7 +134,7 @@ func main() {
 	router.GET("/card/:id", cardHandler.CardDetail)
 	router.GET("/product/:id", productHandler.Detail)
 	router.GET("/checkout", cardHandler.Checkout)
-	router.GET("/customize", orderHandler.CustomizePage)
+	router.POST("/customize", orderHandler.CustomizePage)
 	router.POST("/review", orderHandler.ReviewPage)
 	router.GET("/order-confirmation/:id", orderHandler.OrderConfirmation)
 	router.GET("/order/:id", orderHandler.OrderStatus)

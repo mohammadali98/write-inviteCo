@@ -319,7 +319,8 @@
 
             <section class="checkout-form">
                 <h2>Customer Information</h2>
-                <form action="/customize" method="get">
+                <form action="/customize" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
                     <input type="hidden" name="card_id" value="{{ .cardID }}">
                     <input type="hidden" name="quantity" value="{{ .quantity }}">
                     <input type="hidden" name="foil_option" value="{{ .foilOption }}">

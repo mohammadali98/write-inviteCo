@@ -42,19 +42,24 @@ func NewOrderHandler(service orderService, paymentProofDir string) *OrderHandler
 }
 
 func (h *OrderHandler) CustomizePage(c *gin.Context) {
-	cardID, err := parsePositiveInt64(c.Query("card_id"))
+	if !webui.ValidateCSRF(c) {
+		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please return to checkout and submit your details again.")
+		return
+	}
+
+	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing.")
 		return
 	}
 
-	quantity, err := parsePositiveInt64(c.Query("quantity"))
+	quantity, err := parsePositiveInt64(c.PostForm("quantity"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Quantity", "Please choose a valid quantity before continuing.")
 		return
 	}
 
-	requestedInserts, err := parseNonNegativeInt64(c.Query("extra_inserts"))
+	requestedInserts, err := parseNonNegativeInt64(c.PostForm("extra_inserts"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please choose a valid insert count before continuing.")
 		return
@@ -63,14 +68,14 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	summary, err := h.service.PrepareCustomization(c.Request.Context(), orderapplication.CustomizationInput{
 		CardID:           cardID,
 		Quantity:         quantity,
-		FoilOption:       c.Query("foil_option"),
+		FoilOption:       c.PostForm("foil_option"),
 		RequestedInserts: requestedInserts,
-		Name:             c.Query("name"),
-		Email:            c.Query("email"),
-		Phone:            c.Query("phone"),
-		Address:          c.Query("address"),
-		City:             c.Query("city"),
-		PostalCode:       c.Query("postal_code"),
+		Name:             c.PostForm("name"),
+		Email:            c.PostForm("email"),
+		Phone:            c.PostForm("phone"),
+		Address:          c.PostForm("address"),
+		City:             c.PostForm("city"),
+		PostalCode:       c.PostForm("postal_code"),
 	})
 	if err != nil {
 		renderServiceError(c, err)

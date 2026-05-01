@@ -213,6 +213,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"extraInsertCostPerCard": extraInsertCostPerCard,
 		"perCardTotal":           perCardTotal,
 		"totalPrice":             total,
+		"csrfToken":              webui.EnsureCSRFToken(c),
 	})
 }
 
