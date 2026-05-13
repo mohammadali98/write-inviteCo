@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ type fakeOrderService struct {
 	prepareCustomizationInput     orderapplication.CustomizationInput
 	prepareCustomizationSummary   *orderapplication.CustomizationSummary
 	prepareCustomizationErr       error
+	prepareOrderReviewInput       orderapplication.PlaceOrderInput
 	placeOrderInput               orderapplication.PlaceOrderInput
 	adminUpdateOrderStatusOrderID int64
 	adminUpdateOrderStatusStatus  string
@@ -39,7 +41,18 @@ func (f *fakeOrderService) PrepareCustomization(ctx context.Context, input order
 }
 
 func (f *fakeOrderService) PrepareOrderReview(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.OrderReview, error) {
-	return nil, nil
+	f.prepareOrderReviewInput = input
+	return &orderapplication.OrderReview{
+		Summary: &orderapplication.CustomizationSummary{
+			CardID:       input.CardID,
+			CardName:     "Trusted Card",
+			CardCategory: "wedding-cards",
+			Quantity:     input.Quantity,
+			Currency:     "PKR",
+			Side:         input.Side,
+		},
+		Input: input,
+	}, nil
 }
 
 func (f *fakeOrderService) PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error) {
@@ -76,7 +89,7 @@ func (f *fakeOrderService) AdminProcessPayment(ctx context.Context, orderID int6
 	return f.adminProcessPaymentErr
 }
 
-func TestCustomizePageReadsCustomerFieldsFromPostBody(t *testing.T) {
+func TestCustomizePageReadsProductOptionsFromPostBodyAndIgnoresQueryPII(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
@@ -87,12 +100,6 @@ func TestCustomizePageReadsCustomerFieldsFromPostBody(t *testing.T) {
 		"quantity":      {"250"},
 		"foil_option":   {"foil"},
 		"extra_inserts": {"3"},
-		"name":          {"Body Name"},
-		"email":         {"body@example.com"},
-		"phone":         {"03001234567"},
-		"address":       {"123 Karim Block"},
-		"city":          {"Lahore"},
-		"postal_code":   {"54000"},
 	}
 
 	req := httptest.NewRequest(
@@ -119,23 +126,266 @@ func TestCustomizePageReadsCustomerFieldsFromPostBody(t *testing.T) {
 		t.Fatalf("expected customize template to render, got %q", body)
 	}
 
-	if service.prepareCustomizationInput.Name != "Body Name" {
-		t.Fatalf("expected body name to be used, got %q", service.prepareCustomizationInput.Name)
+	if service.prepareCustomizationInput.Name != "" {
+		t.Fatalf("expected customer name to be ignored before checkout, got %q", service.prepareCustomizationInput.Name)
 	}
-	if service.prepareCustomizationInput.Email != "body@example.com" {
-		t.Fatalf("expected body email to be used, got %q", service.prepareCustomizationInput.Email)
+	if service.prepareCustomizationInput.Email != "" {
+		t.Fatalf("expected customer email to be ignored before checkout, got %q", service.prepareCustomizationInput.Email)
 	}
-	if service.prepareCustomizationInput.Phone != "03001234567" {
-		t.Fatalf("expected body phone to be used, got %q", service.prepareCustomizationInput.Phone)
+	if service.prepareCustomizationInput.Phone != "" {
+		t.Fatalf("expected customer phone to be ignored before checkout, got %q", service.prepareCustomizationInput.Phone)
 	}
-	if service.prepareCustomizationInput.Address != "123 Karim Block" {
-		t.Fatalf("expected body address to be used, got %q", service.prepareCustomizationInput.Address)
+	if service.prepareCustomizationInput.Address != "" {
+		t.Fatalf("expected customer address to be ignored before checkout, got %q", service.prepareCustomizationInput.Address)
 	}
-	if service.prepareCustomizationInput.City != "Lahore" {
-		t.Fatalf("expected body city to be used, got %q", service.prepareCustomizationInput.City)
+	if service.prepareCustomizationInput.City != "" {
+		t.Fatalf("expected customer city to be ignored before checkout, got %q", service.prepareCustomizationInput.City)
 	}
-	if service.prepareCustomizationInput.PostalCode != "54000" {
-		t.Fatalf("expected body postal code to be used, got %q", service.prepareCustomizationInput.PostalCode)
+	if service.prepareCustomizationInput.PostalCode != "" {
+		t.Fatalf("expected customer postal code to be ignored before checkout, got %q", service.prepareCustomizationInput.PostalCode)
+	}
+	if service.prepareCustomizationInput.CardID != 7 {
+		t.Fatalf("expected card id 7, got %d", service.prepareCustomizationInput.CardID)
+	}
+	if service.prepareCustomizationInput.Quantity != 250 {
+		t.Fatalf("expected quantity 250, got %d", service.prepareCustomizationInput.Quantity)
+	}
+	if service.prepareCustomizationInput.RequestedInserts != 3 {
+		t.Fatalf("expected extra inserts 3, got %d", service.prepareCustomizationInput.RequestedInserts)
+	}
+}
+
+func TestReviewPagePreservesMultipleRSVPValues(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	form := url.Values{
+		"csrf_token":    {"trusted-csrf"},
+		"card_id":       {"7"},
+		"quantity":      {"250"},
+		"foil_option":   {"foil"},
+		"extra_inserts": {"1"},
+		"name":          {"Aimen"},
+		"email":         {"aimen@example.com"},
+		"phone":         {"03001234567"},
+		"address":       {"123 Karim Block"},
+		"city":          {"Lahore"},
+		"postal_code":   {"54000"},
+		"side":          {"bride"},
+		"rsvp_name":     {"Ali", "Sara"},
+		"rsvp_phone":    {"03001234567", "03007654321"},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/review", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("review_order.html").Parse("ok")))
+	router.POST("/review", handler.ReviewPage)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+	if service.prepareOrderReviewInput.RsvpName != "Ali\nSara" {
+		t.Fatalf("expected multiple RSVP names to be preserved, got %q", service.prepareOrderReviewInput.RsvpName)
+	}
+	if service.prepareOrderReviewInput.RsvpPhone != "03001234567\n03007654321" {
+		t.Fatalf("expected multiple RSVP phones to be preserved, got %q", service.prepareOrderReviewInput.RsvpPhone)
+	}
+}
+
+func TestReviewPageRendersAfterCheckoutWithFullHiddenFields(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	form := url.Values{
+		"csrf_token":           {"trusted-csrf"},
+		"card_id":              {"7"},
+		"quantity":             {"50"},
+		"foil_option":          {"foil"},
+		"extra_inserts":        {"1"},
+		"side":                 {"bride"},
+		"name":                 {"Aimen"},
+		"email":                {"aimen@example.com"},
+		"phone":                {"03001234567"},
+		"address":              {"123 Karim Block"},
+		"city":                 {"Lahore"},
+		"postal_code":          {"54000"},
+		"bride_name":           {"Bride"},
+		"groom_name":           {"Groom"},
+		"bride_father_name":    {"Bride Parents"},
+		"groom_father_name":    {"Groom Parents"},
+		"mehndi_date":          {"2026-06-01"},
+		"mehndi_day":           {"Monday"},
+		"mehndi_time_type":     {"evening"},
+		"mehndi_time":          {"18:00"},
+		"mehndi_dinner_time":   {"21:00"},
+		"mehndi_venue_name":    {"Mehndi Hall"},
+		"mehndi_venue_address": {"Mehndi Address"},
+		"baraat_date":          {"2026-06-02"},
+		"baraat_day":           {"Tuesday"},
+		"baraat_time_type":     {"night"},
+		"baraat_time":          {"20:00"},
+		"baraat_dinner_time":   {"22:00"},
+		"baraat_arrival_time":  {"19:00"},
+		"rukhsati_time":        {"23:00"},
+		"baraat_venue_name":    {"Baraat Hall"},
+		"baraat_venue_address": {"Baraat Address"},
+		"nikkah_date":          {"2026-06-03"},
+		"nikkah_day":           {"Wednesday"},
+		"nikkah_time_type":     {"evening"},
+		"nikkah_time":          {"17:00"},
+		"nikkah_dinner_time":   {"20:00"},
+		"nikkah_venue_name":    {"Nikkah Hall"},
+		"nikkah_venue_address": {"Nikkah Address"},
+		"walima_date":          {"2026-06-04"},
+		"walima_day":           {"Thursday"},
+		"walima_time_type":     {"night"},
+		"walima_time":          {"19:00"},
+		"walima_dinner_time":   {"21:00"},
+		"walima_venue_name":    {"Walima Hall"},
+		"walima_venue_address": {"Walima Address"},
+		"reception_time":       {"18:30"},
+		"rsvp_name":            {"Ali", "Sara"},
+		"rsvp_phone":           {"03001234567", "03007654321"},
+		"notes":                {"Please use formal wording."},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/review", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("review_order.html").Parse("ok")))
+	router.POST("/review", handler.ReviewPage)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+	if service.prepareOrderReviewInput.RequestedInserts != 1 {
+		t.Fatalf("expected extra inserts 1, got %d", service.prepareOrderReviewInput.RequestedInserts)
+	}
+	if service.prepareOrderReviewInput.BrideFatherName != "Bride Parents" {
+		t.Fatalf("expected bride parents field to be preserved, got %q", service.prepareOrderReviewInput.BrideFatherName)
+	}
+	if service.prepareOrderReviewInput.NikkahVenueAddress != "Nikkah Address" {
+		t.Fatalf("expected nikkah venue address to be preserved, got %q", service.prepareOrderReviewInput.NikkahVenueAddress)
+	}
+	if service.prepareOrderReviewInput.RsvpName != "Ali\nSara" {
+		t.Fatalf("expected RSVP names to be preserved, got %q", service.prepareOrderReviewInput.RsvpName)
+	}
+}
+
+func TestReviewPageMissingRequiredProductFieldsReturnsBadRequest(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	form := url.Values{
+		"csrf_token": {"trusted-csrf"},
+		"quantity":   {"50"},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/review", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	handler := &OrderHandler{service: &fakeOrderService{}, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("error.html").Parse("{{ .title }}")))
+	router.POST("/review", handler.ReviewPage)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, recorder.Code)
+	}
+	if body := recorder.Body.String(); !strings.Contains(body, "Invalid Card") {
+		t.Fatalf("expected invalid card error, got %q", body)
+	}
+}
+
+func TestPersonalizationLabelsAreVisualOnlyParentsWording(t *testing.T) {
+	t.Parallel()
+
+	customize, err := os.ReadFile("../../templates/customize.html")
+	if err != nil {
+		t.Fatalf("read customize template: %v", err)
+	}
+	customizeBody := string(customize)
+
+	for _, unwanted := range []string{
+		"(Optional)",
+		"Father Name",
+		"Bride's Father Name",
+		"Groom's Father Name",
+	} {
+		if strings.Contains(customizeBody, unwanted) {
+			t.Fatalf("expected customize labels to avoid %q", unwanted)
+		}
+	}
+	for _, want := range []string{
+		"Bride Name",
+		"Groom Name",
+		"Bride's Parents Name",
+		"Groom's Parents Name",
+		`name="bride_father_name"`,
+		`name="groom_father_name"`,
+	} {
+		if !strings.Contains(customizeBody, want) {
+			t.Fatalf("expected customize template to contain %q", want)
+		}
+	}
+
+	for _, path := range []string{
+		"../../templates/review_order.html",
+		"../../templates/admin_order_detail.html",
+		"../../templates/order-status.html",
+	} {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read template %s: %v", path, err)
+		}
+		text := string(body)
+		if strings.Contains(text, "Bride's Father") || strings.Contains(text, "Groom's Father") {
+			t.Fatalf("expected %s to use parents wording", path)
+		}
+	}
+}
+
+func TestCheckoutCustomerFormPostsPIIToReviewOnly(t *testing.T) {
+	t.Parallel()
+
+	checkout, err := os.ReadFile("../../templates/checkout.html")
+	if err != nil {
+		t.Fatalf("read checkout template: %v", err)
+	}
+	body := string(checkout)
+
+	if !strings.Contains(body, `form action="/review" method="post"`) {
+		t.Fatalf("expected checkout customer form to post to /review")
+	}
+	if strings.Contains(body, `method="get"`) || strings.Contains(body, `method="GET"`) {
+		t.Fatalf("checkout template must not submit customer information with GET")
+	}
+	for _, field := range []string{"name", "email", "phone", "address", "city", "postal_code"} {
+		if !strings.Contains(body, `name="`+field+`"`) {
+			t.Fatalf("expected checkout form to keep customer field %q in POST body", field)
+		}
 	}
 }
 

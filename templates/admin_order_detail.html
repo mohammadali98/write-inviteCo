@@ -71,6 +71,7 @@
             color: var(--text);
             font-size: 0.93rem;
             line-height: 1.55;
+            white-space: pre-line;
         }
 
         .events-grid {
@@ -311,6 +312,12 @@
                     <div class="row-label">Quantity</div>
                     <div class="row-value">{{ .order.Quantity }}</div>
                 </div>
+                {{ if .details }}
+                <div>
+                    <div class="row-label">Extra Inserts / Card</div>
+                    <div class="row-value">{{ .details.ExtraInsertsPerCard }}</div>
+                </div>
+                {{ end }}
                 <div>
                     <div class="row-label">Created At</div>
                     <div class="row-value">{{ if .order.CreatedAt }}{{ .order.CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</div>
@@ -528,11 +535,11 @@
                     </div>
                 </div>
                 <div>
-                    <div class="row-label">Bride's Father</div>
+                    <div class="row-label">Bride's Parents Name</div>
                     <div class="row-value">{{ if .details.BrideFatherName }}{{ .details.BrideFatherName }}{{ else }}-{{ end }}</div>
                 </div>
                 <div>
-                    <div class="row-label">Groom's Father</div>
+                    <div class="row-label">Groom's Parents Name</div>
                     <div class="row-value">{{ if .details.GroomFatherName }}{{ .details.GroomFatherName }}{{ else }}-{{ end }}</div>
                 </div>
             </div>
@@ -588,11 +595,11 @@
 
             <div class="admin-grid">
                 <div>
-                    <div class="row-label">RSVP Name</div>
+                    <div class="row-label">RSVP Name(s)</div>
                     <div class="row-value">{{ if .details.RsvpName }}{{ .details.RsvpName }}{{ else }}-{{ end }}</div>
                 </div>
                 <div>
-                    <div class="row-label">RSVP Phone</div>
+                    <div class="row-label">RSVP Phone Number(s)</div>
                     <div class="row-value">{{ if .details.RsvpPhone }}{{ .details.RsvpPhone }}{{ else }}-{{ end }}</div>
                 </div>
             </div>

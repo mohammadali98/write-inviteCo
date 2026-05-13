@@ -56,6 +56,26 @@ func (e MinOrderError) Error() string {
 	return fmt.Sprintf("minimum order quantity is %d", e.MinOrder)
 }
 
+type InvalidFieldError struct {
+	Field string
+}
+
+func (e InvalidFieldError) Error() string {
+	return fmt.Sprintf("invalid input field: %s", e.Field)
+}
+
+func (e InvalidFieldError) Unwrap() error {
+	return ErrInvalidInput
+}
+
+func InvalidInputField(err error) (string, bool) {
+	var fieldErr InvalidFieldError
+	if errors.As(err, &fieldErr) {
+		return fieldErr.Field, true
+	}
+	return "", false
+}
+
 type CustomizationInput struct {
 	CardID           int64
 	Quantity         int64
@@ -342,9 +362,6 @@ func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, sta
 
 func (s *Service) PrepareCustomization(ctx context.Context, input CustomizationInput) (*CustomizationSummary, error) {
 	input = sanitizeCustomizationInput(input)
-	if err := validateCustomerFields(input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode); err != nil {
-		return nil, err
-	}
 
 	pricing, err := s.calculatePricing(ctx, input.CardID, input.Quantity, input.Currency, input.FoilOption, input.RequestedInserts)
 	if err != nil {
@@ -448,50 +465,51 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	}
 
 	_, err = s.orderWriter.WithTx(tx).CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
-		OrderID:            orderRow.ID,
-		Side:               input.Side,
-		TopLabel:           nullableString(input.BidBoxTopLabel),
-		CoupleName:         nullableString(input.BidBoxCoupleName),
-		BidBoxEventDate:    input.BidBoxEventDate,
-		BidBoxDetails:      nullableString(input.BidBoxDetails),
-		BrideName:          nullableString(input.BrideName),
-		GroomName:          nullableString(input.GroomName),
-		BrideFatherName:    nullableString(input.BrideFatherName),
-		GroomFatherName:    nullableString(input.GroomFatherName),
-		MehndiDate:         input.MehndiDate,
-		MehndiDay:          nullableString(input.MehndiDay),
-		MehndiTimeType:     nullableString(input.MehndiTimeType),
-		MehndiTime:         input.MehndiTime,
-		MehndiDinnerTime:   input.MehndiDinnerTime,
-		MehndiVenueName:    nullableString(input.MehndiVenueName),
-		MehndiVenueAddress: nullableString(input.MehndiVenueAddress),
-		BaraatDate:         input.BaraatDate,
-		BaraatDay:          nullableString(input.BaraatDay),
-		BaraatTimeType:     nullableString(input.BaraatTimeType),
-		BaraatTime:         input.BaraatTime,
-		BaraatDinnerTime:   input.BaraatDinnerTime,
-		BaraatArrivalTime:  input.BaraatArrivalTime,
-		RukhsatiTime:       input.RukhsatiTime,
-		BaraatVenueName:    nullableString(input.BaraatVenueName),
-		BaraatVenueAddress: nullableString(input.BaraatVenueAddress),
-		NikkahDate:         input.NikkahDate,
-		NikkahDay:          nullableString(input.NikkahDay),
-		NikkahTimeType:     nullableString(input.NikkahTimeType),
-		NikkahTime:         input.NikkahTime,
-		NikkahDinnerTime:   input.NikkahDinnerTime,
-		NikkahVenueName:    nullableString(input.NikkahVenueName),
-		NikkahVenueAddress: nullableString(input.NikkahVenueAddress),
-		WalimaDate:         input.WalimaDate,
-		WalimaDay:          nullableString(input.WalimaDay),
-		WalimaTimeType:     nullableString(input.WalimaTimeType),
-		WalimaTime:         input.WalimaTime,
-		WalimaDinnerTime:   input.WalimaDinnerTime,
-		WalimaVenueName:    nullableString(input.WalimaVenueName),
-		WalimaVenueAddress: nullableString(input.WalimaVenueAddress),
-		ReceptionTime:      input.ReceptionTime,
-		RsvpName:           input.RsvpName,
-		RsvpPhone:          input.RsvpPhone,
-		Notes:              nullableString(input.Notes),
+		OrderID:             orderRow.ID,
+		Side:                input.Side,
+		ExtraInsertsPerCard: pricing.extraInserts,
+		TopLabel:            nullableString(input.BidBoxTopLabel),
+		CoupleName:          nullableString(input.BidBoxCoupleName),
+		BidBoxEventDate:     input.BidBoxEventDate,
+		BidBoxDetails:       nullableString(input.BidBoxDetails),
+		BrideName:           nullableString(input.BrideName),
+		GroomName:           nullableString(input.GroomName),
+		BrideFatherName:     nullableString(input.BrideFatherName),
+		GroomFatherName:     nullableString(input.GroomFatherName),
+		MehndiDate:          input.MehndiDate,
+		MehndiDay:           nullableString(input.MehndiDay),
+		MehndiTimeType:      nullableString(input.MehndiTimeType),
+		MehndiTime:          input.MehndiTime,
+		MehndiDinnerTime:    input.MehndiDinnerTime,
+		MehndiVenueName:     nullableString(input.MehndiVenueName),
+		MehndiVenueAddress:  nullableString(input.MehndiVenueAddress),
+		BaraatDate:          input.BaraatDate,
+		BaraatDay:           nullableString(input.BaraatDay),
+		BaraatTimeType:      nullableString(input.BaraatTimeType),
+		BaraatTime:          input.BaraatTime,
+		BaraatDinnerTime:    input.BaraatDinnerTime,
+		BaraatArrivalTime:   input.BaraatArrivalTime,
+		RukhsatiTime:        input.RukhsatiTime,
+		BaraatVenueName:     nullableString(input.BaraatVenueName),
+		BaraatVenueAddress:  nullableString(input.BaraatVenueAddress),
+		NikkahDate:          input.NikkahDate,
+		NikkahDay:           nullableString(input.NikkahDay),
+		NikkahTimeType:      nullableString(input.NikkahTimeType),
+		NikkahTime:          input.NikkahTime,
+		NikkahDinnerTime:    input.NikkahDinnerTime,
+		NikkahVenueName:     nullableString(input.NikkahVenueName),
+		NikkahVenueAddress:  nullableString(input.NikkahVenueAddress),
+		WalimaDate:          input.WalimaDate,
+		WalimaDay:           nullableString(input.WalimaDay),
+		WalimaTimeType:      nullableString(input.WalimaTimeType),
+		WalimaTime:          input.WalimaTime,
+		WalimaDinnerTime:    input.WalimaDinnerTime,
+		WalimaVenueName:     nullableString(input.WalimaVenueName),
+		WalimaVenueAddress:  nullableString(input.WalimaVenueAddress),
+		ReceptionTime:       input.ReceptionTime,
+		RsvpName:            input.RsvpName,
+		RsvpPhone:           input.RsvpPhone,
+		Notes:               nullableString(input.Notes),
 	})
 	if err != nil {
 		return nil, err
@@ -629,10 +647,7 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 	if includedInserts < 0 {
 		includedInserts = 0
 	}
-	extraInserts := requestedInserts - includedInserts
-	if extraInserts < 0 {
-		extraInserts = 0
-	}
+	extraInserts := requestedInserts
 
 	extraInsertCost, err := safeMultiplyInt64(extraInserts, insertPrice)
 	if err != nil {
@@ -726,32 +741,61 @@ func sanitizePlaceOrderInput(input PlaceOrderInput) PlaceOrderInput {
 	input.WalimaVenueName = sanitizeSingleLine(input.WalimaVenueName)
 	input.WalimaVenueAddress = sanitizeMultiline(input.WalimaVenueAddress)
 	input.ReceptionTime = strings.TrimSpace(input.ReceptionTime)
-	input.RsvpName = sanitizeSingleLine(input.RsvpName)
-	input.RsvpPhone = normalizePhone(input.RsvpPhone)
+	input.RsvpName = sanitizeMultiline(input.RsvpName)
+	input.RsvpPhone = normalizePhoneList(input.RsvpPhone)
 	input.Notes = sanitizeMultiline(input.Notes)
 	return input
 }
 
 func validateCustomerFields(name string, email string, phone string, address string, city string, postalCode string) error {
-	if name == "" || email == "" || phone == "" || address == "" || city == "" || postalCode == "" {
-		return ErrInvalidInput
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "name", value: name},
+		{name: "email", value: email},
+		{name: "phone", value: phone},
+		{name: "address", value: address},
+		{name: "city", value: city},
+		{name: "postal_code", value: postalCode},
+	} {
+		if field.value == "" {
+			return InvalidFieldError{Field: field.name}
+		}
 	}
-	if utf8.RuneCountInString(name) > maxCustomerNameLength ||
-		utf8.RuneCountInString(email) > maxEmailLength ||
-		utf8.RuneCountInString(phone) > maxPhoneLength ||
-		utf8.RuneCountInString(address) > maxAddressLength ||
-		utf8.RuneCountInString(city) > maxCityLength ||
-		utf8.RuneCountInString(postalCode) > maxPostalCodeLength {
-		return ErrInvalidInput
+	for _, field := range []struct {
+		name  string
+		value string
+		max   int
+	}{
+		{name: "name", value: name, max: maxCustomerNameLength},
+		{name: "email", value: email, max: maxEmailLength},
+		{name: "phone", value: phone, max: maxPhoneLength},
+		{name: "address", value: address, max: maxAddressLength},
+		{name: "city", value: city, max: maxCityLength},
+		{name: "postal_code", value: postalCode, max: maxPostalCodeLength},
+	} {
+		if utf8.RuneCountInString(field.value) > field.max {
+			return InvalidFieldError{Field: field.name}
+		}
 	}
-	if !containsLetterOrDigit(name) || !containsLetterOrDigit(address) || !containsLetterOrDigit(city) || !containsLetterOrDigit(postalCode) {
-		return ErrInvalidInput
+	if !containsLetterOrDigit(name) {
+		return InvalidFieldError{Field: "name"}
+	}
+	if !containsLetterOrDigit(address) {
+		return InvalidFieldError{Field: "address"}
+	}
+	if !containsLetterOrDigit(city) {
+		return InvalidFieldError{Field: "city"}
+	}
+	if !containsLetterOrDigit(postalCode) {
+		return InvalidFieldError{Field: "postal_code"}
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
-		return ErrInvalidInput
+		return InvalidFieldError{Field: "email"}
 	}
 	if !pakistanPhonePattern.MatchString(phone) {
-		return ErrInvalidInput
+		return InvalidFieldError{Field: "phone"}
 	}
 	return nil
 }
@@ -841,11 +885,13 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 		input.GroomName,
 		input.BrideFatherName,
 		input.GroomFatherName,
-		input.RsvpName,
 	} {
 		if utf8.RuneCountInString(value) > maxPersonNameLength {
 			return ErrInvalidInput
 		}
+	}
+	if utf8.RuneCountInString(input.RsvpName) > maxNotesLength {
+		return ErrInvalidInput
 	}
 	for _, value := range []string{
 		input.MehndiVenueName,
@@ -870,8 +916,8 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 	if utf8.RuneCountInString(input.Notes) > maxNotesLength {
 		return ErrInvalidInput
 	}
-	if input.RsvpPhone != "" && !pakistanPhonePattern.MatchString(input.RsvpPhone) {
-		return ErrInvalidInput
+	if err := validateRSVPPhones(input.RsvpPhone); err != nil {
+		return err
 	}
 	return nil
 }
@@ -1441,7 +1487,55 @@ func collapseWhitespace(value string) string {
 
 func normalizePhone(value string) string {
 	replacer := strings.NewReplacer(" ", "", "-", "", "(", "", ")", "")
-	return replacer.Replace(strings.TrimSpace(value))
+	normalized := replacer.Replace(strings.TrimSpace(value))
+	switch {
+	case strings.HasPrefix(normalized, "00923") && len(normalized) == 14:
+		return "+" + strings.TrimPrefix(normalized, "00")
+	case strings.HasPrefix(normalized, "923") && len(normalized) == 12:
+		return "+" + normalized
+	case strings.HasPrefix(normalized, "3") && len(normalized) == 10:
+		return "0" + normalized
+	default:
+		return normalized
+	}
+}
+
+func normalizePhoneList(value string) string {
+	value = sanitizeMultiline(value)
+	phones := splitRSVPValues(value)
+	for i, phone := range phones {
+		phones[i] = normalizePhone(phone)
+	}
+	return strings.Join(phones, "\n")
+}
+
+func validateRSVPPhones(value string) error {
+	if value == "" {
+		return nil
+	}
+	if utf8.RuneCountInString(value) > maxNotesLength {
+		return ErrInvalidInput
+	}
+	for _, phone := range splitRSVPValues(value) {
+		if !pakistanPhonePattern.MatchString(phone) {
+			return ErrInvalidInput
+		}
+	}
+	return nil
+}
+
+func splitRSVPValues(value string) []string {
+	values := strings.FieldsFunc(value, func(r rune) bool {
+		return r == '\n' || r == ',' || r == ';'
+	})
+	cleaned := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			cleaned = append(cleaned, value)
+		}
+	}
+	return cleaned
 }
 
 func normalizeOptionalDay(raw string) string {

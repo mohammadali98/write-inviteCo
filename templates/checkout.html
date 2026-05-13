@@ -253,8 +253,7 @@
         <a class="nav-link" href="/contact">Contact</a>
         <div class="header-icons">
             <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
-            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
-            <button class="header-icon" aria-label="Cart">⊡</button>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
         </div>
     </div>
 </header>
@@ -319,12 +318,55 @@
 
             <section class="checkout-form">
                 <h2>Customer Information</h2>
-                <form action="/customize" method="post">
+                <form action="/review" method="post">
                     <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
                     <input type="hidden" name="card_id" value="{{ .cardID }}">
                     <input type="hidden" name="quantity" value="{{ .quantity }}">
                     <input type="hidden" name="foil_option" value="{{ .foilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .requestedInserts }}">
+                    <input type="hidden" name="side" value="{{ .personalization.Side }}">
+                    <input type="hidden" name="top_label" value="{{ .personalization.BidBoxTopLabel }}">
+                    <input type="hidden" name="couple_name" value="{{ .personalization.BidBoxCoupleName }}">
+                    <input type="hidden" name="event_date" value="{{ .personalization.BidBoxEventDate }}">
+                    <input type="hidden" name="bride_name" value="{{ .personalization.BrideName }}">
+                    <input type="hidden" name="groom_name" value="{{ .personalization.GroomName }}">
+                    <input type="hidden" name="bride_father_name" value="{{ .personalization.BrideFatherName }}">
+                    <input type="hidden" name="groom_father_name" value="{{ .personalization.GroomFatherName }}">
+                    <input type="hidden" name="mehndi_date" value="{{ .personalization.MehndiDate }}">
+                    <input type="hidden" name="mehndi_day" value="{{ .personalization.MehndiDay }}">
+                    <input type="hidden" name="mehndi_time_type" value="{{ .personalization.MehndiTimeType }}">
+                    <input type="hidden" name="mehndi_time" value="{{ .personalization.MehndiTime }}">
+                    <input type="hidden" name="mehndi_dinner_time" value="{{ .personalization.MehndiDinnerTime }}">
+                    <input type="hidden" name="mehndi_venue_name" value="{{ .personalization.MehndiVenueName }}">
+                    <input type="hidden" name="baraat_date" value="{{ .personalization.BaraatDate }}">
+                    <input type="hidden" name="baraat_day" value="{{ .personalization.BaraatDay }}">
+                    <input type="hidden" name="baraat_time_type" value="{{ .personalization.BaraatTimeType }}">
+                    <input type="hidden" name="baraat_time" value="{{ .personalization.BaraatTime }}">
+                    <input type="hidden" name="baraat_dinner_time" value="{{ .personalization.BaraatDinnerTime }}">
+                    <input type="hidden" name="baraat_arrival_time" value="{{ .personalization.BaraatArrivalTime }}">
+                    <input type="hidden" name="rukhsati_time" value="{{ .personalization.RukhsatiTime }}">
+                    <input type="hidden" name="baraat_venue_name" value="{{ .personalization.BaraatVenueName }}">
+                    <input type="hidden" name="nikkah_date" value="{{ .personalization.NikkahDate }}">
+                    <input type="hidden" name="nikkah_day" value="{{ .personalization.NikkahDay }}">
+                    <input type="hidden" name="nikkah_time_type" value="{{ .personalization.NikkahTimeType }}">
+                    <input type="hidden" name="nikkah_time" value="{{ .personalization.NikkahTime }}">
+                    <input type="hidden" name="nikkah_dinner_time" value="{{ .personalization.NikkahDinnerTime }}">
+                    <input type="hidden" name="nikkah_venue_name" value="{{ .personalization.NikkahVenueName }}">
+                    <input type="hidden" name="walima_date" value="{{ .personalization.WalimaDate }}">
+                    <input type="hidden" name="walima_day" value="{{ .personalization.WalimaDay }}">
+                    <input type="hidden" name="walima_time_type" value="{{ .personalization.WalimaTimeType }}">
+                    <input type="hidden" name="walima_time" value="{{ .personalization.WalimaTime }}">
+                    <input type="hidden" name="walima_dinner_time" value="{{ .personalization.WalimaDinnerTime }}">
+                    <input type="hidden" name="walima_venue_name" value="{{ .personalization.WalimaVenueName }}">
+                    <input type="hidden" name="reception_time" value="{{ .personalization.ReceptionTime }}">
+                    <textarea name="details" hidden>{{ .personalization.BidBoxDetails }}</textarea>
+                    <textarea name="mehndi_venue_address" hidden>{{ .personalization.MehndiVenueAddress }}</textarea>
+                    <textarea name="baraat_venue_address" hidden>{{ .personalization.BaraatVenueAddress }}</textarea>
+                    <textarea name="nikkah_venue_address" hidden>{{ .personalization.NikkahVenueAddress }}</textarea>
+                    <textarea name="walima_venue_address" hidden>{{ .personalization.WalimaVenueAddress }}</textarea>
+                    <textarea name="rsvp_name" hidden>{{ .personalization.RsvpName }}</textarea>
+                    <textarea name="rsvp_phone" hidden>{{ .personalization.RsvpPhone }}</textarea>
+                    <textarea name="notes" hidden>{{ .personalization.Notes }}</textarea>
 
                     <div class="form-grid">
                         <div class="form-group full-width">
@@ -358,9 +400,9 @@
                         </div>
                     </div>
 
-                    <button class="checkout-submit" type="submit">Continue to Personalization →</button>
+                    <button class="checkout-submit" type="submit">Continue to Review →</button>
                 </form>
-                <p class="payment-note">Payment method: manual bank transfer. The server will lock your trusted order total and show the 50% advance due now with the remaining balance on the next step.</p>
+                <p class="payment-note">Payment method: manual bank transfer. The server will lock your trusted order total, then show the 50% advance due now and remaining balance after final review.</p>
             </section>
         </div>
     </section>

@@ -316,8 +316,7 @@
         <a class="nav-link" href="/contact">Contact</a>
         <div class="header-icons">
             <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
-            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
-            <button class="header-icon" aria-label="Cart">⊡</button>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
         </div>
     </div>
 </header>
@@ -346,8 +345,7 @@
                 <div class="summary-row"><span>Foil Finish</span><span>{{ .summary.FoilLabel }}</span></div>
                 <div class="summary-row"><span>Base Price / Card</span><span>{{ .summary.Currency }} {{ .summary.UnitPrice }}</span></div>
                 <div class="summary-row"><span>Included Inserts / Card</span><span>{{ .summary.IncludedInserts }}</span></div>
-                <div class="summary-row"><span>Requested Inserts / Card</span><span>{{ .summary.RequestedInserts }}</span></div>
-                <div class="summary-row"><span>Chargeable Extra Inserts</span><span>{{ .summary.ExtraInserts }}</span></div>
+                <div class="summary-row"><span>Extra Inserts / Card</span><span>{{ .summary.ExtraInserts }}</span></div>
                 <div class="summary-row"><span>Per Card Total</span><span>{{ .summary.Currency }} {{ .summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .summary.Quantity }}</span></div>
                 <div class="summary-total"><span>Total</span><span>{{ .summary.Currency }} {{ .summary.TotalPrice }}</span></div>
@@ -355,21 +353,15 @@
 
             <section class="customize-form">
                 <h1>Customize Your Invitation</h1>
-                <p class="customize-subtitle">Add event details now. You will review everything before creating the order, and the next step will show your 50% advance bank transfer instructions and remaining balance.</p>
+                <p class="customize-subtitle">Add event details now. Next you will enter customer information, then review the full order before bank transfer instructions are shown.</p>
 
-                <form id="review-form" action="/review" method="POST">
+                <form id="review-form" action="/checkout" method="POST">
                     <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
                     <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
                     <input type="hidden" name="foil_option" value="{{ .summary.FoilOption }}">
                     <input type="hidden" name="extra_inserts" value="{{ .summary.RequestedInserts }}">
                     <input type="hidden" id="side-input" name="side" value="{{ .summary.Side }}">
                     <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
-                    <input type="hidden" name="name" value="{{ .summary.Name }}">
-                    <input type="hidden" name="email" value="{{ .summary.Email }}">
-                    <input type="hidden" name="phone" value="{{ .summary.Phone }}">
-                    <input type="hidden" name="address" value="{{ .summary.Address }}">
-                    <input type="hidden" name="city" value="{{ .summary.City }}">
-                    <input type="hidden" name="postal_code" value="{{ .summary.PostalCode }}">
 
                     <div class="section-card">
                         <h3>Side Selection</h3>
@@ -383,11 +375,11 @@
                         <h3>Bride & Groom</h3>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="bride_name">Bride Name (Optional)</label>
+                                <label for="bride_name">Bride Name</label>
                                 <input id="bride_name" name="bride_name" type="text">
                             </div>
                             <div class="form-group">
-                                <label for="groom_name">Groom Name (Optional)</label>
+                                <label for="groom_name">Groom Name</label>
                                 <input id="groom_name" name="groom_name" type="text">
                             </div>
                         </div>
@@ -397,11 +389,11 @@
                         <h3>Parents</h3>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="bride_father_name">Bride's Father Name (Optional)</label>
+                                <label for="bride_father_name">Bride's Parents Name</label>
                                 <input id="bride_father_name" name="bride_father_name" type="text">
                             </div>
                             <div class="form-group">
-                                <label for="groom_father_name">Groom's Father Name (Optional)</label>
+                                <label for="groom_father_name">Groom's Parents Name</label>
                                 <input id="groom_father_name" name="groom_father_name" type="text">
                             </div>
                         </div>
@@ -631,21 +623,21 @@
                         <h3>RSVP</h3>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="rsvp_name">RSVP Name</label>
-                                <input id="rsvp_name" name="rsvp_name" type="text">
+                                <label for="rsvp_name">RSVP Name(s)</label>
+                                <textarea id="rsvp_name" name="rsvp_name" placeholder="One per line if you have multiple RSVP contacts"></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="rsvp_phone">RSVP Phone</label>
-                                <input id="rsvp_phone" name="rsvp_phone" type="tel">
+                                <label for="rsvp_phone">RSVP Phone Number(s)</label>
+                                <textarea id="rsvp_phone" name="rsvp_phone" placeholder="One phone number per line"></textarea>
                             </div>
                             <div class="form-group full-width">
-                                <label for="notes">Notes (Optional)</label>
+                                <label for="notes">Notes</label>
                                 <textarea id="notes" name="notes"></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <button class="submit-btn" id="review-submit-btn" type="button">Continue to Review →</button>
+                    <button class="submit-btn" id="review-submit-btn" type="button">Continue to Checkout →</button>
                 </form>
             </section>
         </div>

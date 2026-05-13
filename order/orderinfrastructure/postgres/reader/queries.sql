@@ -43,6 +43,7 @@ SELECT
     id,
     order_id,
     COALESCE(side, 'bride') AS side,
+    COALESCE(extra_inserts_per_card, 0)::bigint AS extra_inserts_per_card,
     COALESCE(top_label, '') AS top_label,
     COALESCE(couple_name, '') AS couple_name,
     COALESCE(event_date, '') AS event_date,

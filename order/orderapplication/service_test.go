@@ -96,6 +96,131 @@ func TestCalculatePricingIgnoresClientCurrency(t *testing.T) {
 	}
 }
 
+func TestCalculatePricingTreatsRequestedInsertsAsAdditionalExtras(t *testing.T) {
+	t.Parallel()
+
+	service := &Service{
+		cardRepo: &stubCardRepo{
+			card: &carddomain.Card{
+				ID:              7,
+				Name:            "Trusted Card",
+				PriceFoilPKR:    500,
+				PriceNofoilPKR:  450,
+				InsertPricePKR:  25,
+				MinOrder:        1,
+				IncludedInserts: 2,
+				Category:        "wedding-cards",
+			},
+		},
+	}
+
+	pricing, err := service.calculatePricing(context.Background(), 7, 2, "PKR", "foil", 1)
+	if err != nil {
+		t.Fatalf("calculatePricing returned error: %v", err)
+	}
+
+	if pricing.includedInserts != 2 {
+		t.Fatalf("expected included inserts 2, got %d", pricing.includedInserts)
+	}
+	if pricing.extraInserts != 1 {
+		t.Fatalf("expected selected extra inserts 1, got %d", pricing.extraInserts)
+	}
+
+	expectedTotal := int64((500 + 25) * 2)
+	if pricing.totalPrice != expectedTotal {
+		t.Fatalf("expected total with one extra insert per card %d, got %d", expectedTotal, pricing.totalPrice)
+	}
+}
+
+func TestPrepareOrderReviewAllowsMultipleRSVPContacts(t *testing.T) {
+	t.Parallel()
+
+	service := &Service{
+		cardRepo: &stubCardRepo{
+			card: &carddomain.Card{
+				ID:              7,
+				Name:            "Trusted Card",
+				PriceFoilPKR:    500,
+				PriceNofoilPKR:  450,
+				InsertPricePKR:  25,
+				MinOrder:        1,
+				IncludedInserts: 0,
+				Category:        "wedding-cards",
+			},
+		},
+	}
+
+	review, err := service.PrepareOrderReview(context.Background(), PlaceOrderInput{
+		CardID:           7,
+		Quantity:         10,
+		FoilOption:       "foil",
+		RequestedInserts: 0,
+		Name:             "Aimen",
+		Email:            "aimen@example.com",
+		Phone:            "03001234567",
+		Address:          "123 Karim Block",
+		City:             "Lahore",
+		PostalCode:       "54000",
+		Side:             "bride",
+		RsvpName:         "Ali\nSara",
+		RsvpPhone:        "0300 1234567\n0300 7654321",
+	})
+	if err != nil {
+		t.Fatalf("PrepareOrderReview returned error: %v", err)
+	}
+
+	if review.Input.RsvpName != "Ali\nSara" {
+		t.Fatalf("expected RSVP names preserved, got %q", review.Input.RsvpName)
+	}
+	if review.Input.RsvpPhone != "03001234567\n03007654321" {
+		t.Fatalf("expected RSVP phones normalized and preserved, got %q", review.Input.RsvpPhone)
+	}
+}
+
+func TestPrepareOrderReviewNormalizesCommonPakistanPhoneFormats(t *testing.T) {
+	t.Parallel()
+
+	service := &Service{
+		cardRepo: &stubCardRepo{
+			card: &carddomain.Card{
+				ID:              7,
+				Name:            "Trusted Card",
+				PriceFoilPKR:    500,
+				PriceNofoilPKR:  450,
+				InsertPricePKR:  25,
+				MinOrder:        1,
+				IncludedInserts: 0,
+				Category:        "wedding-cards",
+			},
+		},
+	}
+
+	review, err := service.PrepareOrderReview(context.Background(), PlaceOrderInput{
+		CardID:           7,
+		Quantity:         10,
+		FoilOption:       "foil",
+		RequestedInserts: 0,
+		Name:             "Aimen",
+		Email:            "aimen@example.com",
+		Phone:            "923001234567",
+		Address:          "123 Karim Block",
+		City:             "Lahore",
+		PostalCode:       "54000",
+		Side:             "bride",
+		RsvpPhone:        "3007654321",
+	})
+	if err != nil {
+		t.Fatalf("PrepareOrderReview returned error: %v", err)
+	}
+
+	if review.Input.Phone != "+923001234567" {
+		t.Fatalf("expected customer phone normalized, got %q", review.Input.Phone)
+	}
+	if review.Input.RsvpPhone != "03007654321" {
+		t.Fatalf("expected RSVP phone normalized, got %q", review.Input.RsvpPhone)
+	}
+}
+
 func TestBuildPaymentAmountSummaryUsesFiftyPercentAdvance(t *testing.T) {
 	t.Parallel()
 

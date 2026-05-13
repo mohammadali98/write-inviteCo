@@ -21,6 +21,52 @@ type CardHandler struct {
 	productService *productapplication.Service
 }
 
+type CheckoutPersonalization struct {
+	BidBoxTopLabel     string
+	BidBoxCoupleName   string
+	BidBoxEventDate    string
+	BidBoxDetails      string
+	Side               string
+	BrideName          string
+	GroomName          string
+	BrideFatherName    string
+	GroomFatherName    string
+	MehndiDate         string
+	MehndiDay          string
+	MehndiTimeType     string
+	MehndiTime         string
+	MehndiDinnerTime   string
+	MehndiVenueName    string
+	MehndiVenueAddress string
+	BaraatDate         string
+	BaraatDay          string
+	BaraatTimeType     string
+	BaraatTime         string
+	BaraatDinnerTime   string
+	BaraatArrivalTime  string
+	RukhsatiTime       string
+	BaraatVenueName    string
+	BaraatVenueAddress string
+	NikkahDate         string
+	NikkahDay          string
+	NikkahTimeType     string
+	NikkahTime         string
+	NikkahDinnerTime   string
+	NikkahVenueName    string
+	NikkahVenueAddress string
+	WalimaDate         string
+	WalimaDay          string
+	WalimaTimeType     string
+	WalimaTime         string
+	WalimaDinnerTime   string
+	WalimaVenueName    string
+	WalimaVenueAddress string
+	ReceptionTime      string
+	RsvpName           string
+	RsvpPhone          string
+	Notes              string
+}
+
 const (
 	maxCheckoutQuantity     = 5000
 	maxCheckoutExtraInserts = 20
@@ -103,7 +149,12 @@ func (h *CardHandler) SearchCards(c *gin.Context) {
 }
 
 func (h *CardHandler) Checkout(c *gin.Context) {
-	cardID, err := parsePositiveInt64(c.Query("card_id"))
+	if c.Request.Method == http.MethodPost && !webui.ValidateCSRF(c) {
+		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please return to personalization and submit your details again.")
+		return
+	}
+
+	cardID, err := parsePositiveInt64(checkoutValue(c, "card_id"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing to checkout.")
 		return
@@ -124,7 +175,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		minOrder = 1
 	}
 
-	quantity := parseInt64Default(c.Query("quantity"), minOrder)
+	quantity := parseInt64Default(checkoutValue(c, "quantity"), minOrder)
 	if quantity < minOrder {
 		quantity = minOrder
 	}
@@ -133,7 +184,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		return
 	}
 
-	requestedInserts := parseInt64Default(c.Query("extra_inserts"), 0)
+	requestedInserts := parseInt64Default(checkoutValue(c, "extra_inserts"), 0)
 	if requestedInserts < 0 || requestedInserts > maxCheckoutExtraInserts {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please enter a valid insert count per card.")
 		return
@@ -141,7 +192,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 
 	currency := "PKR"
 
-	foilOption, err := parseCheckoutFoilOption(c.Query("foil_option"))
+	foilOption, err := parseCheckoutFoilOption(checkoutValue(c, "foil_option"))
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Finish", "Please choose a valid foil option.")
 		return
@@ -162,10 +213,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 	if includedInserts < 0 {
 		includedInserts = 0
 	}
-	extraInserts := requestedInserts - includedInserts
-	if extraInserts < 0 {
-		extraInserts = 0
-	}
+	extraInserts := requestedInserts
 
 	unitPrice := priceFoil
 	foilLabel := "With Foil"
@@ -213,6 +261,7 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"extraInsertCostPerCard": extraInsertCostPerCard,
 		"perCardTotal":           perCardTotal,
 		"totalPrice":             total,
+		"personalization":        readCheckoutPersonalization(c),
 		"csrfToken":              webui.EnsureCSRFToken(c),
 	})
 }
@@ -244,9 +293,86 @@ func (h *CardHandler) CardDetail(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "card.html", gin.H{
-		"card":   card,
-		"images": images,
+		"card":      card,
+		"images":    images,
+		"csrfToken": webui.EnsureCSRFToken(c),
 	})
+}
+
+func checkoutValue(c *gin.Context, key string) string {
+	if c.Request.Method == http.MethodPost {
+		return c.PostForm(key)
+	}
+	return c.Query(key)
+}
+
+func readCheckoutPersonalization(c *gin.Context) CheckoutPersonalization {
+	return CheckoutPersonalization{
+		BidBoxTopLabel:     checkoutValue(c, "top_label"),
+		BidBoxCoupleName:   checkoutValue(c, "couple_name"),
+		BidBoxEventDate:    checkoutValue(c, "event_date"),
+		BidBoxDetails:      checkoutValue(c, "details"),
+		Side:               checkoutValue(c, "side"),
+		BrideName:          checkoutValue(c, "bride_name"),
+		GroomName:          checkoutValue(c, "groom_name"),
+		BrideFatherName:    checkoutValue(c, "bride_father_name"),
+		GroomFatherName:    checkoutValue(c, "groom_father_name"),
+		MehndiDate:         checkoutValue(c, "mehndi_date"),
+		MehndiDay:          checkoutValue(c, "mehndi_day"),
+		MehndiTimeType:     checkoutValue(c, "mehndi_time_type"),
+		MehndiTime:         checkoutValue(c, "mehndi_time"),
+		MehndiDinnerTime:   checkoutValue(c, "mehndi_dinner_time"),
+		MehndiVenueName:    checkoutValue(c, "mehndi_venue_name"),
+		MehndiVenueAddress: checkoutValue(c, "mehndi_venue_address"),
+		BaraatDate:         checkoutValue(c, "baraat_date"),
+		BaraatDay:          checkoutValue(c, "baraat_day"),
+		BaraatTimeType:     checkoutValue(c, "baraat_time_type"),
+		BaraatTime:         checkoutValue(c, "baraat_time"),
+		BaraatDinnerTime:   checkoutValue(c, "baraat_dinner_time"),
+		BaraatArrivalTime:  checkoutValue(c, "baraat_arrival_time"),
+		RukhsatiTime:       checkoutValue(c, "rukhsati_time"),
+		BaraatVenueName:    checkoutValue(c, "baraat_venue_name"),
+		BaraatVenueAddress: checkoutValue(c, "baraat_venue_address"),
+		NikkahDate:         checkoutValue(c, "nikkah_date"),
+		NikkahDay:          checkoutValue(c, "nikkah_day"),
+		NikkahTimeType:     checkoutValue(c, "nikkah_time_type"),
+		NikkahTime:         checkoutValue(c, "nikkah_time"),
+		NikkahDinnerTime:   checkoutValue(c, "nikkah_dinner_time"),
+		NikkahVenueName:    checkoutValue(c, "nikkah_venue_name"),
+		NikkahVenueAddress: checkoutValue(c, "nikkah_venue_address"),
+		WalimaDate:         checkoutValue(c, "walima_date"),
+		WalimaDay:          checkoutValue(c, "walima_day"),
+		WalimaTimeType:     checkoutValue(c, "walima_time_type"),
+		WalimaTime:         checkoutValue(c, "walima_time"),
+		WalimaDinnerTime:   checkoutValue(c, "walima_dinner_time"),
+		WalimaVenueName:    checkoutValue(c, "walima_venue_name"),
+		WalimaVenueAddress: checkoutValue(c, "walima_venue_address"),
+		ReceptionTime:      checkoutValue(c, "reception_time"),
+		RsvpName:           joinedCheckoutValue(c, "rsvp_name"),
+		RsvpPhone:          joinedCheckoutValue(c, "rsvp_phone"),
+		Notes:              checkoutValue(c, "notes"),
+	}
+}
+
+func joinedCheckoutValue(c *gin.Context, key string) string {
+	var values []string
+	if c.Request.Method == http.MethodPost {
+		values = c.PostFormArray(key)
+	} else {
+		values = c.QueryArray(key)
+	}
+	if len(values) == 0 {
+		return checkoutValue(c, key)
+	}
+
+	cleaned := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			cleaned = append(cleaned, value)
+		}
+	}
+	return strings.Join(cleaned, "\n")
 }
 
 func parseInt64Default(raw string, fallback int64) int64 {

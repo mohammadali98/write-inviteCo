@@ -310,8 +310,7 @@
         <a class="nav-link" href="/contact">Contact</a>
         <div class="header-icons">
             <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
-            <a href="/search" class="header-icon" aria-label="Favorites" style="text-decoration:none;">♥</a>
-            <button class="header-icon" aria-label="Cart">⊡</button>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
         </div>
     </div>
 </header>
@@ -340,9 +339,8 @@
                 <div class="summary-row"><span>Finish</span><span>{{ .review.Summary.FoilLabel }}</span></div>
                 <div class="summary-row"><span>Base Price / {{ if .review.IsBidBox }}Box{{ else }}Card{{ end }}</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.UnitPrice }}</span></div>
                 {{ if not .review.IsBidBox }}
-                <div class="summary-row"><span>Included Inserts</span><span>{{ .review.Summary.IncludedInserts }}</span></div>
-                <div class="summary-row"><span>Requested Inserts</span><span>{{ .review.Summary.RequestedInserts }}</span></div>
-                <div class="summary-row"><span>Chargeable Extra Inserts</span><span>{{ .review.Summary.ExtraInserts }}</span></div>
+                <div class="summary-row"><span>Included Inserts / Card</span><span>{{ .review.Summary.IncludedInserts }}</span></div>
+                <div class="summary-row"><span>Extra Inserts / Card</span><span>{{ .review.Summary.ExtraInserts }}</span></div>
                 {{ end }}
                 <div class="summary-row"><span>Per {{ if .review.IsBidBox }}Box{{ else }}Card{{ end }} Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .review.Summary.Quantity }}</span></div>
@@ -400,8 +398,8 @@
                     <input type="hidden" name="walima_dinner_time" value="{{ .review.Input.WalimaDinnerTime }}">
                     <input type="hidden" name="walima_venue_name" value="{{ .review.Input.WalimaVenueName }}">
                     <input type="hidden" name="reception_time" value="{{ .review.Input.ReceptionTime }}">
-                    <input type="hidden" name="rsvp_name" value="{{ .review.Input.RsvpName }}">
-                    <input type="hidden" name="rsvp_phone" value="{{ .review.Input.RsvpPhone }}">
+                    <textarea name="rsvp_name" hidden>{{ .review.Input.RsvpName }}</textarea>
+                    <textarea name="rsvp_phone" hidden>{{ .review.Input.RsvpPhone }}</textarea>
                     <textarea name="details" hidden>{{ .review.Input.BidBoxDetails }}</textarea>
                     <textarea name="mehndi_venue_address" hidden>{{ .review.Input.MehndiVenueAddress }}</textarea>
                     <textarea name="baraat_venue_address" hidden>{{ .review.Input.BaraatVenueAddress }}</textarea>
@@ -493,11 +491,11 @@
                             <h3>Parents</h3>
                             <div class="info-grid">
                                 <div class="info-item">
-                                    <span class="info-label">Bride's Father</span>
+                                    <span class="info-label">Bride's Parents Name</span>
                                     <div class="info-value">{{ if .review.Input.BrideFatherName }}{{ .review.Input.BrideFatherName }}{{ else }}Not provided{{ end }}</div>
                                 </div>
                                 <div class="info-item">
-                                    <span class="info-label">Groom's Father</span>
+                                    <span class="info-label">Groom's Parents Name</span>
                                     <div class="info-value">{{ if .review.Input.GroomFatherName }}{{ .review.Input.GroomFatherName }}{{ else }}Not provided{{ end }}</div>
                                 </div>
                             </div>
@@ -571,8 +569,8 @@
                         <div class="detail-block">
                             <h3>RSVP & Notes</h3>
                             <div class="info-grid">
-                                <div class="info-item"><span class="info-label">RSVP Name</span><div class="info-value">{{ if .review.Input.RsvpName }}{{ .review.Input.RsvpName }}{{ else }}Not provided{{ end }}</div></div>
-                                <div class="info-item"><span class="info-label">RSVP Phone</span><div class="info-value">{{ if .review.Input.RsvpPhone }}{{ .review.Input.RsvpPhone }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">RSVP Name(s)</span><div class="info-value">{{ if .review.Input.RsvpName }}{{ .review.Input.RsvpName }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">RSVP Phone Number(s)</span><div class="info-value">{{ if .review.Input.RsvpPhone }}{{ .review.Input.RsvpPhone }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Notes</span><div class="info-value">{{ if .review.Input.Notes }}{{ .review.Input.Notes }}{{ else }}No extra notes added.{{ end }}</div></div>
                             </div>
                         </div>

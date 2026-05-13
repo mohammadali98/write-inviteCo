@@ -70,14 +70,9 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 		Quantity:         quantity,
 		FoilOption:       c.PostForm("foil_option"),
 		RequestedInserts: requestedInserts,
-		Name:             c.PostForm("name"),
-		Email:            c.PostForm("email"),
-		Phone:            c.PostForm("phone"),
-		Address:          c.PostForm("address"),
-		City:             c.PostForm("city"),
-		PostalCode:       c.PostForm("postal_code"),
 	})
 	if err != nil {
+		logReviewValidationError(c, err)
 		renderServiceError(c, err)
 		return
 	}
@@ -168,8 +163,8 @@ func (h *OrderHandler) ReviewPage(c *gin.Context) {
 		WalimaVenueName:    c.PostForm("walima_venue_name"),
 		WalimaVenueAddress: c.PostForm("walima_venue_address"),
 		ReceptionTime:      c.PostForm("reception_time"),
-		RsvpName:           c.PostForm("rsvp_name"),
-		RsvpPhone:          c.PostForm("rsvp_phone"),
+		RsvpName:           joinedPostForm(c, "rsvp_name"),
+		RsvpPhone:          joinedPostForm(c, "rsvp_phone"),
 		Notes:              c.PostForm("notes"),
 	})
 	if err != nil {
@@ -258,8 +253,8 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		WalimaVenueName:    c.PostForm("walima_venue_name"),
 		WalimaVenueAddress: c.PostForm("walima_venue_address"),
 		ReceptionTime:      c.PostForm("reception_time"),
-		RsvpName:           c.PostForm("rsvp_name"),
-		RsvpPhone:          c.PostForm("rsvp_phone"),
+		RsvpName:           joinedPostForm(c, "rsvp_name"),
+		RsvpPhone:          joinedPostForm(c, "rsvp_phone"),
 		Notes:              c.PostForm("notes"),
 	})
 	if err != nil {
@@ -335,6 +330,47 @@ func renderServiceError(c *gin.Context, err error) {
 	webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not process the request right now.")
 }
 
+func logReviewValidationError(c *gin.Context, err error) {
+	if !errors.Is(err, orderapplication.ErrInvalidInput) {
+		return
+	}
+
+	if field, ok := orderapplication.InvalidInputField(err); ok {
+		log.Printf("REVIEW ERROR: invalid field=%s", field)
+		return
+	}
+
+	missing := missingRequiredReviewFields(c)
+	if len(missing) > 0 {
+		log.Printf("REVIEW ERROR: missing required fields=%s", strings.Join(missing, ","))
+		return
+	}
+
+	log.Printf("REVIEW ERROR: invalid details; required fields present and product fields present")
+}
+
+func missingRequiredReviewFields(c *gin.Context) []string {
+	required := []string{
+		"card_id",
+		"quantity",
+		"extra_inserts",
+		"name",
+		"email",
+		"phone",
+		"address",
+		"city",
+		"postal_code",
+	}
+
+	missing := make([]string, 0)
+	for _, field := range required {
+		if strings.TrimSpace(c.PostForm(field)) == "" {
+			missing = append(missing, field)
+		}
+	}
+	return missing
+}
+
 func parsePositiveInt64(raw string) (int64, error) {
 	value, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
 	if err != nil || value < 1 {
@@ -349,6 +385,22 @@ func parseNonNegativeInt64(raw string) (int64, error) {
 		return 0, strconv.ErrSyntax
 	}
 	return value, nil
+}
+
+func joinedPostForm(c *gin.Context, key string) string {
+	values := c.PostFormArray(key)
+	if len(values) == 0 {
+		return c.PostForm(key)
+	}
+
+	cleaned := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			cleaned = append(cleaned, value)
+		}
+	}
+	return strings.Join(cleaned, "\n")
 }
 
 func (h *OrderHandler) AdminOrders(c *gin.Context) {

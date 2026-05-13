@@ -125,6 +125,7 @@ RETURNING
 INSERT INTO order_details (
     order_id,
     side,
+    extra_inserts_per_card,
     top_label,
     couple_name,
     event_date,
@@ -171,6 +172,7 @@ INSERT INTO order_details (
 VALUES (
     sqlc.arg(order_id),
     sqlc.arg(side),
+    sqlc.arg(extra_inserts_per_card),
     sqlc.arg(top_label),
     sqlc.arg(couple_name),
     NULLIF(sqlc.arg(bid_box_event_date), ''),
@@ -218,6 +220,7 @@ RETURNING
     id,
     order_id,
     side,
+    extra_inserts_per_card,
     COALESCE(top_label, '') AS top_label,
     COALESCE(couple_name, '') AS couple_name,
     COALESCE(event_date, '') AS event_date,

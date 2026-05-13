@@ -66,6 +66,7 @@ const createOrderDetail = `-- name: CreateOrderDetail :one
 INSERT INTO order_details (
     order_id,
     side,
+    extra_inserts_per_card,
     top_label,
     couple_name,
     event_date,
@@ -114,51 +115,53 @@ VALUES (
     $2,
     $3,
     $4,
-    NULLIF($5, ''),
-    $6,
+    $5,
+    NULLIF($6, ''),
     $7,
     $8,
     $9,
     $10,
-    NULLIF($11, '')::date,
-    $12,
+    $11,
+    NULLIF($12, '')::date,
     $13,
-    NULLIF($14, '')::time,
+    $14,
     NULLIF($15, '')::time,
-    $16,
+    NULLIF($16, '')::time,
     $17,
-    NULLIF($18, '')::date,
-    $19,
+    $18,
+    NULLIF($19, '')::date,
     $20,
-    NULLIF($21, '')::time,
+    $21,
     NULLIF($22, '')::time,
     NULLIF($23, '')::time,
     NULLIF($24, '')::time,
-    $25,
+    NULLIF($25, '')::time,
     $26,
-    NULLIF($27, '')::date,
-    $28,
+    $27,
+    NULLIF($28, '')::date,
     $29,
-    NULLIF($30, '')::time,
+    $30,
     NULLIF($31, '')::time,
-    $32,
+    NULLIF($32, '')::time,
     $33,
-    NULLIF($34, '')::date,
-    $35,
+    $34,
+    NULLIF($35, '')::date,
     $36,
-    NULLIF($37, '')::time,
+    $37,
     NULLIF($38, '')::time,
     NULLIF($39, '')::time,
-    $40,
+    NULLIF($40, '')::time,
     $41,
     $42,
     $43,
-    $44
+    $44,
+    $45
 )
 RETURNING
     id,
     order_id,
     side,
+    extra_inserts_per_card,
     COALESCE(top_label, '') AS top_label,
     COALESCE(couple_name, '') AS couple_name,
     COALESCE(event_date, '') AS event_date,
@@ -205,105 +208,108 @@ RETURNING
 `
 
 type CreateOrderDetailParams struct {
-	OrderID            int64
-	Side               string
-	TopLabel           *string
-	CoupleName         *string
-	BidBoxEventDate    interface{}
-	BidBoxDetails      *string
-	BrideName          *string
-	GroomName          *string
-	BrideFatherName    *string
-	GroomFatherName    *string
-	MehndiDate         interface{}
-	MehndiDay          *string
-	MehndiTimeType     *string
-	MehndiTime         interface{}
-	MehndiDinnerTime   interface{}
-	MehndiVenueName    *string
-	MehndiVenueAddress *string
-	BaraatDate         interface{}
-	BaraatDay          *string
-	BaraatTimeType     *string
-	BaraatTime         interface{}
-	BaraatDinnerTime   interface{}
-	BaraatArrivalTime  interface{}
-	RukhsatiTime       interface{}
-	BaraatVenueName    *string
-	BaraatVenueAddress *string
-	NikkahDate         interface{}
-	NikkahDay          *string
-	NikkahTimeType     *string
-	NikkahTime         interface{}
-	NikkahDinnerTime   interface{}
-	NikkahVenueName    *string
-	NikkahVenueAddress *string
-	WalimaDate         interface{}
-	WalimaDay          *string
-	WalimaTimeType     *string
-	WalimaTime         interface{}
-	WalimaDinnerTime   interface{}
-	ReceptionTime      interface{}
-	WalimaVenueName    *string
-	WalimaVenueAddress *string
-	RsvpName           string
-	RsvpPhone          string
-	Notes              *string
+	OrderID             int64
+	Side                string
+	ExtraInsertsPerCard int64
+	TopLabel            *string
+	CoupleName          *string
+	BidBoxEventDate     interface{}
+	BidBoxDetails       *string
+	BrideName           *string
+	GroomName           *string
+	BrideFatherName     *string
+	GroomFatherName     *string
+	MehndiDate          interface{}
+	MehndiDay           *string
+	MehndiTimeType      *string
+	MehndiTime          interface{}
+	MehndiDinnerTime    interface{}
+	MehndiVenueName     *string
+	MehndiVenueAddress  *string
+	BaraatDate          interface{}
+	BaraatDay           *string
+	BaraatTimeType      *string
+	BaraatTime          interface{}
+	BaraatDinnerTime    interface{}
+	BaraatArrivalTime   interface{}
+	RukhsatiTime        interface{}
+	BaraatVenueName     *string
+	BaraatVenueAddress  *string
+	NikkahDate          interface{}
+	NikkahDay           *string
+	NikkahTimeType      *string
+	NikkahTime          interface{}
+	NikkahDinnerTime    interface{}
+	NikkahVenueName     *string
+	NikkahVenueAddress  *string
+	WalimaDate          interface{}
+	WalimaDay           *string
+	WalimaTimeType      *string
+	WalimaTime          interface{}
+	WalimaDinnerTime    interface{}
+	ReceptionTime       interface{}
+	WalimaVenueName     *string
+	WalimaVenueAddress  *string
+	RsvpName            string
+	RsvpPhone           string
+	Notes               *string
 }
 
 type CreateOrderDetailRow struct {
-	ID                 int64
-	OrderID            int64
-	Side               string
-	TopLabel           string
-	CoupleName         string
-	EventDate          string
-	BidBoxDetails      string
-	BrideName          *string
-	GroomName          *string
-	BrideFatherName    *string
-	GroomFatherName    *string
-	MehndiDate         string
-	MehndiDay          *string
-	MehndiTimeType     *string
-	MehndiTime         string
-	MehndiDinnerTime   string
-	MehndiVenueName    string
-	MehndiVenueAddress string
-	BaraatDate         string
-	BaraatDay          *string
-	BaraatTimeType     *string
-	BaraatTime         string
-	BaraatDinnerTime   string
-	BaraatArrivalTime  string
-	RukhsatiTime       string
-	BaraatVenueName    string
-	BaraatVenueAddress string
-	NikkahDate         string
-	NikkahDay          *string
-	NikkahTimeType     *string
-	NikkahTime         string
-	NikkahDinnerTime   string
-	NikkahVenueName    string
-	NikkahVenueAddress string
-	WalimaDate         string
-	WalimaDay          *string
-	WalimaTimeType     *string
-	WalimaTime         string
-	WalimaDinnerTime   string
-	ReceptionTime      string
-	WalimaVenueName    string
-	WalimaVenueAddress string
-	RsvpName           string
-	RsvpPhone          string
-	Notes              *string
-	CreatedAt          pgtype.Timestamptz
+	ID                  int64
+	OrderID             int64
+	Side                string
+	ExtraInsertsPerCard int64
+	TopLabel            string
+	CoupleName          string
+	EventDate           string
+	BidBoxDetails       string
+	BrideName           *string
+	GroomName           *string
+	BrideFatherName     *string
+	GroomFatherName     *string
+	MehndiDate          string
+	MehndiDay           *string
+	MehndiTimeType      *string
+	MehndiTime          string
+	MehndiDinnerTime    string
+	MehndiVenueName     string
+	MehndiVenueAddress  string
+	BaraatDate          string
+	BaraatDay           *string
+	BaraatTimeType      *string
+	BaraatTime          string
+	BaraatDinnerTime    string
+	BaraatArrivalTime   string
+	RukhsatiTime        string
+	BaraatVenueName     string
+	BaraatVenueAddress  string
+	NikkahDate          string
+	NikkahDay           *string
+	NikkahTimeType      *string
+	NikkahTime          string
+	NikkahDinnerTime    string
+	NikkahVenueName     string
+	NikkahVenueAddress  string
+	WalimaDate          string
+	WalimaDay           *string
+	WalimaTimeType      *string
+	WalimaTime          string
+	WalimaDinnerTime    string
+	ReceptionTime       string
+	WalimaVenueName     string
+	WalimaVenueAddress  string
+	RsvpName            string
+	RsvpPhone           string
+	Notes               *string
+	CreatedAt           pgtype.Timestamptz
 }
 
 func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailParams) (CreateOrderDetailRow, error) {
 	row := q.db.QueryRow(ctx, createOrderDetail,
 		arg.OrderID,
 		arg.Side,
+		arg.ExtraInsertsPerCard,
 		arg.TopLabel,
 		arg.CoupleName,
 		arg.BidBoxEventDate,
@@ -352,6 +358,7 @@ func (q *Queries) CreateOrderDetail(ctx context.Context, arg CreateOrderDetailPa
 		&i.ID,
 		&i.OrderID,
 		&i.Side,
+		&i.ExtraInsertsPerCard,
 		&i.TopLabel,
 		&i.CoupleName,
 		&i.EventDate,

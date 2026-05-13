@@ -59,6 +59,10 @@ func (h *CustomerHandler) MyAccountPage(c *gin.Context) {
 	)
 }
 
+func (h *CustomerHandler) WishlistPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "wishlist.html", nil)
+}
+
 func (h *CustomerHandler) TermsOfUsePage(c *gin.Context) {
 	renderInfoPage(c,
 		"Terms of Use",
