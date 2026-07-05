@@ -596,8 +596,14 @@ type pricingResult struct {
 }
 
 func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity int64, currency string, foilOption string, requestedInserts int64) (*pricingResult, error) {
-	if cardID <= 0 || quantity < 1 || quantity > maxQuantity || requestedInserts < 0 || requestedInserts > maxRequestedInserts {
-		return nil, ErrInvalidInput
+	if cardID <= 0 {
+		return nil, InvalidFieldError{Field: "card_id"}
+	}
+	if quantity < 1 || quantity > maxQuantity {
+		return nil, InvalidFieldError{Field: "quantity"}
+	}
+	if requestedInserts < 0 || requestedInserts > maxRequestedInserts {
+		return nil, InvalidFieldError{Field: "extra_inserts"}
 	}
 
 	card, err := s.cardRepo.GetCardByID(ctx, cardID)
@@ -620,7 +626,7 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 	currency = "PKR"
 	foilOption, err = parseFoilOption(foilOption)
 	if err != nil {
-		return nil, err
+		return nil, InvalidFieldError{Field: "foil_option"}
 	}
 
 	priceFoil := card.PriceFoilPKR
@@ -741,8 +747,8 @@ func sanitizePlaceOrderInput(input PlaceOrderInput) PlaceOrderInput {
 	input.WalimaVenueName = sanitizeSingleLine(input.WalimaVenueName)
 	input.WalimaVenueAddress = sanitizeMultiline(input.WalimaVenueAddress)
 	input.ReceptionTime = strings.TrimSpace(input.ReceptionTime)
-	input.RsvpName = sanitizeMultiline(input.RsvpName)
-	input.RsvpPhone = normalizePhoneList(input.RsvpPhone)
+	input.RsvpName = normalizeRSVPNameList(input.RsvpName)
+	input.RsvpPhone = normalizeOptionalPhoneList(input.RsvpPhone)
 	input.Notes = sanitizeMultiline(input.Notes)
 	return input
 }
@@ -808,116 +814,134 @@ func validateCustomizationFields(input PlaceOrderInput, category string) error {
 }
 
 func validateBidBoxCustomizationFields(input PlaceOrderInput) error {
-	for _, value := range []string{
-		input.BidBoxTopLabel,
-		input.BidBoxCoupleName,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "top_label", value: input.BidBoxTopLabel},
+		{name: "couple_name", value: input.BidBoxCoupleName},
 	} {
-		if utf8.RuneCountInString(value) > maxBidBoxLabelLength {
-			return ErrInvalidInput
+		if utf8.RuneCountInString(field.value) > maxBidBoxLabelLength {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
 	if err := validateOptionalDate(input.BidBoxEventDate); err != nil {
-		return err
+		return InvalidFieldError{Field: "event_date"}
 	}
 	if utf8.RuneCountInString(input.BidBoxDetails) > maxBidBoxDetailsLength {
-		return ErrInvalidInput
+		return InvalidFieldError{Field: "details"}
 	}
 	return nil
 }
 
 func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 	if _, err := parseSide(input.Side); err != nil {
-		return err
+		return InvalidFieldError{Field: "side"}
 	}
 	if _, err := parseOptionalDay(input.MehndiDay); err != nil {
-		return err
+		return InvalidFieldError{Field: "mehndi_day"}
 	}
 	if _, err := parseOptionalDay(input.BaraatDay); err != nil {
-		return err
+		return InvalidFieldError{Field: "baraat_day"}
 	}
 	if _, err := parseOptionalDay(input.NikkahDay); err != nil {
-		return err
+		return InvalidFieldError{Field: "nikkah_day"}
 	}
 	if _, err := parseOptionalDay(input.WalimaDay); err != nil {
-		return err
+		return InvalidFieldError{Field: "walima_day"}
 	}
 	if _, err := parseOptionalTimeType(input.MehndiTimeType); err != nil {
-		return err
+		return InvalidFieldError{Field: "mehndi_time_type"}
 	}
 	if _, err := parseOptionalTimeType(input.BaraatTimeType); err != nil {
-		return err
+		return InvalidFieldError{Field: "baraat_time_type"}
 	}
 	if _, err := parseOptionalTimeType(input.NikkahTimeType); err != nil {
-		return err
+		return InvalidFieldError{Field: "nikkah_time_type"}
 	}
 	if _, err := parseOptionalTimeType(input.WalimaTimeType); err != nil {
-		return err
+		return InvalidFieldError{Field: "walima_time_type"}
 	}
-	for _, value := range []string{
-		input.MehndiDate,
-		input.BaraatDate,
-		input.NikkahDate,
-		input.WalimaDate,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "mehndi_date", value: input.MehndiDate},
+		{name: "baraat_date", value: input.BaraatDate},
+		{name: "nikkah_date", value: input.NikkahDate},
+		{name: "walima_date", value: input.WalimaDate},
 	} {
-		if err := validateOptionalDate(value); err != nil {
-			return err
+		if err := validateOptionalDate(field.value); err != nil {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
-	for _, value := range []string{
-		input.MehndiTime,
-		input.MehndiDinnerTime,
-		input.BaraatTime,
-		input.BaraatDinnerTime,
-		input.BaraatArrivalTime,
-		input.RukhsatiTime,
-		input.NikkahTime,
-		input.NikkahDinnerTime,
-		input.WalimaTime,
-		input.WalimaDinnerTime,
-		input.ReceptionTime,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "mehndi_time", value: input.MehndiTime},
+		{name: "mehndi_dinner_time", value: input.MehndiDinnerTime},
+		{name: "baraat_time", value: input.BaraatTime},
+		{name: "baraat_dinner_time", value: input.BaraatDinnerTime},
+		{name: "baraat_arrival_time", value: input.BaraatArrivalTime},
+		{name: "rukhsati_time", value: input.RukhsatiTime},
+		{name: "nikkah_time", value: input.NikkahTime},
+		{name: "nikkah_dinner_time", value: input.NikkahDinnerTime},
+		{name: "walima_time", value: input.WalimaTime},
+		{name: "walima_dinner_time", value: input.WalimaDinnerTime},
+		{name: "reception_time", value: input.ReceptionTime},
 	} {
-		if err := validateOptionalTime(value); err != nil {
-			return err
+		if err := validateOptionalTime(field.value); err != nil {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
-	for _, value := range []string{
-		input.BrideName,
-		input.GroomName,
-		input.BrideFatherName,
-		input.GroomFatherName,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "bride_name", value: input.BrideName},
+		{name: "groom_name", value: input.GroomName},
+		{name: "bride_father_name", value: input.BrideFatherName},
+		{name: "groom_father_name", value: input.GroomFatherName},
 	} {
-		if utf8.RuneCountInString(value) > maxPersonNameLength {
-			return ErrInvalidInput
+		if utf8.RuneCountInString(field.value) > maxPersonNameLength {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
 	if utf8.RuneCountInString(input.RsvpName) > maxNotesLength {
-		return ErrInvalidInput
+		return InvalidFieldError{Field: "rsvp_name"}
 	}
-	for _, value := range []string{
-		input.MehndiVenueName,
-		input.BaraatVenueName,
-		input.NikkahVenueName,
-		input.WalimaVenueName,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "mehndi_venue_name", value: input.MehndiVenueName},
+		{name: "baraat_venue_name", value: input.BaraatVenueName},
+		{name: "nikkah_venue_name", value: input.NikkahVenueName},
+		{name: "walima_venue_name", value: input.WalimaVenueName},
 	} {
-		if utf8.RuneCountInString(value) > maxVenueNameLength {
-			return ErrInvalidInput
+		if utf8.RuneCountInString(field.value) > maxVenueNameLength {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
-	for _, value := range []string{
-		input.MehndiVenueAddress,
-		input.BaraatVenueAddress,
-		input.NikkahVenueAddress,
-		input.WalimaVenueAddress,
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "mehndi_venue_address", value: input.MehndiVenueAddress},
+		{name: "baraat_venue_address", value: input.BaraatVenueAddress},
+		{name: "nikkah_venue_address", value: input.NikkahVenueAddress},
+		{name: "walima_venue_address", value: input.WalimaVenueAddress},
 	} {
-		if utf8.RuneCountInString(value) > maxVenueAddressLength {
-			return ErrInvalidInput
+		if utf8.RuneCountInString(field.value) > maxVenueAddressLength {
+			return InvalidFieldError{Field: field.name}
 		}
 	}
 	if utf8.RuneCountInString(input.Notes) > maxNotesLength {
-		return ErrInvalidInput
+		return InvalidFieldError{Field: "notes"}
 	}
 	if err := validateRSVPPhones(input.RsvpPhone); err != nil {
-		return err
+		return InvalidFieldError{Field: "rsvp_phone"}
 	}
 	return nil
 }
@@ -1500,13 +1524,27 @@ func normalizePhone(value string) string {
 	}
 }
 
-func normalizePhoneList(value string) string {
+func normalizeOptionalPhoneList(value string) string {
 	value = sanitizeMultiline(value)
-	phones := splitRSVPValues(value)
-	for i, phone := range phones {
-		phones[i] = normalizePhone(phone)
+	if utf8.RuneCountInString(value) > maxNotesLength {
+		return value
 	}
-	return strings.Join(phones, "\n")
+
+	phones := splitRSVPValues(value)
+	normalized := make([]string, 0, len(phones))
+	for _, phone := range phones {
+		phone = normalizePhone(phone)
+		if pakistanPhonePattern.MatchString(phone) {
+			normalized = append(normalized, phone)
+		}
+	}
+	return strings.Join(normalized, "\n")
+}
+
+func normalizeRSVPNameList(value string) string {
+	value = sanitizeMultiline(value)
+	names := splitRSVPValues(value)
+	return strings.Join(names, "\n")
 }
 
 func validateRSVPPhones(value string) error {
@@ -1515,11 +1553,6 @@ func validateRSVPPhones(value string) error {
 	}
 	if utf8.RuneCountInString(value) > maxNotesLength {
 		return ErrInvalidInput
-	}
-	for _, phone := range splitRSVPValues(value) {
-		if !pakistanPhonePattern.MatchString(phone) {
-			return ErrInvalidInput
-		}
 	}
 	return nil
 }

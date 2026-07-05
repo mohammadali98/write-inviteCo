@@ -117,12 +117,6 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		return
 	}
 
-	submittedAmount, err := parsePositiveInt64(c.PostForm("submitted_amount"))
-	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Amount", "Please enter the advance amount you transferred as a valid number.")
-		return
-	}
-
 	proof, err := h.savePaymentProof(c, "payment_proof")
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Proof Upload", "Upload a JPG, JPEG, PNG, WEBP, or PDF file up to 10 MB.")
@@ -135,7 +129,6 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 	}
 
 	err = h.service.SubmitBankTransferProof(c.Request.Context(), orderID, orderapplication.PaymentProofInput{
-		SubmittedAmount:      submittedAmount,
 		SenderName:           c.PostForm("sender_name"),
 		TransactionReference: c.PostForm("transaction_reference"),
 		CustomerNote:         c.PostForm("payment_note"),

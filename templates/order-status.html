@@ -119,6 +119,7 @@
             color: var(--text);
             font-size: 0.92rem;
             line-height: 1.55;
+            white-space: pre-line;
         }
 
         .event-grid {
@@ -299,7 +300,7 @@
             <p class="empty-text">No bid box personalization details are available for this order yet.</p>
             {{ end }}
             {{ else }}
-            <h2>Bride & Groom</h2>
+            <h2>Customization Details</h2>
             {{ if .details }}
             <div class="status-grid">
                 <div>
@@ -341,28 +342,47 @@
                     <h3>Mehndi</h3>
                     <p class="event-row">Date: {{ if .details.MehndiDate }}{{ .details.MehndiDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.MehndiDay }}{{ .details.MehndiDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.MehndiTimeType }}{{ .details.MehndiTimeType }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Time: {{ if .details.MehndiTime }}{{ .details.MehndiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.MehndiDinnerTime }}{{ .details.MehndiDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.MehndiVenueName }}{{ .details.MehndiVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.MehndiVenueAddress }}{{ .details.MehndiVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
 
                 <article class="event-card">
                     <h3>Baraat</h3>
                     <p class="event-row">Date: {{ if .details.BaraatDate }}{{ .details.BaraatDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.BaraatDay }}{{ .details.BaraatDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.BaraatTimeType }}{{ .details.BaraatTimeType }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Time: {{ if .details.BaraatTime }}{{ .details.BaraatTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.BaraatDinnerTime }}{{ .details.BaraatDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Arrival: {{ if .details.BaraatArrivalTime }}{{ .details.BaraatArrivalTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Rukhsati: {{ if .details.RukhsatiTime }}{{ .details.RukhsatiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.BaraatVenueName }}{{ .details.BaraatVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.BaraatVenueAddress }}{{ .details.BaraatVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
 
                 <article class="event-card">
                     <h3>Nikkah</h3>
                     <p class="event-row">Date: {{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.NikkahDay }}{{ .details.NikkahDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.NikkahTimeType }}{{ .details.NikkahTimeType }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Time: {{ if .details.NikkahTime }}{{ .details.NikkahTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.NikkahDinnerTime }}{{ .details.NikkahDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.NikkahVenueName }}{{ .details.NikkahVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.NikkahVenueAddress }}{{ .details.NikkahVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
 
                 <article class="event-card">
                     <h3>Walima</h3>
                     <p class="event-row">Date: {{ if .details.WalimaDate }}{{ .details.WalimaDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.WalimaDay }}{{ .details.WalimaDay }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.WalimaTimeType }}{{ .details.WalimaTimeType }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Time: {{ if .details.WalimaTime }}{{ .details.WalimaTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.WalimaDinnerTime }}{{ .details.WalimaDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Reception: {{ if .details.ReceptionTime }}{{ .details.ReceptionTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Venue: {{ if .details.WalimaVenueName }}{{ .details.WalimaVenueName }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Address: {{ if .details.WalimaVenueAddress }}{{ .details.WalimaVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
             </div>
             {{ else }}
@@ -370,6 +390,26 @@
             {{ end }}
             {{ end }}
         </section>
+
+        {{ if .details }}
+        <section class="status-card">
+            <h2>RSVP & Notes</h2>
+            <div class="status-grid">
+                <div>
+                    <div class="row-label">RSVP Name(s)</div>
+                    <div class="row-value">{{ if .details.RsvpName }}{{ .details.RsvpName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">RSVP Phone Number(s)</div>
+                    <div class="row-value">{{ if .details.RsvpPhone }}{{ .details.RsvpPhone }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+            <div style="margin-top: 14px;">
+                <div class="row-label">Notes</div>
+                <div class="row-value">{{ if .details.Notes }}{{ .details.Notes }}{{ else }}-{{ end }}</div>
+            </div>
+        </section>
+        {{ end }}
     </div>
 </main>
 

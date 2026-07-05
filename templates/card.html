@@ -257,6 +257,7 @@
 
                     <label for="extra-inserts">Extra Inserts (per card)</label>
                     <input id="extra-inserts" name="extra_inserts" type="number" value="0" min="0" required>
+                    <p class="insert-help">An insert is an additional printed card placed inside the invitation, such as a Mehndi, Baraat, Walima, Nikkah, RSVP, or details card. This design includes {{ .card.IncludedInserts }} inserts per card. Choose extra inserts only if you need more printed cards inside each invitation.</p>
 
                     <label for="quantity">Quantity</label>
                     <input id="quantity" name="quantity" type="number" value="{{ .card.MinOrder }}" min="{{ .card.MinOrder }}" required>

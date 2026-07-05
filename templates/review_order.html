@@ -341,6 +341,7 @@
                 {{ if not .review.IsBidBox }}
                 <div class="summary-row"><span>Included Inserts / Card</span><span>{{ .review.Summary.IncludedInserts }}</span></div>
                 <div class="summary-row"><span>Extra Inserts / Card</span><span>{{ .review.Summary.ExtraInserts }}</span></div>
+                <div class="summary-row"><span>Extra Insert Cost / Card</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.ExtraInsertCost }}</span></div>
                 {{ end }}
                 <div class="summary-row"><span>Per {{ if .review.IsBidBox }}Box{{ else }}Card{{ end }} Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .review.Summary.Quantity }}</span></div>
@@ -584,7 +585,6 @@
                             <span class="payment-title">Bank Transfer Only</span>
                             <span class="payment-copy">Your trusted order total is {{ .review.Summary.Currency }} {{ .review.Summary.TotalPrice }}. After you create the order, we will show the Meezan Bank details, your trusted 50% advance payment due now, the remaining balance, and the payment proof upload form.</span>
                         </div>
-                        <p class="payment-note">The frontend display is only for review. The final payable amount is recalculated and saved by the server when the order is created.</p>
                     </section>
 
                     <div class="review-actions">

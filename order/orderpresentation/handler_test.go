@@ -1,8 +1,10 @@
 package orderpresentation
 
 import (
+	"bytes"
 	"context"
 	"html/template"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -30,6 +32,10 @@ type fakeOrderService struct {
 	adminProcessPaymentAction     string
 	adminProcessPaymentNote       string
 	adminProcessPaymentErr        error
+	statusDetail                  *orderapplication.AdminOrderDetail
+	submitPaymentProofOrderID     int64
+	submitPaymentProofInput       orderapplication.PaymentProofInput
+	submitPaymentProofErr         error
 }
 
 func (f *fakeOrderService) PrepareCustomization(ctx context.Context, input orderapplication.CustomizationInput) (*orderapplication.CustomizationSummary, error) {
@@ -61,6 +67,9 @@ func (f *fakeOrderService) PlaceOrder(ctx context.Context, input orderapplicatio
 }
 
 func (f *fakeOrderService) GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error) {
+	if f.statusDetail != nil {
+		return f.statusDetail, nil
+	}
 	return nil, nil
 }
 
@@ -79,7 +88,9 @@ func (f *fakeOrderService) AdminUpdateOrderStatus(ctx context.Context, orderID i
 }
 
 func (f *fakeOrderService) SubmitBankTransferProof(ctx context.Context, orderID int64, input orderapplication.PaymentProofInput) error {
-	return nil
+	f.submitPaymentProofOrderID = orderID
+	f.submitPaymentProofInput = input
+	return f.submitPaymentProofErr
 }
 
 func (f *fakeOrderService) AdminProcessPayment(ctx context.Context, orderID int64, action string, adminNote string) error {
@@ -198,6 +209,52 @@ func TestReviewPagePreservesMultipleRSVPValues(t *testing.T) {
 	}
 	if service.prepareOrderReviewInput.RsvpPhone != "03001234567\n03007654321" {
 		t.Fatalf("expected multiple RSVP phones to be preserved, got %q", service.prepareOrderReviewInput.RsvpPhone)
+	}
+}
+
+func TestReviewPageAllowsOptionalBlankRSVPRows(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	form := url.Values{
+		"csrf_token":    {"trusted-csrf"},
+		"card_id":       {"7"},
+		"quantity":      {"250"},
+		"foil_option":   {"foil"},
+		"extra_inserts": {"1"},
+		"name":          {"Aimen"},
+		"email":         {"aimen@example.com"},
+		"phone":         {"03001234567"},
+		"address":       {"123 Karim Block"},
+		"city":          {"Lahore"},
+		"postal_code":   {"54000"},
+		"side":          {"bride"},
+		"rsvp_name":     {"Ali", "", "Sara"},
+		"rsvp_phone":    {"", "03084549268", "", "+923084549268"},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/review", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("review_order.html").Parse("ok")))
+	router.POST("/review", handler.ReviewPage)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+	if service.prepareOrderReviewInput.RsvpName != "Ali\nSara" {
+		t.Fatalf("expected blank RSVP names skipped, got %q", service.prepareOrderReviewInput.RsvpName)
+	}
+	if service.prepareOrderReviewInput.RsvpPhone != "03084549268\n+923084549268" {
+		t.Fatalf("expected blank RSVP phones skipped, got %q", service.prepareOrderReviewInput.RsvpPhone)
 	}
 }
 
@@ -531,6 +588,23 @@ func TestAdminPaymentActionRequestReuploadRedirectsWithNotice(t *testing.T) {
 	}
 }
 
+func TestPaymentSubmittedAmountBelowExpectedDetectsUnderpaidProof(t *testing.T) {
+	t.Parallel()
+
+	submitted := int64(13000)
+	payment := &orderdomain.OrderPayment{SubmittedAmount: &submitted}
+	summary := orderapplication.PaymentAmountSummary{AdvanceAmount: 16500}
+
+	if !paymentSubmittedAmountBelowExpected(payment, summary) {
+		t.Fatalf("expected submitted amount below required advance to be detected")
+	}
+
+	submitted = 16500
+	if paymentSubmittedAmountBelowExpected(payment, summary) {
+		t.Fatalf("expected exact submitted amount to be accepted")
+	}
+}
+
 func TestTrackOrderPageRedirectsToOrderStatus(t *testing.T) {
 	t.Parallel()
 
@@ -550,5 +624,113 @@ func TestTrackOrderPageRedirectsToOrderStatus(t *testing.T) {
 	}
 	if location := recorder.Header().Get("Location"); location != "/order/75" {
 		t.Fatalf("expected redirect to order status page, got %q", location)
+	}
+}
+
+func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	mustWriteMultipartField(t, writer, "csrf_token", "trusted-csrf")
+	mustWriteMultipartField(t, writer, "sender_name", "Ali Sender")
+	mustWriteMultipartField(t, writer, "transaction_reference", "TXN-123")
+	mustWriteMultipartField(t, writer, "submitted_amount", "13000")
+	fileWriter, err := writer.CreateFormFile("payment_proof", "receipt.pdf")
+	if err != nil {
+		t.Fatalf("create payment proof part: %v", err)
+	}
+	if _, err := fileWriter.Write([]byte("%PDF-1.4\n% test receipt\n")); err != nil {
+		t.Fatalf("write payment proof: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/order/42/payment-proof", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{
+		statusDetail: &orderapplication.AdminOrderDetail{
+			Order: &orderdomain.Order{
+				ID:         42,
+				TotalPrice: 33000,
+				Currency:   "PKR",
+			},
+			Payment: &orderdomain.OrderPayment{
+				OrderID:        42,
+				PaymentMethod:  orderdomain.BankTransferPaymentMethod,
+				PaymentStatus:  orderdomain.PendingPaymentStatus,
+				ExpectedAmount: 16500,
+			},
+		},
+	}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("error.html").Parse("{{ .message }}")))
+	router.POST("/order/:id/payment-proof", handler.SubmitPaymentProof)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusSeeOther {
+		t.Fatalf("expected redirect status %d, got %d body=%q", http.StatusSeeOther, recorder.Code, recorder.Body.String())
+	}
+	if service.submitPaymentProofOrderID != 42 {
+		t.Fatalf("expected proof submission for order 42, got %d", service.submitPaymentProofOrderID)
+	}
+	if service.submitPaymentProofInput.SubmittedAmount != 0 {
+		t.Fatalf("expected presentation layer to ignore tampered submitted_amount, got %d", service.submitPaymentProofInput.SubmittedAmount)
+	}
+	if service.submitPaymentProofInput.ProofFilePath == "" {
+		t.Fatalf("expected uploaded proof path to be passed to service")
+	}
+}
+
+func TestReviewPageDoesNotExposeFrontendTrustDisclaimer(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("../../templates/review_order.html")
+	if err != nil {
+		t.Fatalf("read review template: %v", err)
+	}
+
+	if strings.Contains(string(body), "frontend display is only for review") ||
+		strings.Contains(string(body), "recalculated and saved by the server") {
+		t.Fatalf("review page should not show internal pricing trust disclaimer to customers")
+	}
+}
+
+func TestOrderStatusTemplateShowsCustomizationAndRSVPDetails(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("../../templates/order-status.html")
+	if err != nil {
+		t.Fatalf("read order status template: %v", err)
+	}
+	text := string(body)
+
+	for _, want := range []string{
+		"Customization Details",
+		"Bride's Parents Name",
+		"Groom's Parents Name",
+		"RSVP Name(s)",
+		"RSVP Phone Number(s)",
+		"Extra Inserts / Card",
+		"Remaining Balance",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected order status template to contain %q", want)
+		}
+	}
+}
+
+func mustWriteMultipartField(t *testing.T, writer *multipart.Writer, field string, value string) {
+	t.Helper()
+	if err := writer.WriteField(field, value); err != nil {
+		t.Fatalf("write multipart field %s: %v", field, err)
 	}
 }

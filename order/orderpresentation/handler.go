@@ -90,24 +90,28 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 
 func (h *OrderHandler) ReviewPage(c *gin.Context) {
 	if !webui.ValidateCSRF(c) {
+		logReviewCSRFError(c)
 		webui.RenderError(c, http.StatusBadRequest, "Request Expired", "Please refresh the page and try again.")
 		return
 	}
 
 	cardID, err := parsePositiveInt64(c.PostForm("card_id"))
 	if err != nil {
+		logReviewInvalidRawField(c, "card_id")
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Card", "Please choose a valid product before continuing.")
 		return
 	}
 
 	quantity, err := parsePositiveInt64(c.PostForm("quantity"))
 	if err != nil {
+		logReviewInvalidRawField(c, "quantity")
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Quantity", "Please choose a valid quantity before continuing.")
 		return
 	}
 
 	requestedInserts, err := parseNonNegativeInt64(c.PostForm("extra_inserts"))
 	if err != nil {
+		logReviewInvalidRawField(c, "extra_inserts")
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Inserts", "Please choose a valid insert count before continuing.")
 		return
 	}
@@ -168,6 +172,7 @@ func (h *OrderHandler) ReviewPage(c *gin.Context) {
 		Notes:              c.PostForm("notes"),
 	})
 	if err != nil {
+		logReviewValidationError(c, err)
 		renderServiceError(c, err)
 		return
 	}
@@ -330,6 +335,18 @@ func renderServiceError(c *gin.Context, err error) {
 	webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not process the request right now.")
 }
 
+func logReviewCSRFError(c *gin.Context) {
+	if strings.TrimSpace(c.PostForm("csrf_token")) == "" {
+		log.Printf("REVIEW ERROR: missing csrf token")
+		return
+	}
+	log.Printf("REVIEW ERROR: invalid csrf token raw_present=true")
+}
+
+func logReviewInvalidRawField(c *gin.Context, field string) {
+	log.Printf("REVIEW ERROR: invalid %s raw_present=%t", field, strings.TrimSpace(c.PostForm(field)) != "")
+}
+
 func logReviewValidationError(c *gin.Context, err error) {
 	if !errors.Is(err, orderapplication.ErrInvalidInput) {
 		return
@@ -447,25 +464,27 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		paymentCanBeReviewed = payload.Payment.PaymentStatus == orderdomain.AwaitingVerificationPaymentStatus
 	}
 	amountSummary := paymentAmountSummary(payload.Order, payload.Payment)
+	submittedAmountBelowExpected := paymentSubmittedAmountBelowExpected(payload.Payment, amountSummary)
 
 	c.HTML(http.StatusOK, "admin_order_detail.html", gin.H{
-		"order":                payload.Order,
-		"statusStr":            string(payload.Order.Status),
-		"customer":             payload.Customer,
-		"details":              payload.Details,
-		"payment":              payload.Payment,
-		"card_name":            payload.Order.CardName,
-		"card_image":           payload.Order.CardImage,
-		"isBidBox":             isBidBoxOrder(payload.Order, payload.Details),
-		"csrfToken":            webui.EnsureCSRFToken(c),
-		"canConfirmOrder":      canConfirmOrder,
-		"paymentNeedsReview":   !canConfirmOrder,
-		"paymentCanBeReviewed": paymentCanBeReviewed,
-		"paymentStatusDisplay": paymentStatusLabel,
-		"amountSummary":        amountSummary,
-		"remainingStatus":      remainingBalanceStatus(payload.Order, payload.Payment),
-		"adminAlertTone":       alertTone,
-		"adminAlertMessage":    alertMessage,
+		"order":                        payload.Order,
+		"statusStr":                    string(payload.Order.Status),
+		"customer":                     payload.Customer,
+		"details":                      payload.Details,
+		"payment":                      payload.Payment,
+		"card_name":                    payload.Order.CardName,
+		"card_image":                   payload.Order.CardImage,
+		"isBidBox":                     isBidBoxOrder(payload.Order, payload.Details),
+		"csrfToken":                    webui.EnsureCSRFToken(c),
+		"canConfirmOrder":              canConfirmOrder,
+		"paymentNeedsReview":           !canConfirmOrder,
+		"paymentCanBeReviewed":         paymentCanBeReviewed,
+		"paymentStatusDisplay":         paymentStatusLabel,
+		"submittedAmountBelowExpected": submittedAmountBelowExpected,
+		"amountSummary":                amountSummary,
+		"remainingStatus":              remainingBalanceStatus(payload.Order, payload.Payment),
+		"adminAlertTone":               alertTone,
+		"adminAlertMessage":            alertMessage,
 	})
 }
 
@@ -567,6 +586,13 @@ func paymentAmountSummary(order *orderdomain.Order, payment *orderdomain.OrderPa
 		expectedAdvanceAmount = payment.ExpectedAmount
 	}
 	return orderapplication.BuildPaymentAmountSummary(totalAmount, expectedAdvanceAmount)
+}
+
+func paymentSubmittedAmountBelowExpected(payment *orderdomain.OrderPayment, summary orderapplication.PaymentAmountSummary) bool {
+	return payment != nil &&
+		payment.SubmittedAmount != nil &&
+		summary.AdvanceAmount > 0 &&
+		*payment.SubmittedAmount < summary.AdvanceAmount
 }
 
 func remainingBalanceStatus(order *orderdomain.Order, payment *orderdomain.OrderPayment) string {

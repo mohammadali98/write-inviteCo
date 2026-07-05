@@ -329,8 +329,10 @@
                     </div>
 
                     <div>
-                        <label for="submitted_amount">Advance Amount Transferred</label>
-                        <input id="submitted_amount" name="submitted_amount" type="number" min="1" value="{{ if and .payment .payment.SubmittedAmount }}{{ .payment.SubmittedAmount }}{{ else }}{{ .amountSummary.AdvanceAmount }}{{ end }}" required>
+                        <div class="meta-label">Advance Amount Required</div>
+                        <div class="meta-value" style="text-align:left;">PKR {{ .amountSummary.AdvanceAmount }}</div>
+                        <input type="hidden" name="submitted_amount" value="{{ .amountSummary.AdvanceAmount }}">
+                        <p class="instruction-copy" style="margin: 8px 0 0;">Transfer this exact advance amount. Our team will verify the amount from your uploaded receipt.</p>
                     </div>
 
                     <div>

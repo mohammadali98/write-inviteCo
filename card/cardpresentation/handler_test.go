@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -139,6 +140,79 @@ func TestCheckoutPostAfterPersonalizationRendersCustomerInfo(t *testing.T) {
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected checkout body to contain %q, got %q", want, body)
+		}
+	}
+}
+
+func TestCheckoutPostCalculatesSelectedExtraInsertsAsAdditionalCharge(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	form := url.Values{
+		"csrf_token":    {"trusted-csrf"},
+		"card_id":       {"5"},
+		"quantity":      {"50"},
+		"foil_option":   {"foil"},
+		"extra_inserts": {"1"},
+		"side":          {"bride"},
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/checkout", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
+
+	recorder := httptest.NewRecorder()
+	handler := NewCardHandler(fakeCardRepo{card: &carddomain.Card{
+		ID:              5,
+		Name:            "Sage & Gold Nikkah Suite",
+		PriceFoilPKR:    580,
+		PriceNofoilPKR:  580,
+		InsertPricePKR:  80,
+		MinOrder:        50,
+		IncludedInserts: 2,
+		Category:        "wedding-cards",
+	}}, nil)
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("checkout.html").Parse(`included={{ .includedInserts }}|extra={{ .extraInserts }}|extraCost={{ .extraInsertCostPerCard }}|perCard={{ .perCardTotal }}|total={{ .totalPrice }}|hidden=<input name="extra_inserts" value="{{ .requestedInserts }}">`)))
+	router.POST("/checkout", handler.Checkout)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		"included=2",
+		"extra=1",
+		"extraCost=80",
+		"perCard=660",
+		"total=33000",
+		`hidden=<input name="extra_inserts" value="1">`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected checkout body to contain %q, got %q", want, body)
+		}
+	}
+}
+
+func TestCardTemplateExplainsExtraInsertsAsAdditionalPrintedCards(t *testing.T) {
+	t.Parallel()
+
+	body, err := os.ReadFile("../../templates/card.html")
+	if err != nil {
+		t.Fatalf("read card template: %v", err)
+	}
+	text := string(body)
+
+	for _, want := range []string{
+		"An insert is an additional printed card placed inside the invitation",
+		"includes {{ .card.IncludedInserts }} inserts per card",
+		"Choose extra inserts only if you need more printed cards",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected card template to contain %q", want)
 		}
 	}
 }

@@ -91,11 +91,6 @@ func (s *Service) SubmitBankTransferProof(ctx context.Context, orderID int64, in
 		return ErrInvalidInput
 	}
 
-	input = sanitizePaymentProofInput(input)
-	if err := validatePaymentProofInput(input); err != nil {
-		return err
-	}
-
 	payment, err := s.orderRepo.GetOrderPaymentByOrderID(ctx, orderID)
 	if err != nil {
 		return err
@@ -105,6 +100,17 @@ func (s *Service) SubmitBankTransferProof(ctx context.Context, orderID int64, in
 	case orderdomain.PendingPaymentStatus, orderdomain.RejectedPaymentStatus:
 	default:
 		return ErrPaymentActionNotAllowed
+	}
+
+	expectedAmount, err := s.trustedAdvanceAmount(ctx, orderID, payment)
+	if err != nil {
+		return err
+	}
+
+	input = sanitizePaymentProofInput(input)
+	input.SubmittedAmount = expectedAmount
+	if err := validatePaymentProofInput(input); err != nil {
+		return err
 	}
 
 	status := string(orderdomain.AwaitingVerificationPaymentStatus)
@@ -122,6 +128,18 @@ func (s *Service) SubmitBankTransferProof(ctx context.Context, orderID int64, in
 	}
 
 	return nil
+}
+
+func (s *Service) trustedAdvanceAmount(ctx context.Context, orderID int64, payment *orderdomain.OrderPayment) (int64, error) {
+	if payment != nil && payment.ExpectedAmount > 0 {
+		return payment.ExpectedAmount, nil
+	}
+
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return 0, err
+	}
+	return BuildPaymentAmountSummary(order.TotalPrice, 0).AdvanceAmount, nil
 }
 
 func (s *Service) AdminProcessPayment(ctx context.Context, orderID int64, action string, adminNote string) error {
@@ -148,11 +166,6 @@ func (s *Service) AdminProcessPayment(ctx context.Context, orderID int64, action
 	}
 	if payment.PaymentStatus != orderdomain.AwaitingVerificationPaymentStatus {
 		return ErrPaymentActionNotAllowed
-	}
-
-	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
-	if err != nil {
-		return err
 	}
 
 	tx, err := s.db.Begin(ctx)
@@ -183,17 +196,6 @@ func (s *Service) AdminProcessPayment(ctx context.Context, orderID int64, action
 			return err
 		}
 
-		if order.Status != orderdomain.CompletedOrderStatus {
-			status := string(orderdomain.ConfirmedOrderStatus)
-			if err := writer.UpdateOrderStatus(ctx, orderwriter.UpdateOrderStatusParams{
-				ID:     orderID,
-				Status: &status,
-			}); err != nil {
-				return err
-			}
-			order.Status = orderdomain.ConfirmedOrderStatus
-		}
-
 	case "reject", "request_reupload":
 		if _, err := writer.RejectOrderPayment(ctx, orderwriter.RejectOrderPaymentParams{
 			OrderID:   orderID,
@@ -208,10 +210,6 @@ func (s *Service) AdminProcessPayment(ctx context.Context, orderID int64, action
 
 	if err := tx.Commit(ctx); err != nil {
 		return err
-	}
-
-	if action == "verify" {
-		s.sendOrderStatusEmailAsync(order, order.Status)
 	}
 
 	return nil
