@@ -78,6 +78,10 @@ func (s stubPaymentOrderRepo) GetOrderByID(ctx context.Context, id int64) (*orde
 	return s.order, nil
 }
 
+func (s stubPaymentOrderRepo) GetOrderByPublicToken(ctx context.Context, token string) (*orderdomain.Order, error) {
+	return s.order, nil
+}
+
 func (s stubPaymentOrderRepo) GetOrdersByCustomerID(ctx context.Context, customerID int64) ([]*orderdomain.Order, error) {
 	return nil, nil
 }

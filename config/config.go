@@ -8,13 +8,15 @@ import (
 )
 
 type Config struct {
-	DatabaseURL     string
-	Port            string
-	ResendAPIKey    string
-	ResendFromEmail string
-	AdminEmail      string
-	AdminUser       string
-	AdminPass       string
+	DatabaseURL       string
+	Port              string
+	ResendAPIKey      string
+	ResendFromEmail   string
+	AdminEmail        string
+	AdminUser         string
+	AdminPass         string
+	AdminAuthDisabled bool
+	PublicBaseURL     string
 }
 
 func Load() Config {
@@ -33,13 +35,15 @@ func Load() Config {
 	}
 
 	return Config{
-		DatabaseURL:     dsn,
-		Port:            getEnv("PORT", "8080"),
-		ResendAPIKey:    getEnv("RESEND_API_KEY", ""),
-		ResendFromEmail: getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-		AdminEmail:      strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
-		AdminUser:       strings.TrimSpace(os.Getenv("ADMIN_USER")),
-		AdminPass:       strings.TrimSpace(os.Getenv("ADMIN_PASS")),
+		DatabaseURL:       dsn,
+		Port:              getEnv("PORT", "8080"),
+		ResendAPIKey:      getEnv("RESEND_API_KEY", ""),
+		ResendFromEmail:   getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
+		AdminEmail:        strings.TrimSpace(os.Getenv("ADMIN_EMAIL")),
+		AdminUser:         strings.TrimSpace(os.Getenv("ADMIN_USER")),
+		AdminPass:         strings.TrimSpace(os.Getenv("ADMIN_PASS")),
+		AdminAuthDisabled: strings.TrimSpace(os.Getenv("ADMIN_AUTH_DISABLED")) == "true",
+		PublicBaseURL:     strings.TrimRight(getEnv("PUBLIC_BASE_URL", "http://localhost:8080"), "/"),
 	}
 }
 

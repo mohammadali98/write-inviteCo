@@ -23,8 +23,11 @@ func TestSavePaymentProofAcceptsPDF(t *testing.T) {
 		t.Fatalf("savePaymentProof returned error: %v", err)
 	}
 
-	if !strings.HasPrefix(proof.PublicPath, paymentProofPathPrefix) {
-		t.Fatalf("expected public path to start with %q, got %q", paymentProofPathPrefix, proof.PublicPath)
+	if strings.ContainsAny(proof.Filename, "/\\") {
+		t.Fatalf("expected a bare filename, got %q", proof.Filename)
+	}
+	if !strings.HasSuffix(proof.Filename, ".pdf") {
+		t.Fatalf("expected filename to end with .pdf, got %q", proof.Filename)
 	}
 	if filepath.Dir(proof.SavedPath) != handler.paymentProofDir {
 		t.Fatalf("expected saved path inside %q, got %q", handler.paymentProofDir, proof.SavedPath)
@@ -60,13 +63,16 @@ func TestPaymentProofFilePathRejectsTraversal(t *testing.T) {
 
 	uploadDir := t.TempDir()
 
-	if _, ok := paymentProofFilePath(uploadDir, "/static/payment-proofs/../../etc/passwd"); ok {
+	if _, ok := paymentProofFilePath(uploadDir, "../../etc/passwd"); ok {
 		t.Fatal("expected traversal path to be rejected")
 	}
+	if _, ok := paymentProofFilePath(uploadDir, "sub/receipt.pdf"); ok {
+		t.Fatal("expected non-bare filename to be rejected")
+	}
 
-	validPath, ok := paymentProofFilePath(uploadDir, "/static/payment-proofs/receipt.pdf")
+	validPath, ok := paymentProofFilePath(uploadDir, "receipt.pdf")
 	if !ok {
-		t.Fatal("expected valid payment proof path to be accepted")
+		t.Fatal("expected valid payment proof filename to be accepted")
 	}
 	if !strings.HasPrefix(validPath, uploadDir) {
 		t.Fatalf("expected valid path to stay inside upload dir %q, got %q", uploadDir, validPath)

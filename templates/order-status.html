@@ -275,7 +275,7 @@
                 </div>
             </div>
             <p class="status-message" style="margin-top: 16px;">{{ .paymentMessage }}</p>
-            <p class="empty-text" style="margin-top: 12px;"><a class="status-link" href="/order/{{ .order.ID }}/payment">View bank transfer instructions and advance payment proof upload</a></p>
+            <p class="empty-text" style="margin-top: 12px;"><a class="status-link" href="/order/{{ .order.PublicToken }}/payment">View bank transfer instructions and advance payment proof upload</a></p>
         </section>
 
         <section class="status-card">

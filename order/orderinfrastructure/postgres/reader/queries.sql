@@ -7,6 +7,7 @@ SELECT
     o.total_price,
     o.status,
     o.currency,
+    o.public_token::text AS public_token,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -15,6 +16,25 @@ SELECT
 FROM orders o
 LEFT JOIN cards c ON o.card_id = c.id
 WHERE o.id = $1;
+
+-- name: GetOrderByPublicToken :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.card_id,
+    o.quantity,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.public_token::text AS public_token,
+    o.created_at,
+    o.updated_at,
+    COALESCE(c.name, '') AS card_name,
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
+FROM orders o
+LEFT JOIN cards c ON o.card_id = c.id
+WHERE o.public_token::text = sqlc.arg(public_token)::text;
 
 -- name: GetOrdersByCustomerID :many
 SELECT id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at

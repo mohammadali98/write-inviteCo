@@ -47,9 +47,9 @@ func main() {
 	if strings.TrimSpace(cfg.DatabaseURL) == "" {
 		log.Fatal("DATABASE_URL or DB_* settings must be configured")
 	}
-	adminAuthEnabled := gin.Mode() == gin.ReleaseMode
+	adminAuthEnabled := !cfg.AdminAuthDisabled
 	if adminAuthEnabled && (cfg.AdminUser == "" || cfg.AdminPass == "") {
-		log.Fatal("ADMIN_USER and ADMIN_PASS must be configured")
+		log.Fatal("ADMIN_USER and ADMIN_PASS must be set (or set ADMIN_AUTH_DISABLED=true for local dev)")
 	}
 
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
@@ -95,13 +95,17 @@ func main() {
 		orderWriter,
 		emailSender,
 		cfg.AdminEmail,
+		cfg.PublicBaseURL,
 	)
-	orderHandler := orderpresentation.NewOrderHandler(orderService, filepath.Join(appRoot, "static", "payment-proofs"))
+	orderHandler := orderpresentation.NewOrderHandler(orderService, filepath.Join(appRoot, "private", "payment-proofs"))
 	cardHandler := cardpresentation.NewCardHandler(cardRepo, productService)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
 
 	// router
 	router := gin.Default()
+	if err := router.SetTrustedProxies(nil); err != nil {
+		log.Fatalf("failed to configure trusted proxies: %v", err)
+	}
 	router.MaxMultipartMemory = 20 << 20
 	safeStaticPath := makeSafeStaticPathFunc(appRoot)
 	router.SetFuncMap(template.FuncMap{
@@ -138,10 +142,10 @@ func main() {
 	router.POST("/checkout", cardHandler.Checkout)
 	router.POST("/customize", orderHandler.CustomizePage)
 	router.POST("/review", orderHandler.ReviewPage)
-	router.GET("/order-confirmation/:id", orderHandler.OrderConfirmation)
-	router.GET("/order/:id", orderHandler.OrderStatus)
-	router.GET("/order/:id/payment", orderHandler.BankTransferPage)
-	router.POST("/order/:id/payment-proof", orderHandler.SubmitPaymentProof)
+	router.GET("/order-confirmation/:token", orderHandler.OrderConfirmation)
+	router.GET("/order/:token", orderHandler.OrderStatus)
+	router.GET("/order/:token/payment", orderHandler.BankTransferPage)
+	router.POST("/order/:token/payment-proof", orderHandler.SubmitPaymentProof)
 	router.GET("/track-order", orderHandler.TrackOrderPage)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
@@ -152,12 +156,13 @@ func main() {
 			cfg.AdminUser: cfg.AdminPass,
 		}))
 	} else {
-		log.Println("Admin basic auth disabled outside release mode for local testing")
+		log.Println("!!! ADMIN AUTH DISABLED — local dev only !!!")
 	}
 	admin.GET("/orders", orderHandler.AdminOrders)
 	admin.GET("/orders/:id", orderHandler.AdminOrderDetail)
 	admin.POST("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
 	admin.POST("/orders/:id/payment", orderHandler.AdminPaymentAction)
+	admin.GET("/payment-proof/:orderID", orderHandler.AdminServePaymentProof)
 	admin.GET("/products", productHandler.List)
 	admin.GET("/products/new", productHandler.NewForm)
 	admin.POST("/products", productHandler.Create)

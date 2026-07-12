@@ -180,6 +180,7 @@ type PlaceOrderInput struct {
 
 type PlaceOrderResult struct {
 	OrderID      int64
+	OrderToken   string
 	CustomerName string
 	CardName     string
 	Quantity     int64
@@ -202,6 +203,7 @@ type Service struct {
 	orderWriter    *orderwriter.Queries
 	emailSender    EmailSender
 	adminEmail     string
+	publicBaseURL  string
 }
 
 type EmailSender interface {
@@ -217,6 +219,7 @@ func NewService(
 	orderWriter *orderwriter.Queries,
 	emailSender EmailSender,
 	adminEmail string,
+	publicBaseURL string,
 ) *Service {
 	return &Service{
 		db:             db,
@@ -227,6 +230,7 @@ func NewService(
 		orderWriter:    orderWriter,
 		emailSender:    emailSender,
 		adminEmail:     strings.TrimSpace(adminEmail),
+		publicBaseURL:  strings.TrimRight(strings.TrimSpace(publicBaseURL), "/"),
 	}
 }
 
@@ -249,6 +253,20 @@ func (s *Service) GetOrderStatusDetail(ctx context.Context, orderID int64) (*Adm
 	return s.getOrderDetail(ctx, orderID)
 }
 
+func (s *Service) GetOrderStatusDetailByToken(ctx context.Context, token string) (*AdminOrderDetail, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, ErrInvalidInput
+	}
+
+	order, err := s.orderRepo.GetOrderByPublicToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildOrderDetail(ctx, order)
+}
+
 func (s *Service) getOrderDetail(ctx context.Context, orderID int64) (*AdminOrderDetail, error) {
 	if orderID <= 0 {
 		return nil, ErrInvalidInput
@@ -259,8 +277,13 @@ func (s *Service) getOrderDetail(ctx context.Context, orderID int64) (*AdminOrde
 		return nil, err
 	}
 
+	return s.buildOrderDetail(ctx, order)
+}
+
+func (s *Service) buildOrderDetail(ctx context.Context, order *orderdomain.Order) (*AdminOrderDetail, error) {
 	var customer *customerdomain.Customer
 	if order.CustomerID > 0 {
+		var err error
 		customer, err = s.customerRepo.GetCustomerByID(ctx, order.CustomerID)
 		if err != nil {
 			if !errors.Is(err, pgx.ErrNoRows) {
@@ -526,6 +549,9 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 
 	s.sendOrderCreatedEmailsAsync(orderEmailPayload{
 		OrderID:       orderRow.ID,
+		OrderToken:    orderRow.PublicToken,
+		PaymentLink:   s.buildOrderPaymentLink(orderRow.PublicToken),
+		StatusLink:    s.buildOrderStatusLink(orderRow.PublicToken),
 		CustomerName:  input.Name,
 		CustomerEmail: input.Email,
 		CustomerPhone: input.Phone,
@@ -541,6 +567,7 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 
 	return &PlaceOrderResult{
 		OrderID:      orderRow.ID,
+		OrderToken:   orderRow.PublicToken,
 		CustomerName: input.Name,
 		CardName:     cardName,
 		Quantity:     pricing.quantity,
@@ -979,6 +1006,9 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 
 type orderEmailPayload struct {
 	OrderID       int64
+	OrderToken    string
+	PaymentLink   string
+	StatusLink    string
 	CustomerID    int64
 	CustomerName  string
 	CustomerEmail string
@@ -991,6 +1021,22 @@ type orderEmailPayload struct {
 	Currency      string
 	PaymentStatus orderdomain.PaymentStatus
 	Status        orderdomain.OrderStatus
+}
+
+func (s *Service) buildOrderPaymentLink(token string) string {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return ""
+	}
+	return s.publicBaseURL + "/order/" + token + "/payment"
+}
+
+func (s *Service) buildOrderStatusLink(token string) string {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return ""
+	}
+	return s.publicBaseURL + "/order/" + token
 }
 
 func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
@@ -1070,6 +1116,9 @@ func (s *Service) sendOrderStatusEmailAsync(order *orderdomain.Order, status ord
 
 		payload := orderEmailPayload{
 			OrderID:       order.ID,
+			OrderToken:    order.PublicToken,
+			PaymentLink:   s.buildOrderPaymentLink(order.PublicToken),
+			StatusLink:    s.buildOrderStatusLink(order.PublicToken),
 			CustomerID:    order.CustomerID,
 			CustomerName:  customer.Name,
 			CustomerEmail: strings.TrimSpace(*customer.Email),
@@ -1123,7 +1172,7 @@ func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
 
 func buildNewOrderCustomerEmailBody(payload orderEmailPayload) string {
 	return fmt.Sprintf(
-		"Dear %s,\n\nThank you for your order. We have received it.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nPlease transfer the 50%% advance payment and upload your payment proof from the bank transfer page. We will confirm your order for processing after the advance payment is verified.\n\nBest regards,\nWrite & InviteCo",
+		"Dear %s,\n\nThank you for your order. We have received it.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nPlease transfer the 50%% advance payment and upload your payment proof from the bank transfer page below. We will confirm your order for processing after the advance payment is verified.\n\nBank transfer instructions and payment proof upload:\n%s\n\nBest regards,\nWrite & InviteCo",
 		defaultCustomerName(payload.CustomerName),
 		payload.OrderID,
 		defaultProductName(payload.ProductName),
@@ -1134,6 +1183,7 @@ func buildNewOrderCustomerEmailBody(payload orderEmailPayload) string {
 		payload.AdvanceAmount,
 		defaultCurrency(payload.Currency),
 		payload.Remaining,
+		defaultOrderLink(payload.PaymentLink),
 	)
 }
 
@@ -1141,7 +1191,7 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 	switch payload.Status {
 	case orderdomain.ConfirmedOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been confirmed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nOur team will contact you on your provided WhatsApp number or email when your order is ready. We will share proof/images of your product before dispatch. Once you review and confirm the final product, please pay the remaining balance before delivery.\n\nThank you for trusting Write & InviteCo. We truly appreciate your kindness and support. 🤍\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been confirmed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nOur team will contact you on your provided WhatsApp number or email when your order is ready. We will share proof/images of your product before dispatch. Once you review and confirm the final product, please pay the remaining balance before delivery.\n\nThank you for trusting Write & InviteCo. We truly appreciate your kindness and support. 🤍\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
@@ -1152,10 +1202,11 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
 			payload.Remaining,
+			defaultOrderLink(payload.StatusLink),
 		)
 	case orderdomain.CompletedOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been completed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nYour order is ready. Our team will contact you on your provided WhatsApp number or email, share proof/images of your final product if needed, and collect the remaining balance before delivery.\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been completed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nYour order is ready. Our team will contact you on your provided WhatsApp number or email, share proof/images of your final product if needed, and collect the remaining balance before delivery.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
@@ -1166,10 +1217,11 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
 			payload.Remaining,
+			defaultOrderLink(payload.StatusLink),
 		)
 	case orderdomain.CancelledOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been cancelled.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nIf you have any questions about this cancellation or your payment, please reply to this email and our team will help you.\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been cancelled.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nIf you have any questions about this cancellation or your payment, please reply to this email and our team will help you.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
@@ -1182,10 +1234,11 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 			defaultCurrency(payload.Currency),
 			payload.Remaining,
 			customerPaymentStatusLine(payload),
+			defaultOrderLink(payload.StatusLink),
 		)
 	default:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order status has been updated.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nPlease follow the payment instructions on your order page if your advance payment is still pending.\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order status has been updated.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nPlease follow the payment instructions on your order page if your advance payment is still pending.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
@@ -1197,6 +1250,7 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 			defaultCurrency(payload.Currency),
 			payload.Remaining,
 			customerPaymentStatusLine(payload),
+			defaultOrderLink(payload.StatusLink),
 		)
 	}
 }
@@ -1365,6 +1419,14 @@ func defaultCustomerPhone(phone string) string {
 		return "Not provided"
 	}
 	return phone
+}
+
+func defaultOrderLink(link string) string {
+	link = strings.TrimSpace(link)
+	if link == "" {
+		return "Not available — please contact us for your order link."
+	}
+	return link
 }
 
 func defaultCurrency(currency string) string {

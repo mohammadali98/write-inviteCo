@@ -131,11 +131,11 @@
     <section class="track-page">
         <div class="track-card animate-in">
             <h1>Track Order & Payment</h1>
-            <p>Enter your order number to check order progress, view payment status, and reopen the bank transfer proof page when a re-upload is needed.</p>
+            <p>Enter the order tracking code from your confirmation email to check order progress, view payment status, and reopen the bank transfer proof page when a re-upload is needed.</p>
 
             <form class="track-form" action="/track-order" method="get">
-                <label for="order_id">Order Number</label>
-                <input id="order_id" name="order_id" type="number" min="1" inputmode="numeric" placeholder="For example: 1024" required>
+                <label for="token">Order Tracking Code</label>
+                <input id="token" name="token" type="text" placeholder="e.g. 8e2b6b3a-4c11-4e77-9c2d-2ab6b6e2b0f1" required>
                 <button class="track-submit" type="submit">View Order & Payment</button>
             </form>
         </div>

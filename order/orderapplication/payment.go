@@ -22,7 +22,6 @@ const (
 	maxTransactionReferenceLength = 150
 	maxCustomerPaymentNoteLength  = 1000
 	maxAdminPaymentNoteLength     = 1000
-	paymentProofStaticPrefix      = "/static/payment-proofs/"
 )
 
 type BankTransferDetails struct {
@@ -238,7 +237,7 @@ func validatePaymentProofInput(input PaymentProofInput) error {
 	if !containsLetterOrDigit(input.SenderName) || !containsLetterOrDigit(input.TransactionReference) {
 		return ErrInvalidInput
 	}
-	if !strings.HasPrefix(input.ProofFilePath, paymentProofStaticPrefix) || strings.Contains(input.ProofFilePath, "..") {
+	if strings.ContainsAny(input.ProofFilePath, "/\\") || strings.Contains(input.ProofFilePath, "..") {
 		return ErrInvalidInput
 	}
 	return nil

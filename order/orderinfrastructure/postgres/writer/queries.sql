@@ -1,7 +1,7 @@
 -- name: CreateOrder :one
 INSERT INTO orders (customer_id, card_id, quantity, total_price, status, currency)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at;
+RETURNING id, customer_id, card_id, quantity, total_price, status, currency, public_token::text AS public_token, created_at, updated_at;
 
 -- name: UpdateOrderStatus :exec
 UPDATE orders

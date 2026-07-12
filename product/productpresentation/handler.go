@@ -21,6 +21,22 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const maxProductImageFileSize = 10 << 20
+
+var (
+	allowedProductImageTypes = map[string]string{
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".png":  "image/png",
+		".webp": "image/webp",
+	}
+	detectedProductImageTypes = map[string]string{
+		"image/jpeg": ".jpg",
+		"image/png":  ".png",
+		"image/webp": ".webp",
+	}
+)
+
 type Handler struct {
 	service   *productapplication.Service
 	cardRepo  carddomain.CardReader
@@ -130,6 +146,10 @@ func (h *Handler) Create(c *gin.Context) {
 
 	imageURLs, savedPaths, err := h.uploadProductImages(c)
 	if err != nil {
+		if errors.Is(err, webui.ErrInvalidUpload) {
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Image Upload", "Upload a JPG, JPEG, PNG, or WEBP file up to 10 MB.")
+			return
+		}
 		webui.RenderError(c, http.StatusInternalServerError, "Upload Error", "We could not upload the selected images.")
 		return
 	}
@@ -235,6 +255,10 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 	imageURLs, savedPaths, err := h.uploadProductImages(c)
 	if err != nil {
+		if errors.Is(err, webui.ErrInvalidUpload) {
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Image Upload", "Upload a JPG, JPEG, PNG, or WEBP file up to 10 MB.")
+			return
+		}
 		webui.RenderError(c, http.StatusInternalServerError, "Upload Error", "We could not upload the selected images.")
 		return
 	}
@@ -468,7 +492,13 @@ func (h *Handler) uploadProductImages(c *gin.Context) ([]string, []string, error
 			continue
 		}
 
-		filename, err := newUploadFilename(filepath.Ext(file.Filename))
+		canonicalExt, err := webui.ValidateUploadedFile(file, maxProductImageFileSize, allowedProductImageTypes, detectedProductImageTypes)
+		if err != nil {
+			cleanupFiles(savedPaths)
+			return nil, nil, err
+		}
+
+		filename, err := newUploadFilename(canonicalExt)
 		if err != nil {
 			cleanupFiles(savedPaths)
 			return nil, nil, err

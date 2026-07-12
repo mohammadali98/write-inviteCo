@@ -1,4 +1,4 @@
-\restrict HMhOWLHqGsGiADbHBHI7i3lhiUtecdEhm1L0GIlltq67aa7zBZd1xcUNj7X0CRF
+\restrict OKOYg2zntAukzIAAYWB1hrheZ8iKIvXUVjQHRysjgiX6YXUzPu8N9BsiUO03j49
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -181,6 +181,7 @@ CREATE TABLE public.order_details (
     top_label text,
     couple_name text,
     bid_box_details text,
+    extra_inserts_per_card bigint DEFAULT 0 NOT NULL,
     CONSTRAINT chk_order_details_side CHECK ((side = ANY (ARRAY['bride'::text, 'groom'::text])))
 );
 
@@ -264,7 +265,8 @@ CREATE TABLE public.orders (
     status text DEFAULT 'pending'::text,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    currency text DEFAULT 'PKR'::text NOT NULL
+    currency text DEFAULT 'PKR'::text NOT NULL,
+    public_token uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -554,6 +556,13 @@ CREATE INDEX idx_orders_customer_id ON public.orders USING btree (customer_id);
 
 
 --
+-- Name: idx_orders_public_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_orders_public_token ON public.orders USING btree (public_token);
+
+
+--
 -- Name: idx_orders_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -619,7 +628,7 @@ ALTER TABLE ONLY public.product_images
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HMhOWLHqGsGiADbHBHI7i3lhiUtecdEhm1L0GIlltq67aa7zBZd1xcUNj7X0CRF
+\unrestrict OKOYg2zntAukzIAAYWB1hrheZ8iKIvXUVjQHRysjgiX6YXUzPu8N9BsiUO03j49
 
 
 --
@@ -645,4 +654,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260418000001'),
     ('20260418000002'),
     ('20260418000003'),
-    ('20260429000001');
+    ('20260429000001'),
+    ('20260512000001'),
+    ('20260712000001'),
+    ('20260712000002');

@@ -14,7 +14,7 @@ import (
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (customer_id, card_id, quantity, total_price, status, currency)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, customer_id, card_id, quantity, total_price, status, currency, created_at, updated_at
+RETURNING id, customer_id, card_id, quantity, total_price, status, currency, public_token::text AS public_token, created_at, updated_at
 `
 
 type CreateOrderParams struct {
@@ -27,15 +27,16 @@ type CreateOrderParams struct {
 }
 
 type CreateOrderRow struct {
-	ID         int64
-	CustomerID *int64
-	CardID     *int64
-	Quantity   int64
-	TotalPrice int64
-	Status     *string
-	Currency   string
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	ID          int64
+	CustomerID  *int64
+	CardID      *int64
+	Quantity    int64
+	TotalPrice  int64
+	Status      *string
+	Currency    string
+	PublicToken string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (CreateOrderRow, error) {
@@ -56,6 +57,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Creat
 		&i.TotalPrice,
 		&i.Status,
 		&i.Currency,
+		&i.PublicToken,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

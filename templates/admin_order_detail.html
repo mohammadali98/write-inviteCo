@@ -425,11 +425,11 @@
                 <div class="row-label">Advance Payment Proof</div>
                 <div class="row-value">
                     {{ if isPDFPath .payment.ProofFilePath }}
-                    <a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open uploaded PDF proof</a>
+                    <a href="/admin/payment-proof/{{ .order.ID }}" target="_blank" rel="noopener">Open uploaded PDF proof</a>
                     {{ else }}
                     <div class="proof-wrap">
-                        <img class="product-image" style="max-width: 320px; aspect-ratio: auto;" src="{{ safeStaticPath .payment.ProofFilePath }}" alt="Payment proof">
-                        <a href="{{ safeStaticPath .payment.ProofFilePath }}" target="_blank" rel="noopener">Open full-size proof</a>
+                        <img class="product-image" style="max-width: 320px; aspect-ratio: auto;" src="/admin/payment-proof/{{ .order.ID }}" alt="Payment proof">
+                        <a href="/admin/payment-proof/{{ .order.ID }}" target="_blank" rel="noopener">Open full-size proof</a>
                     </div>
                     {{ end }}
                 </div>

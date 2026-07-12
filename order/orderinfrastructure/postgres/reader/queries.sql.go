@@ -252,6 +252,7 @@ SELECT
     o.total_price,
     o.status,
     o.currency,
+    o.public_token::text AS public_token,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -270,6 +271,7 @@ type GetOrderByIDRow struct {
 	TotalPrice   int64
 	Status       *string
 	Currency     string
+	PublicToken  string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	CardName     string
@@ -288,6 +290,64 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, 
 		&i.TotalPrice,
 		&i.Status,
 		&i.Currency,
+		&i.PublicToken,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CardName,
+		&i.CardImage,
+		&i.CardCategory,
+	)
+	return i, err
+}
+
+const getOrderByPublicToken = `-- name: GetOrderByPublicToken :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.card_id,
+    o.quantity,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.public_token::text AS public_token,
+    o.created_at,
+    o.updated_at,
+    COALESCE(c.name, '') AS card_name,
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
+FROM orders o
+LEFT JOIN cards c ON o.card_id = c.id
+WHERE o.public_token::text = $1::text
+`
+
+type GetOrderByPublicTokenRow struct {
+	ID           int64
+	CustomerID   *int64
+	CardID       *int64
+	Quantity     int64
+	TotalPrice   int64
+	Status       *string
+	Currency     string
+	PublicToken  string
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+	CardName     string
+	CardImage    string
+	CardCategory string
+}
+
+func (q *Queries) GetOrderByPublicToken(ctx context.Context, publicToken string) (GetOrderByPublicTokenRow, error) {
+	row := q.db.QueryRow(ctx, getOrderByPublicToken, publicToken)
+	var i GetOrderByPublicTokenRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.CardID,
+		&i.Quantity,
+		&i.TotalPrice,
+		&i.Status,
+		&i.Currency,
+		&i.PublicToken,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CardName,

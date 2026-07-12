@@ -25,6 +25,7 @@ type Order struct {
 	TotalPrice   int64
 	Status       OrderStatus
 	Currency     string
+	PublicToken  string
 	CreatedAt    *time.Time
 	UpdatedAt    *time.Time
 }
@@ -104,6 +105,7 @@ type OrderWriter interface {
 
 type OrderReader interface {
 	GetOrderByID(ctx context.Context, id int64) (*Order, error)
+	GetOrderByPublicToken(ctx context.Context, token string) (*Order, error)
 	GetOrdersByCustomerID(ctx context.Context, customerID int64) ([]*Order, error)
 	GetAdminOrders(ctx context.Context) ([]*AdminOrder, error)
 	GetOrderDetailByOrderID(ctx context.Context, orderID int64) (*OrderDetail, error)

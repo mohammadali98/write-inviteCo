@@ -4,12 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"writeandinviteco/inviteandco/order/orderapplication"
@@ -22,7 +20,6 @@ import (
 
 const (
 	maxPaymentProofFileSize = 10 << 20
-	paymentProofPathPrefix  = "/static/payment-proofs/"
 )
 
 var (
@@ -43,25 +40,25 @@ var (
 )
 
 type savedPaymentProof struct {
-	PublicPath string
-	SavedPath  string
+	Filename  string
+	SavedPath string
 }
 
 func (h *OrderHandler) BankTransferPage(c *gin.Context) {
-	orderID, err := parsePositiveInt64(c.Param("id"))
+	token, err := parsePublicToken(c.Param("token"))
 	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 		return
 	}
 
-	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
+	payload, err := h.service.GetOrderStatusDetailByToken(c.Request.Context(), token)
 	if err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that tracking link.")
 			return
 		}
 
@@ -90,20 +87,20 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		return
 	}
 
-	orderID, err := parsePositiveInt64(c.Param("id"))
+	token, err := parsePublicToken(c.Param("token"))
 	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 		return
 	}
 
-	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
+	payload, err := h.service.GetOrderStatusDetailByToken(c.Request.Context(), token)
 	if err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that tracking link.")
 			return
 		}
 
@@ -128,11 +125,11 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		oldProofPath = *payload.Payment.ProofFilePath
 	}
 
-	err = h.service.SubmitBankTransferProof(c.Request.Context(), orderID, orderapplication.PaymentProofInput{
+	err = h.service.SubmitBankTransferProof(c.Request.Context(), payload.Order.ID, orderapplication.PaymentProofInput{
 		SenderName:           c.PostForm("sender_name"),
 		TransactionReference: c.PostForm("transaction_reference"),
 		CustomerNote:         c.PostForm("payment_note"),
-		ProofFilePath:        proof.PublicPath,
+		ProofFilePath:        proof.Filename,
 	})
 	if err != nil {
 		_ = os.Remove(proof.SavedPath)
@@ -142,7 +139,7 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		case errors.Is(err, orderapplication.ErrPaymentActionNotAllowed):
 			webui.RenderError(c, http.StatusBadRequest, "Upload Not Allowed", "This order is not currently accepting a new payment proof upload.")
 		case errors.Is(err, pgx.ErrNoRows):
-			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that tracking link.")
 		default:
 			log.Println("PAYMENT PROOF SUBMISSION ERROR:", err)
 			webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not save your payment proof right now.")
@@ -150,11 +147,11 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		return
 	}
 
-	if oldProofPath != "" && oldProofPath != proof.PublicPath {
+	if oldProofPath != "" && oldProofPath != proof.Filename {
 		removeUploadedPaymentProof(h.paymentProofDir, oldProofPath)
 	}
 
-	c.Redirect(http.StatusSeeOther, "/order/"+strconv.FormatInt(orderID, 10)+"/payment?proof_submitted=1")
+	c.Redirect(http.StatusSeeOther, "/order/"+token+"/payment?proof_submitted=1")
 }
 
 func (h *OrderHandler) AdminPaymentAction(c *gin.Context) {
@@ -198,6 +195,43 @@ func (h *OrderHandler) AdminPaymentAction(c *gin.Context) {
 	}
 }
 
+func (h *OrderHandler) AdminServePaymentProof(c *gin.Context) {
+	orderID, err := parsePositiveInt64(c.Param("orderID"))
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		return
+	}
+
+	payload, err := h.service.GetAdminOrderDetail(c.Request.Context(), orderID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			return
+		}
+		log.Println("ADMIN PAYMENT PROOF LOAD ERROR:", err)
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the payment record right now.")
+		return
+	}
+
+	if payload.Payment == nil || payload.Payment.ProofFilePath == nil || strings.TrimSpace(*payload.Payment.ProofFilePath) == "" {
+		webui.RenderError(c, http.StatusNotFound, "No Proof Uploaded", "No payment proof has been uploaded for this order.")
+		return
+	}
+
+	filePath, ok := paymentProofFilePath(h.paymentProofDir, *payload.Payment.ProofFilePath)
+	if !ok {
+		webui.RenderError(c, http.StatusNotFound, "No Proof Uploaded", "No payment proof has been uploaded for this order.")
+		return
+	}
+
+	if _, err := os.Stat(filePath); err != nil {
+		webui.RenderError(c, http.StatusNotFound, "No Proof Uploaded", "No payment proof has been uploaded for this order.")
+		return
+	}
+
+	c.File(filePath)
+}
+
 func canUploadPaymentProof(payment *orderdomain.OrderPayment) bool {
 	if payment == nil {
 		return false
@@ -211,34 +245,9 @@ func (h *OrderHandler) savePaymentProof(c *gin.Context, field string) (*savedPay
 	if err != nil {
 		return nil, errInvalidPaymentProofFile
 	}
-	if fileHeader.Size <= 0 || fileHeader.Size > maxPaymentProofFileSize {
-		return nil, errInvalidPaymentProofFile
-	}
 
-	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(fileHeader.Filename)))
-	expectedContentType, ok := allowedPaymentProofTypes[ext]
-	if !ok {
-		return nil, errInvalidPaymentProofFile
-	}
-
-	file, err := fileHeader.Open()
+	canonicalExt, err := webui.ValidateUploadedFile(fileHeader, maxPaymentProofFileSize, allowedPaymentProofTypes, detectedPaymentProofTypes)
 	if err != nil {
-		return nil, errInvalidPaymentProofFile
-	}
-	defer file.Close()
-
-	buffer := make([]byte, 512)
-	readBytes, readErr := io.ReadFull(file, buffer)
-	if readErr != nil && !errors.Is(readErr, io.ErrUnexpectedEOF) {
-		return nil, errInvalidPaymentProofFile
-	}
-	if readBytes == 0 {
-		return nil, errInvalidPaymentProofFile
-	}
-
-	detectedContentType := http.DetectContentType(buffer[:readBytes])
-	canonicalExt, ok := detectedPaymentProofTypes[detectedContentType]
-	if !ok || detectedContentType != expectedContentType {
 		return nil, errInvalidPaymentProofFile
 	}
 
@@ -257,8 +266,8 @@ func (h *OrderHandler) savePaymentProof(c *gin.Context, field string) (*savedPay
 	}
 
 	return &savedPaymentProof{
-		PublicPath: paymentProofPathPrefix + filename,
-		SavedPath:  savePath,
+		Filename:  filename,
+		SavedPath: savePath,
 	}, nil
 }
 
@@ -276,24 +285,19 @@ func newPaymentProofFilename(ext string) (string, error) {
 	return uuid + strings.ToLower(ext), nil
 }
 
-func removeUploadedPaymentProof(uploadDir string, publicPath string) {
-	savePath, ok := paymentProofFilePath(uploadDir, publicPath)
+func removeUploadedPaymentProof(uploadDir string, filename string) {
+	savePath, ok := paymentProofFilePath(uploadDir, filename)
 	if !ok {
 		return
 	}
 	_ = os.Remove(savePath)
 }
 
-func paymentProofFilePath(uploadDir string, publicPath string) (string, bool) {
-	path := strings.TrimSpace(publicPath)
-	if !strings.HasPrefix(path, paymentProofPathPrefix) {
+func paymentProofFilePath(uploadDir string, filename string) (string, bool) {
+	name := strings.TrimSpace(filename)
+	if name == "" || strings.Contains(name, "..") || strings.ContainsAny(name, "/\\") {
 		return "", false
 	}
 
-	relPath := strings.TrimPrefix(path, paymentProofPathPrefix)
-	if relPath == "" || strings.Contains(relPath, "..") {
-		return "", false
-	}
-
-	return filepath.Join(uploadDir, filepath.FromSlash(relPath)), true
+	return filepath.Join(uploadDir, name), true
 }

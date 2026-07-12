@@ -36,6 +36,29 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id int64) (*orderdom
 		TotalPrice:   row.TotalPrice,
 		Status:       toOrderStatus(row.Status),
 		Currency:     row.Currency,
+		PublicToken:  row.PublicToken,
+		CreatedAt:    toTimePtr(row.CreatedAt),
+		UpdatedAt:    toTimePtr(row.UpdatedAt),
+	}, nil
+}
+
+func (r *OrderRepository) GetOrderByPublicToken(ctx context.Context, token string) (*orderdomain.Order, error) {
+	row, err := r.reader.GetOrderByPublicToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	return &orderdomain.Order{
+		ID:           row.ID,
+		CustomerID:   derefInt64(row.CustomerID),
+		CardID:       derefInt64(row.CardID),
+		CardName:     row.CardName,
+		CardImage:    row.CardImage,
+		CardCategory: row.CardCategory,
+		Quantity:     row.Quantity,
+		TotalPrice:   row.TotalPrice,
+		Status:       toOrderStatus(row.Status),
+		Currency:     row.Currency,
+		PublicToken:  row.PublicToken,
 		CreatedAt:    toTimePtr(row.CreatedAt),
 		UpdatedAt:    toTimePtr(row.UpdatedAt),
 	}, nil
@@ -187,15 +210,16 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, customerID int64, car
 		return nil, err
 	}
 	return &orderdomain.Order{
-		ID:         row.ID,
-		CustomerID: derefInt64(row.CustomerID),
-		CardID:     derefInt64(row.CardID),
-		Quantity:   row.Quantity,
-		TotalPrice: row.TotalPrice,
-		Status:     toOrderStatus(row.Status),
-		Currency:   row.Currency,
-		CreatedAt:  toTimePtr(row.CreatedAt),
-		UpdatedAt:  toTimePtr(row.UpdatedAt),
+		ID:          row.ID,
+		CustomerID:  derefInt64(row.CustomerID),
+		CardID:      derefInt64(row.CardID),
+		Quantity:    row.Quantity,
+		TotalPrice:  row.TotalPrice,
+		Status:      toOrderStatus(row.Status),
+		Currency:    row.Currency,
+		PublicToken: row.PublicToken,
+		CreatedAt:   toTimePtr(row.CreatedAt),
+		UpdatedAt:   toTimePtr(row.UpdatedAt),
 	}, nil
 }
 

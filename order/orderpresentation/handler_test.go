@@ -61,12 +61,21 @@ func (f *fakeOrderService) PrepareOrderReview(ctx context.Context, input orderap
 	}, nil
 }
 
+const fakeOrderToken = "11111111-1111-4111-8111-111111111111"
+
 func (f *fakeOrderService) PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error) {
 	f.placeOrderInput = input
-	return &orderapplication.PlaceOrderResult{OrderID: 55}, nil
+	return &orderapplication.PlaceOrderResult{OrderID: 55, OrderToken: fakeOrderToken}, nil
 }
 
 func (f *fakeOrderService) GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error) {
+	if f.statusDetail != nil {
+		return f.statusDetail, nil
+	}
+	return nil, nil
+}
+
+func (f *fakeOrderService) GetOrderStatusDetailByToken(ctx context.Context, token string) (*orderapplication.AdminOrderDetail, error) {
 	if f.statusDetail != nil {
 		return f.statusDetail, nil
 	}
@@ -491,7 +500,7 @@ func TestCreateOrderIgnoresTamperedDisplayFields(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("expected redirect status %d, got %d", http.StatusSeeOther, recorder.Code)
 	}
-	if location := recorder.Header().Get("Location"); location != "/order/55/payment" {
+	if location := recorder.Header().Get("Location"); location != "/order/"+fakeOrderToken+"/payment" {
 		t.Fatalf("expected redirect to payment page, got %q", location)
 	}
 
@@ -610,7 +619,7 @@ func TestTrackOrderPageRedirectsToOrderStatus(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	req := httptest.NewRequest(http.MethodGet, "/track-order?order_id=75", nil)
+	req := httptest.NewRequest(http.MethodGet, "/track-order?token="+fakeOrderToken, nil)
 	recorder := httptest.NewRecorder()
 	handler := &OrderHandler{service: &fakeOrderService{}, paymentProofDir: t.TempDir()}
 
@@ -622,7 +631,7 @@ func TestTrackOrderPageRedirectsToOrderStatus(t *testing.T) {
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("expected redirect status %d, got %d", http.StatusSeeOther, recorder.Code)
 	}
-	if location := recorder.Header().Get("Location"); location != "/order/75" {
+	if location := recorder.Header().Get("Location"); location != "/order/"+fakeOrderToken {
 		t.Fatalf("expected redirect to order status page, got %q", location)
 	}
 }
@@ -649,7 +658,7 @@ func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
 		t.Fatalf("close multipart writer: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/order/42/payment-proof", body)
+	req := httptest.NewRequest(http.MethodPost, "/order/"+fakeOrderToken+"/payment-proof", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: "trusted-csrf"})
 
@@ -657,9 +666,10 @@ func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
 	service := &fakeOrderService{
 		statusDetail: &orderapplication.AdminOrderDetail{
 			Order: &orderdomain.Order{
-				ID:         42,
-				TotalPrice: 33000,
-				Currency:   "PKR",
+				ID:          42,
+				TotalPrice:  33000,
+				Currency:    "PKR",
+				PublicToken: fakeOrderToken,
 			},
 			Payment: &orderdomain.OrderPayment{
 				OrderID:        42,
@@ -673,7 +683,7 @@ func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
 
 	router := gin.New()
 	router.SetHTMLTemplate(template.Must(template.New("error.html").Parse("{{ .message }}")))
-	router.POST("/order/:id/payment-proof", handler.SubmitPaymentProof)
+	router.POST("/order/:token/payment-proof", handler.SubmitPaymentProof)
 	router.ServeHTTP(recorder, req)
 
 	if recorder.Code != http.StatusSeeOther {

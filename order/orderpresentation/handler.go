@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -17,11 +18,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var publicTokenPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
 type orderService interface {
 	PrepareCustomization(ctx context.Context, input orderapplication.CustomizationInput) (*orderapplication.CustomizationSummary, error)
 	PrepareOrderReview(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.OrderReview, error)
 	PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error)
 	GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
+	GetOrderStatusDetailByToken(ctx context.Context, token string) (*orderapplication.AdminOrderDetail, error)
 	ListAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error)
 	GetAdminOrderDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
 	AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error
@@ -267,34 +271,34 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%d/payment", result.OrderID))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%s/payment", result.OrderToken))
 }
 
 func (h *OrderHandler) OrderConfirmation(c *gin.Context) {
-	orderID, err := parsePositiveInt64(c.Param("id"))
+	token, err := parsePublicToken(c.Param("token"))
 	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%d/payment", orderID))
+	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/order/%s/payment", token))
 }
 
 func (h *OrderHandler) OrderStatus(c *gin.Context) {
-	orderID, err := parsePositiveInt64(c.Param("id"))
+	token, err := parsePublicToken(c.Param("token"))
 	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 		return
 	}
 
-	payload, err := h.service.GetOrderStatusDetail(c.Request.Context(), orderID)
+	payload, err := h.service.GetOrderStatusDetailByToken(c.Request.Context(), token)
 	if err != nil {
 		if errors.Is(err, orderapplication.ErrInvalidInput) {
-			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
 			return
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that number.")
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that tracking link.")
 			return
 		}
 
@@ -402,6 +406,14 @@ func parseNonNegativeInt64(raw string) (int64, error) {
 		return 0, strconv.ErrSyntax
 	}
 	return value, nil
+}
+
+func parsePublicToken(raw string) (string, error) {
+	token := strings.TrimSpace(raw)
+	if !publicTokenPattern.MatchString(token) {
+		return "", strconv.ErrSyntax
+	}
+	return token, nil
 }
 
 func joinedPostForm(c *gin.Context, key string) string {
@@ -529,19 +541,19 @@ func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
 }
 
 func (h *OrderHandler) TrackOrderPage(c *gin.Context) {
-	rawOrderID := strings.TrimSpace(c.Query("order_id"))
-	if rawOrderID == "" {
+	rawToken := strings.TrimSpace(c.Query("token"))
+	if rawToken == "" {
 		c.HTML(http.StatusOK, "track-order.html", nil)
 		return
 	}
 
-	orderID, err := parsePositiveInt64(rawOrderID)
+	token, err := parsePublicToken(rawToken)
 	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order number.")
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order tracking code.")
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/order/"+strconv.FormatInt(orderID, 10))
+	c.Redirect(http.StatusSeeOther, "/order/"+token)
 }
 
 func orderStatusMessage(status orderdomain.OrderStatus) string {

@@ -5,3 +5,8 @@ static/misc/
 
 .env
 static/payment-proofs/
+
+PROJECT_STATE.md
+
+static/uploads/
+private/
