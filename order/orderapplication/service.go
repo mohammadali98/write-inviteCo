@@ -34,6 +34,8 @@ var (
 const (
 	maxQuantity            = 5000
 	maxRequestedInserts    = 20
+	bulkDiscountMinQty     = 70
+	bulkDiscountPercent    = 15
 	maxCustomerNameLength  = 120
 	maxEmailLength         = 254
 	maxPhoneLength         = 20
@@ -108,6 +110,10 @@ type CustomizationSummary struct {
 	InsertPrice      int64
 	ExtraInsertCost  int64
 	PerCardTotal     int64
+	CardSubtotal     int64
+	InsertSubtotal   int64
+	DiscountApplied  bool
+	DiscountAmount   int64
 	TotalPrice       int64
 	MinOrder         int64
 
@@ -189,9 +195,10 @@ type PlaceOrderResult struct {
 }
 
 type OrderReview struct {
-	Summary  *CustomizationSummary
-	Input    PlaceOrderInput
-	IsBidBox bool
+	Summary             *CustomizationSummary
+	Input               PlaceOrderInput
+	IsBidBox            bool
+	IsNikkahCertificate bool
 }
 
 type Service struct {
@@ -416,9 +423,10 @@ func (s *Service) PrepareOrderReview(ctx context.Context, input PlaceOrderInput)
 	}
 
 	return &OrderReview{
-		Summary:  buildCustomizationSummary(pricing, input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode, input.Side),
-		Input:    input,
-		IsBidBox: isBidBoxCategory(pricing.card.Category),
+		Summary:             buildCustomizationSummary(pricing, input.Name, input.Email, input.Phone, input.Address, input.City, input.PostalCode, input.Side),
+		Input:               input,
+		IsBidBox:            isBidBoxCategory(pricing.card.Category),
+		IsNikkahCertificate: isNikkahCertificateCategory(pricing.card.Category),
 	}, nil
 }
 
@@ -548,21 +556,22 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	}
 
 	s.sendOrderCreatedEmailsAsync(orderEmailPayload{
-		OrderID:       orderRow.ID,
-		OrderToken:    orderRow.PublicToken,
-		PaymentLink:   s.buildOrderPaymentLink(orderRow.PublicToken),
-		StatusLink:    s.buildOrderStatusLink(orderRow.PublicToken),
-		CustomerName:  input.Name,
-		CustomerEmail: input.Email,
-		CustomerPhone: input.Phone,
-		ProductName:   cardName,
-		Quantity:      pricing.quantity,
-		TotalPrice:    pricing.totalPrice,
-		AdvanceAmount: paymentAmounts.AdvanceAmount,
-		Remaining:     paymentAmounts.RemainingBalance,
-		Currency:      pricing.currency,
-		PaymentStatus: orderdomain.PendingPaymentStatus,
-		Status:        orderdomain.PendingOrderStatus,
+		OrderID:         orderRow.ID,
+		OrderToken:      orderRow.PublicToken,
+		PaymentLink:     s.buildOrderPaymentLink(orderRow.PublicToken),
+		StatusLink:      s.buildOrderStatusLink(orderRow.PublicToken),
+		CustomerName:    input.Name,
+		CustomerEmail:   input.Email,
+		CustomerPhone:   input.Phone,
+		ProductName:     cardName,
+		Quantity:        pricing.quantity,
+		TotalPrice:      pricing.totalPrice,
+		AdvanceAmount:   paymentAmounts.AdvanceAmount,
+		Remaining:       paymentAmounts.RemainingBalance,
+		Currency:        pricing.currency,
+		PaymentStatus:   orderdomain.PendingPaymentStatus,
+		Status:          orderdomain.PendingOrderStatus,
+		DiscountApplied: pricing.discountApplied,
 	})
 
 	return &PlaceOrderResult{
@@ -594,6 +603,10 @@ func buildCustomizationSummary(pricing *pricingResult, name string, email string
 		InsertPrice:      pricing.insertPrice,
 		ExtraInsertCost:  pricing.extraInsertCost,
 		PerCardTotal:     pricing.perCardPrice,
+		CardSubtotal:     pricing.cardSubtotal,
+		InsertSubtotal:   pricing.insertSubtotal,
+		DiscountApplied:  pricing.discountApplied,
+		DiscountAmount:   pricing.discountAmount,
 		TotalPrice:       pricing.totalPrice,
 		MinOrder:         pricing.minOrder,
 		Name:             name,
@@ -619,6 +632,10 @@ type pricingResult struct {
 	extraInserts     int64
 	extraInsertCost  int64
 	perCardPrice     int64
+	cardSubtotal     int64
+	insertSubtotal   int64
+	discountApplied  bool
+	discountAmount   int64
 	totalPrice       int64
 }
 
@@ -690,7 +707,28 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 	if err != nil {
 		return nil, fmt.Errorf("calculate per-card price: %w", err)
 	}
-	totalPrice, err := safeMultiplyInt64(perCardPrice, quantity)
+
+	cardSubtotal, err := safeMultiplyInt64(basePrice, quantity)
+	if err != nil {
+		return nil, fmt.Errorf("calculate card subtotal: %w", err)
+	}
+	insertSubtotal, err := safeMultiplyInt64(extraInsertCost, quantity)
+	if err != nil {
+		return nil, fmt.Errorf("calculate insert subtotal: %w", err)
+	}
+
+	discountApplied := quantity > bulkDiscountMinQty
+	discountAmount := int64(0)
+	if discountApplied {
+		discountAmount, err = safeMultiplyInt64(cardSubtotal, bulkDiscountPercent)
+		if err != nil {
+			return nil, fmt.Errorf("calculate discount amount: %w", err)
+		}
+		discountAmount /= 100
+	}
+	discountedCardSubtotal := cardSubtotal - discountAmount
+
+	totalPrice, err := safeAddInt64(discountedCardSubtotal, insertSubtotal)
 	if err != nil {
 		return nil, fmt.Errorf("calculate total price: %w", err)
 	}
@@ -709,6 +747,10 @@ func (s *Service) calculatePricing(ctx context.Context, cardID int64, quantity i
 		extraInserts:     extraInserts,
 		extraInsertCost:  extraInsertCost,
 		perCardPrice:     perCardPrice,
+		cardSubtotal:     cardSubtotal,
+		insertSubtotal:   insertSubtotal,
+		discountApplied:  discountApplied,
+		discountAmount:   discountAmount,
 		totalPrice:       totalPrice,
 	}, nil
 }
@@ -837,7 +879,23 @@ func validateCustomizationFields(input PlaceOrderInput, category string) error {
 	if isBidBoxCategory(category) {
 		return validateBidBoxCustomizationFields(input)
 	}
+	if isNikkahCertificateCategory(category) {
+		return validateNikkahCertificateCustomizationFields(input)
+	}
 	return validateWeddingCustomizationFields(input)
+}
+
+func validateNikkahCertificateCustomizationFields(input PlaceOrderInput) error {
+	if utf8.RuneCountInString(input.BrideName) > maxPersonNameLength {
+		return InvalidFieldError{Field: "bride_name"}
+	}
+	if utf8.RuneCountInString(input.GroomName) > maxPersonNameLength {
+		return InvalidFieldError{Field: "groom_name"}
+	}
+	if err := validateOptionalDate(input.NikkahDate); err != nil {
+		return InvalidFieldError{Field: "nikkah_date"}
+	}
+	return nil
 }
 
 func validateBidBoxCustomizationFields(input PlaceOrderInput) error {
@@ -977,6 +1035,10 @@ func isBidBoxCategory(category string) bool {
 	return strings.EqualFold(strings.TrimSpace(category), "bid-boxes")
 }
 
+func isNikkahCertificateCategory(category string) bool {
+	return strings.EqualFold(strings.TrimSpace(category), "nikkah-certificate")
+}
+
 func normalizeCurrency(raw string) string {
 	return strings.ToUpper(strings.TrimSpace(raw))
 }
@@ -1005,22 +1067,30 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 }
 
 type orderEmailPayload struct {
-	OrderID       int64
-	OrderToken    string
-	PaymentLink   string
-	StatusLink    string
-	CustomerID    int64
-	CustomerName  string
-	CustomerEmail string
-	CustomerPhone string
-	ProductName   string
-	Quantity      int64
-	TotalPrice    int64
-	AdvanceAmount int64
-	Remaining     int64
-	Currency      string
-	PaymentStatus orderdomain.PaymentStatus
-	Status        orderdomain.OrderStatus
+	OrderID         int64
+	OrderToken      string
+	PaymentLink     string
+	StatusLink      string
+	CustomerID      int64
+	CustomerName    string
+	CustomerEmail   string
+	CustomerPhone   string
+	ProductName     string
+	Quantity        int64
+	TotalPrice      int64
+	AdvanceAmount   int64
+	Remaining       int64
+	Currency        string
+	PaymentStatus   orderdomain.PaymentStatus
+	Status          orderdomain.OrderStatus
+	DiscountApplied bool
+}
+
+func orderDiscountEmailLine(discountApplied bool) string {
+	if !discountApplied {
+		return ""
+	}
+	return fmt.Sprintf("\nA %d%% bulk discount was applied to the card price for this order (orders over %d units).\n", bulkDiscountPercent, bulkDiscountMinQty)
 }
 
 func (s *Service) buildOrderPaymentLink(token string) string {
@@ -1115,22 +1185,23 @@ func (s *Service) sendOrderStatusEmailAsync(order *orderdomain.Order, status ord
 		}
 
 		payload := orderEmailPayload{
-			OrderID:       order.ID,
-			OrderToken:    order.PublicToken,
-			PaymentLink:   s.buildOrderPaymentLink(order.PublicToken),
-			StatusLink:    s.buildOrderStatusLink(order.PublicToken),
-			CustomerID:    order.CustomerID,
-			CustomerName:  customer.Name,
-			CustomerEmail: strings.TrimSpace(*customer.Email),
-			CustomerPhone: customerPhone,
-			ProductName:   defaultProductName(order.CardName),
-			Quantity:      order.Quantity,
-			TotalPrice:    order.TotalPrice,
-			AdvanceAmount: paymentSummary.AdvanceAmount,
-			Remaining:     paymentSummary.RemainingBalance,
-			Currency:      defaultCurrency(order.Currency),
-			PaymentStatus: paymentStatus,
-			Status:        status,
+			OrderID:         order.ID,
+			OrderToken:      order.PublicToken,
+			PaymentLink:     s.buildOrderPaymentLink(order.PublicToken),
+			StatusLink:      s.buildOrderStatusLink(order.PublicToken),
+			CustomerID:      order.CustomerID,
+			CustomerName:    customer.Name,
+			CustomerEmail:   strings.TrimSpace(*customer.Email),
+			CustomerPhone:   customerPhone,
+			ProductName:     defaultProductName(order.CardName),
+			Quantity:        order.Quantity,
+			TotalPrice:      order.TotalPrice,
+			AdvanceAmount:   paymentSummary.AdvanceAmount,
+			Remaining:       paymentSummary.RemainingBalance,
+			Currency:        defaultCurrency(order.Currency),
+			PaymentStatus:   paymentStatus,
+			Status:          status,
+			DiscountApplied: order.Quantity > bulkDiscountMinQty,
 		}
 
 		adminEmail := strings.TrimSpace(s.adminEmail)
@@ -1154,7 +1225,7 @@ func (s *Service) sendOrderEmail(ctx context.Context, to string, subject string,
 
 func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
 	return fmt.Sprintf(
-		"New order received.\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nAdmin reminder:\nWait for the customer to transfer and submit the 50%% advance payment. Confirm the order only after the advance payment is verified.",
+		"New order received.\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nAdmin reminder:\nWait for the customer to transfer and submit the 50%% advance payment. Confirm the order only after the advance payment is verified.",
 		payload.OrderID,
 		defaultCustomerName(payload.CustomerName),
 		defaultCustomerPhone(payload.CustomerPhone),
@@ -1163,6 +1234,7 @@ func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
 		payload.Quantity,
 		defaultCurrency(payload.Currency),
 		payload.TotalPrice,
+		orderDiscountEmailLine(payload.DiscountApplied),
 		defaultCurrency(payload.Currency),
 		payload.AdvanceAmount,
 		defaultCurrency(payload.Currency),
@@ -1172,13 +1244,14 @@ func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
 
 func buildNewOrderCustomerEmailBody(payload orderEmailPayload) string {
 	return fmt.Sprintf(
-		"Dear %s,\n\nThank you for your order. We have received it.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nPlease transfer the 50%% advance payment and upload your payment proof from the bank transfer page below. We will confirm your order for processing after the advance payment is verified.\n\nBank transfer instructions and payment proof upload:\n%s\n\nBest regards,\nWrite & InviteCo",
+		"Dear %s,\n\nThank you for your order. We have received it.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nPlease transfer the 50%% advance payment and upload your payment proof from the bank transfer page below. We will confirm your order for processing after the advance payment is verified.\n\nBank transfer instructions and payment proof upload:\n%s\n\nBest regards,\nWrite & InviteCo",
 		defaultCustomerName(payload.CustomerName),
 		payload.OrderID,
 		defaultProductName(payload.ProductName),
 		payload.Quantity,
 		defaultCurrency(payload.Currency),
 		payload.TotalPrice,
+		orderDiscountEmailLine(payload.DiscountApplied),
 		defaultCurrency(payload.Currency),
 		payload.AdvanceAmount,
 		defaultCurrency(payload.Currency),
@@ -1191,13 +1264,14 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 	switch payload.Status {
 	case orderdomain.ConfirmedOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been confirmed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nOur team will contact you on your provided WhatsApp number or email when your order is ready. We will share proof/images of your product before dispatch. Once you review and confirm the final product, please pay the remaining balance before delivery.\n\nThank you for trusting Write & InviteCo. We truly appreciate your kindness and support. 🤍\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been confirmed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nOur team will contact you on your provided WhatsApp number or email when your order is ready. We will share proof/images of your product before dispatch. Once you review and confirm the final product, please pay the remaining balance before delivery.\n\nThank you for trusting Write & InviteCo. We truly appreciate your kindness and support. 🤍\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
 			payload.Quantity,
 			defaultCurrency(payload.Currency),
 			payload.TotalPrice,
+			orderDiscountEmailLine(payload.DiscountApplied),
 			defaultCurrency(payload.Currency),
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
@@ -1206,13 +1280,14 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 		)
 	case orderdomain.CompletedOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been completed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nYour order is ready. Our team will contact you on your provided WhatsApp number or email, share proof/images of your final product if needed, and collect the remaining balance before delivery.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been completed.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Received: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Pending\n\nYour order is ready. Our team will contact you on your provided WhatsApp number or email, share proof/images of your final product if needed, and collect the remaining balance before delivery.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
 			payload.Quantity,
 			defaultCurrency(payload.Currency),
 			payload.TotalPrice,
+			orderDiscountEmailLine(payload.DiscountApplied),
 			defaultCurrency(payload.Currency),
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
@@ -1221,13 +1296,14 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 		)
 	case orderdomain.CancelledOrderStatus:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order has been cancelled.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nIf you have any questions about this cancellation or your payment, please reply to this email and our team will help you.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order has been cancelled.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nIf you have any questions about this cancellation or your payment, please reply to this email and our team will help you.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
 			payload.Quantity,
 			defaultCurrency(payload.Currency),
 			payload.TotalPrice,
+			orderDiscountEmailLine(payload.DiscountApplied),
 			advanceEmailLabel(payload.PaymentStatus),
 			defaultCurrency(payload.Currency),
 			advanceAmountForStatusEmail(payload),
@@ -1238,13 +1314,14 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 		)
 	default:
 		return fmt.Sprintf(
-			"Dear %s,\n\nYour order status has been updated.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\nAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nPlease follow the payment instructions on your order page if your advance payment is still pending.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
+			"Dear %s,\n\nYour order status has been updated.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nPlease follow the payment instructions on your order page if your advance payment is still pending.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
 			defaultCustomerName(payload.CustomerName),
 			payload.OrderID,
 			defaultProductName(payload.ProductName),
 			payload.Quantity,
 			defaultCurrency(payload.Currency),
 			payload.TotalPrice,
+			orderDiscountEmailLine(payload.DiscountApplied),
 			defaultCurrency(payload.Currency),
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
@@ -1257,7 +1334,7 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 
 func buildAdminOrderStatusEmailBody(payload orderEmailPayload) string {
 	return fmt.Sprintf(
-		"%s\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nAdmin reminder:\n%s",
+		"%s\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nAdmin reminder:\n%s",
 		adminOrderStatusIntro(payload.Status),
 		payload.OrderID,
 		defaultCustomerName(payload.CustomerName),
@@ -1267,6 +1344,7 @@ func buildAdminOrderStatusEmailBody(payload orderEmailPayload) string {
 		payload.Quantity,
 		defaultCurrency(payload.Currency),
 		payload.TotalPrice,
+		orderDiscountEmailLine(payload.DiscountApplied),
 		advanceEmailLabel(payload.PaymentStatus),
 		defaultCurrency(payload.Currency),
 		advanceAmountForStatusEmail(payload),

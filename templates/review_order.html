@@ -345,6 +345,9 @@
                 {{ end }}
                 <div class="summary-row"><span>Per {{ if .review.IsBidBox }}Box{{ else }}Card{{ end }} Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .review.Summary.Quantity }}</span></div>
+                {{ if .review.Summary.DiscountApplied }}
+                <div class="summary-row"><span>Bulk discount (15%)</span><span>-{{ .review.Summary.Currency }} {{ .review.Summary.DiscountAmount }}</span></div>
+                {{ end }}
                 <div class="summary-total"><span>Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.TotalPrice }}</span></div>
             </aside>
 
@@ -439,7 +442,7 @@
                     </section>
 
                     <section class="review-card">
-                        <h2>{{ if .review.IsBidBox }}Bid Box Personalization{{ else }}Wedding Personalization{{ end }}</h2>
+                        <h2>{{ if .review.IsBidBox }}Bid Box Personalization{{ else if .review.IsNikkahCertificate }}Nikkahnama Details{{ else }}Wedding Personalization{{ end }}</h2>
 
                         {{ if .review.IsBidBox }}
                         <div class="info-grid">
@@ -458,6 +461,21 @@
                             <div class="info-item full-width">
                                 <span class="info-label">Details</span>
                                 <div class="info-value">{{ if .review.Input.BidBoxDetails }}{{ .review.Input.BidBoxDetails }}{{ else }}No extra wording added.{{ end }}</div>
+                            </div>
+                        </div>
+                        {{ else if .review.IsNikkahCertificate }}
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Bride Name</span>
+                                <div class="info-value">{{ if .review.Input.BrideName }}{{ .review.Input.BrideName }}{{ else }}Not provided{{ end }}</div>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Groom Name</span>
+                                <div class="info-value">{{ if .review.Input.GroomName }}{{ .review.Input.GroomName }}{{ else }}Not provided{{ end }}</div>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Nikkah Date</span>
+                                <div class="info-value">{{ if .review.Input.NikkahDate }}{{ .review.Input.NikkahDate }}{{ else }}Not provided{{ end }}</div>
                             </div>
                         </div>
                         {{ else }}

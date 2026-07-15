@@ -36,12 +36,14 @@ type orderService interface {
 type OrderHandler struct {
 	service         orderService
 	paymentProofDir string
+	proofUploader   *cloudinaryProofUploader
 }
 
-func NewOrderHandler(service orderService, paymentProofDir string) *OrderHandler {
+func NewOrderHandler(service orderService, paymentProofDir string, cloudinaryCloudName string, cloudinaryAPIKey string, cloudinaryAPISecret string) *OrderHandler {
 	return &OrderHandler{
 		service:         service,
 		paymentProofDir: paymentProofDir,
+		proofUploader:   newCloudinaryProofUploader(cloudinaryCloudName, cloudinaryAPIKey, cloudinaryAPISecret),
 	}
 }
 
@@ -82,8 +84,11 @@ func (h *OrderHandler) CustomizePage(c *gin.Context) {
 	}
 
 	templateName := "customize.html"
-	if strings.EqualFold(summary.CardCategory, "bid-boxes") {
+	switch {
+	case strings.EqualFold(summary.CardCategory, "bid-boxes"):
 		templateName = "customize_bid_box.html"
+	case strings.EqualFold(summary.CardCategory, "nikkah-certificate"):
+		templateName = "customize_nikkahnama.html"
 	}
 
 	c.HTML(http.StatusOK, templateName, gin.H{
@@ -313,6 +318,7 @@ func (h *OrderHandler) OrderStatus(c *gin.Context) {
 		"details":              payload.Details,
 		"payment":              payload.Payment,
 		"isBidBox":             isBidBoxOrder(payload.Order, payload.Details),
+		"isNikkahCertificate":  isNikkahCertificateOrder(payload.Order),
 		"statusMessage":        orderStatusMessage(payload.Order.Status),
 		"paymentMessage":       orderapplication.PaymentStatusMessage(payload.Payment, payload.Order.TotalPrice),
 		"amountSummary":        paymentAmountSummary(payload.Order, payload.Payment),
@@ -487,6 +493,7 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		"card_name":                    payload.Order.CardName,
 		"card_image":                   payload.Order.CardImage,
 		"isBidBox":                     isBidBoxOrder(payload.Order, payload.Details),
+		"isNikkahCertificate":          isNikkahCertificateOrder(payload.Order),
 		"csrfToken":                    webui.EnsureCSRFToken(c),
 		"canConfirmOrder":              canConfirmOrder,
 		"paymentNeedsReview":           !canConfirmOrder,
@@ -582,6 +589,10 @@ func isBidBoxOrder(order *orderdomain.Order, details *orderdomain.OrderDetail) b
 		details.BidBoxCoupleName != nil ||
 		details.BidBoxEventDate != nil ||
 		details.BidBoxDetails != nil
+}
+
+func isNikkahCertificateOrder(order *orderdomain.Order) bool {
+	return order != nil && strings.EqualFold(strings.TrimSpace(order.CardCategory), "nikkah-certificate")
 }
 
 func canConfirmOrderFromPayment(payment *orderdomain.OrderPayment) bool {

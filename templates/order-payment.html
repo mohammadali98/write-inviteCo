@@ -255,6 +255,9 @@
                     <div class="meta-row">
                         <div class="meta-label">Order Total</div>
                         <div class="meta-value">PKR {{ .amountSummary.TotalAmount }}</div>
+                        {{ if gt .order.Quantity 70 }}
+                        <div class="row-note">Includes 15% bulk discount on card price</div>
+                        {{ end }}
                     </div>
                     <div class="meta-row">
                         <div class="meta-label">Advance Payment Required Now</div>

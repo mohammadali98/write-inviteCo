@@ -307,6 +307,9 @@
                 <div>
                     <div class="row-label">Total</div>
                     <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .order.TotalPrice }}</div>
+                    {{ if gt .order.Quantity 70 }}
+                    <div class="row-note">Includes 15% bulk discount on card price</div>
+                    {{ end }}
                 </div>
                 <div>
                     <div class="row-label">Quantity</div>
@@ -534,6 +537,21 @@
             <div style="margin-top: 14px;">
                 <div class="row-label">Box Details</div>
                 <div class="notes-box">{{ if .details.BidBoxDetails }}{{ .details.BidBoxDetails }}{{ else }}No additional bid box details provided.{{ end }}</div>
+            </div>
+            {{ else if .isNikkahCertificate }}
+            <div class="admin-grid">
+                <div>
+                    <div class="row-label">Bride Name</div>
+                    <div class="row-value">{{ if .details.BrideName }}{{ .details.BrideName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Groom Name</div>
+                    <div class="row-value">{{ if .details.GroomName }}{{ .details.GroomName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Nikkah Date</div>
+                    <div class="row-value">{{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</div>
+                </div>
             </div>
             {{ else }}
             <div class="admin-grid">

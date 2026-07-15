@@ -264,6 +264,10 @@
                     <p class="min-order-note">Minimum order: {{ .card.MinOrder }} card(s)</p>
 
                     <div class="price-calculator">
+                        <div class="subtotal-row" id="discount-row" style="display:none;">
+                            <span>Bulk discount (15%):</span>
+                            <span id="discount-display">-PKR 0</span>
+                        </div>
                         <div class="subtotal-row">
                             <span>Subtotal:</span>
                             <span id="subtotal-display">PKR 0</span>
@@ -326,7 +330,14 @@
         if (priceNofoil === 0) {
             cardPrice = priceFoil;
         }
-        var total = (cardPrice + (extraInserts * insertPrice)) * quantity;
+
+        // Bulk discount rule must match bulkDiscountMinQty/bulkDiscountPercent in
+        // order/orderapplication/service.go calculatePricing (server-side source of truth).
+        var cardSubtotal = cardPrice * quantity;
+        var discountApplied = quantity > 70;
+        var discountAmount = discountApplied ? Math.floor(cardSubtotal * 15 / 100) : 0;
+        var insertSubtotal = (extraInserts * insertPrice) * quantity;
+        var total = (cardSubtotal - discountAmount) + insertSubtotal;
 
         var unitText = 'PKR ' + cardPrice.toLocaleString() + ' per card';
         if (hasFoilChoice) {
@@ -335,6 +346,14 @@
 
         document.getElementById('unit-price-display').textContent = unitText;
         document.getElementById('subtotal-display').textContent = 'PKR ' + total.toLocaleString();
+
+        var discountRow = document.getElementById('discount-row');
+        if (discountApplied) {
+            document.getElementById('discount-display').textContent = '-PKR ' + discountAmount.toLocaleString();
+            discountRow.style.display = '';
+        } else {
+            discountRow.style.display = 'none';
+        }
 
         var foilExplanation = document.getElementById('foil-explanation');
         if (foilExplanation) {

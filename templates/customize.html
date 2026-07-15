@@ -349,6 +349,9 @@
                 <div class="summary-row"><span>Extra Insert Cost / Card</span><span>{{ .summary.Currency }} {{ .summary.ExtraInsertCost }}</span></div>
                 <div class="summary-row"><span>Per Card Total</span><span>{{ .summary.Currency }} {{ .summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .summary.Quantity }}</span></div>
+                {{ if .summary.DiscountApplied }}
+                <div class="summary-row"><span>Bulk discount (15%)</span><span>-{{ .summary.Currency }} {{ .summary.DiscountAmount }}</span></div>
+                {{ end }}
                 <div class="summary-total"><span>Total</span><span>{{ .summary.Currency }} {{ .summary.TotalPrice }}</span></div>
             </aside>
 

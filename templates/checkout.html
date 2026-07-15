@@ -310,6 +310,12 @@
                     <span>Quantity</span>
                     <span>{{ .quantity }}</span>
                 </div>
+                {{ if .discountApplied }}
+                <div class="summary-row">
+                    <span>Bulk discount (15%)</span>
+                    <span>-{{ .currency }} {{ .discountAmount }}</span>
+                </div>
+                {{ end }}
                 <div class="summary-total">
                     <span>Total</span>
                     <span>{{ .currency }} {{ .totalPrice }}</span>

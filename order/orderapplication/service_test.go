@@ -213,6 +213,100 @@ func TestCalculatePricingUsesSelectedExtraInsertsAsChargeableExtras(t *testing.T
 	}
 }
 
+func TestCalculatePricingBulkDiscount(t *testing.T) {
+	t.Parallel()
+
+	newService := func() *Service {
+		return &Service{
+			cardRepo: &stubCardRepo{
+				card: &carddomain.Card{
+					ID:              9,
+					Name:            "Bulk Discount Card",
+					PriceFoilPKR:    380,
+					PriceNofoilPKR:  380,
+					InsertPricePKR:  50,
+					MinOrder:        1,
+					IncludedInserts: 0,
+					Category:        "wedding-cards",
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		quantity         int64
+		requestedInserts int64
+		wantDiscount     bool
+		wantCardSubtotal int64
+		wantInsertSub    int64
+		wantTotal        int64
+	}{
+		{
+			name:             "quantity 70 no discount",
+			quantity:         70,
+			requestedInserts: 0,
+			wantDiscount:     false,
+			wantCardSubtotal: 380 * 70,
+			wantInsertSub:    0,
+			wantTotal:        380 * 70,
+		},
+		{
+			name:             "quantity 71 discount applies",
+			quantity:         71,
+			requestedInserts: 0,
+			wantDiscount:     true,
+			wantCardSubtotal: 380 * 71,
+			wantInsertSub:    0,
+			wantTotal:        int64(float64(380*71) * 0.85),
+		},
+		{
+			name:             "quantity 100 with extra inserts, inserts not discounted",
+			quantity:         100,
+			requestedInserts: 3,
+			wantDiscount:     true,
+			wantCardSubtotal: 380 * 100,
+			wantInsertSub:    3 * 50 * 100,
+			wantTotal:        int64(float64(380*100)*0.85) + 3*50*100,
+		},
+		{
+			name:             "quantity 1 no discount sanity check",
+			quantity:         1,
+			requestedInserts: 0,
+			wantDiscount:     false,
+			wantCardSubtotal: 380,
+			wantInsertSub:    0,
+			wantTotal:        380,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			service := newService()
+			pricing, err := service.calculatePricing(context.Background(), 9, tc.quantity, "PKR", "foil", tc.requestedInserts)
+			if err != nil {
+				t.Fatalf("calculatePricing returned error: %v", err)
+			}
+
+			if pricing.discountApplied != tc.wantDiscount {
+				t.Fatalf("expected discountApplied=%v, got %v", tc.wantDiscount, pricing.discountApplied)
+			}
+			if pricing.cardSubtotal != tc.wantCardSubtotal {
+				t.Fatalf("expected card subtotal %d, got %d", tc.wantCardSubtotal, pricing.cardSubtotal)
+			}
+			if pricing.insertSubtotal != tc.wantInsertSub {
+				t.Fatalf("expected insert subtotal %d, got %d", tc.wantInsertSub, pricing.insertSubtotal)
+			}
+			if pricing.totalPrice != tc.wantTotal {
+				t.Fatalf("expected total price %d, got %d", tc.wantTotal, pricing.totalPrice)
+			}
+		})
+	}
+}
+
 func TestPrepareOrderReviewAllowsMultipleRSVPContacts(t *testing.T) {
 	t.Parallel()
 

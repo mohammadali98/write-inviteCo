@@ -224,6 +224,9 @@
                 <div>
                     <div class="row-label">Total</div>
                     <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .order.TotalPrice }}</div>
+                    {{ if gt .order.Quantity 70 }}
+                    <div class="row-note">Includes 15% bulk discount on card price</div>
+                    {{ end }}
                 </div>
                 <div>
                     <div class="row-label">Quantity</div>
@@ -299,6 +302,26 @@
             {{ else }}
             <p class="empty-text">No bid box personalization details are available for this order yet.</p>
             {{ end }}
+            {{ else if .isNikkahCertificate }}
+            <h2>Nikkahnama Details</h2>
+            {{ if .details }}
+            <div class="status-grid">
+                <div>
+                    <div class="row-label">Bride Name</div>
+                    <div class="row-value">{{ if .details.BrideName }}{{ .details.BrideName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Groom Name</div>
+                    <div class="row-value">{{ if .details.GroomName }}{{ .details.GroomName }}{{ else }}-{{ end }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Nikkah Date</div>
+                    <div class="row-value">{{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</div>
+                </div>
+            </div>
+            {{ else }}
+            <p class="empty-text">No personalization details are available for this order yet.</p>
+            {{ end }}
             {{ else }}
             <h2>Customization Details</h2>
             {{ if .details }}
@@ -326,6 +349,7 @@
             {{ end }}
         </section>
 
+        {{ if not .isNikkahCertificate }}
         <section class="status-card">
             {{ if .isBidBox }}
             <h2>Additional Details</h2>
@@ -390,6 +414,7 @@
             {{ end }}
             {{ end }}
         </section>
+        {{ end }}
 
         {{ if .details }}
         <section class="status-card">

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize Nikkahnama - Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .customize-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 40px 60px;
+        }
+
+        .customize-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.35fr;
+            gap: 36px;
+            align-items: start;
+        }
+
+        .customize-summary {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 4px 24px rgba(90, 60, 20, 0.08);
+            position: sticky;
+            top: 100px;
+        }
+
+        .customize-summary img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 14px;
+        }
+
+        .customize-summary h3 {
+            margin: 0 0 10px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px solid #ece4db;
+            color: #6b5e54;
+            font-size: 0.9rem;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #2a2420;
+        }
+
+        .customize-form {
+            min-width: 0;
+            max-width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .customize-form h1 {
+            margin: 0 0 8px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2.1rem;
+            font-weight: 400;
+        }
+
+        .customize-subtitle {
+            margin: 0 0 20px;
+            color: #7b6f65;
+            font-size: 0.92rem;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid #ece4db;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .section-card h3 {
+            margin: 0 0 12px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+
+        .section-note {
+            margin: 0 0 14px;
+            color: #7b6f65;
+            font-size: 0.87rem;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 0.84rem;
+            color: #6b5e54;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            max-width: 100%;
+            border: 1px solid #e0d6cc;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-family: 'Jost', sans-serif;
+            background: #f5f0eb;
+            font-size: 0.94rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #c4953a;
+            box-shadow: 0 0 0 3px rgba(196, 149, 58, 0.12);
+        }
+
+        .submit-btn {
+            width: 100%;
+            border: none;
+            border-radius: 50px;
+            background: #8b6914;
+            color: #fff;
+            padding: 16px 28px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            z-index: 50;
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: background 0.35s ease;
+        }
+
+        .submit-btn:hover {
+            background: #5c4510;
+        }
+
+        .submit-btn.is-submitting,
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        @media (max-width: 768px) {
+            .customize-page {
+                padding: 20px 18px 40px;
+            }
+
+            .customize-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .customize-summary {
+                position: static;
+                top: auto;
+                order: 2;
+            }
+
+            .customize-form {
+                order: 1;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .submit-btn {
+                position: relative;
+                z-index: 10;
+                width: 100%;
+                -webkit-appearance: none;
+                appearance: none;
+                touch-action: manipulation;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
+        </div>
+    </div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<main class="main-content">
+    <section class="customize-page animate-in">
+        <div class="customize-grid">
+            <aside class="customize-summary">
+                <img src="{{ safeImagePath .summary.CardImage }}" alt="{{ .summary.CardName }}">
+                <h3>{{ .summary.CardName }}</h3>
+                <div class="summary-row"><span>Foil Finish</span><span>{{ .summary.FoilLabel }}</span></div>
+                <div class="summary-row"><span>Base Price / Card</span><span>{{ .summary.Currency }} {{ .summary.UnitPrice }}</span></div>
+                <div class="summary-row"><span>Per Card Total</span><span>{{ .summary.Currency }} {{ .summary.PerCardTotal }}</span></div>
+                <div class="summary-row"><span>Quantity</span><span>{{ .summary.Quantity }}</span></div>
+                {{ if .summary.DiscountApplied }}
+                <div class="summary-row"><span>Bulk discount (15%)</span><span>-{{ .summary.Currency }} {{ .summary.DiscountAmount }}</span></div>
+                {{ end }}
+                <div class="summary-total"><span>Total</span><span>{{ .summary.Currency }} {{ .summary.TotalPrice }}</span></div>
+            </aside>
+
+            <section class="customize-form">
+                <h1>Customize Your Nikkahnama</h1>
+                <p class="customize-subtitle">Add the bride and groom's names and the Nikkah date. Next you will enter customer information, then review the full order before bank transfer instructions are shown.</p>
+
+                <form id="review-form" action="/checkout" method="POST">
+                    <input type="hidden" name="card_id" value="{{ .summary.CardID }}">
+                    <input type="hidden" name="quantity" value="{{ .summary.Quantity }}">
+                    <input type="hidden" name="foil_option" value="{{ .summary.FoilOption }}">
+                    <input type="hidden" name="extra_inserts" value="{{ .summary.RequestedInserts }}">
+                    <input type="hidden" name="side" value="bride">
+                    <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+
+                    <div class="section-card">
+                        <h3>Nikkahnama Details</h3>
+                        <p class="section-note">These names and the date are printed on the certificate. The Nikkah date is optional if you don't know it yet.</p>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="bride_name">Bride's Name</label>
+                                <input id="bride_name" name="bride_name" type="text" maxlength="120">
+                            </div>
+                            <div class="form-group">
+                                <label for="groom_name">Groom's Name</label>
+                                <input id="groom_name" name="groom_name" type="text" maxlength="120">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="nikkah_date">Nikkah Date (optional)</label>
+                                <input id="nikkah_date" name="nikkah_date" type="date">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" id="review-submit-btn" type="button">Continue to Checkout →</button>
+                </form>
+            </section>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/collections/wedding-cards">Shop All</a>
+                <a href="/collections/wedding-cards">New Arrivals</a>
+                <a href="/collections/wedding-cards">Wedding Cards</a>
+                <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/track-order">Track Order & Payment</a>
+                <a href="/shipping-info">Shipping Info</a>
+                <a href="/returns-exchanges">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/terms-of-use">Terms of Use</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+function toggleMenu() {
+    var sidebar = document.getElementById("sidebar");
+    var overlay = document.getElementById("overlay");
+
+    if (sidebar) {
+        sidebar.classList.toggle("active");
+    }
+    if (overlay) {
+        overlay.classList.toggle("active");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var reviewForm = document.getElementById('review-form');
+    var reviewBtn = document.getElementById('review-submit-btn');
+
+    if (reviewForm && reviewBtn) {
+        reviewBtn.addEventListener('click', function() {
+            if (typeof reviewForm.requestSubmit === 'function') {
+                reviewForm.requestSubmit();
+            } else {
+                reviewForm.submit();
+            }
+        });
+    }
+});
+
+</script>
+
+</body>
+</html>

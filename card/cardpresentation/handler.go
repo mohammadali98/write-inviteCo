@@ -71,6 +71,10 @@ const (
 	maxCheckoutQuantity     = 5000
 	maxCheckoutExtraInserts = 20
 	maxSearchQueryLength    = 100
+	// Must match bulkDiscountMinQty/bulkDiscountPercent in order/orderapplication/service.go
+	// so this preview always agrees with the server-side charge.
+	checkoutBulkDiscountMinQty  = 70
+	checkoutBulkDiscountPercent = 15
 )
 
 func NewCardHandler(repo carddomain.CardRepo, productService *productapplication.Service) *CardHandler {
@@ -235,7 +239,30 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected order exceeds the supported pricing range.")
 		return
 	}
-	total, ok := safeMultiplyInt64(perCardTotal, quantity)
+
+	cardSubtotal, ok := safeMultiplyInt64(unitPrice, quantity)
+	if !ok {
+		webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected order exceeds the supported pricing range.")
+		return
+	}
+	insertSubtotal, ok := safeMultiplyInt64(extraInsertCostPerCard, quantity)
+	if !ok {
+		webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected order exceeds the supported pricing range.")
+		return
+	}
+
+	discountApplied := quantity > checkoutBulkDiscountMinQty
+	discountAmount := int64(0)
+	if discountApplied {
+		discounted, ok := safeMultiplyInt64(cardSubtotal, checkoutBulkDiscountPercent)
+		if !ok {
+			webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected order exceeds the supported pricing range.")
+			return
+		}
+		discountAmount = discounted / 100
+	}
+
+	total, ok := safeAddInt64(cardSubtotal-discountAmount, insertSubtotal)
 	if !ok {
 		webui.RenderError(c, http.StatusInternalServerError, "Pricing Error", "The selected order exceeds the supported pricing range.")
 		return
@@ -260,6 +287,8 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"unitPrice":              unitPrice,
 		"extraInsertCostPerCard": extraInsertCostPerCard,
 		"perCardTotal":           perCardTotal,
+		"discountApplied":        discountApplied,
+		"discountAmount":         discountAmount,
 		"totalPrice":             total,
 		"personalization":        readCheckoutPersonalization(c),
 		"csrfToken":              webui.EnsureCSRFToken(c),
