@@ -679,7 +679,23 @@ func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
 			},
 		},
 	}
-	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+	mockCloudinary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"secure_url":"https://res.cloudinary.com/test-cloud/image/upload/v1/payment-proofs/42/abc123.pdf","public_id":"payment-proofs/42/abc123"}`))
+	}))
+	defer mockCloudinary.Close()
+
+	handler := &OrderHandler{
+		service:         service,
+		paymentProofDir: t.TempDir(),
+		proofUploader: &cloudinaryProofUploader{
+			cloudName:  "test-cloud",
+			apiKey:     "test-key",
+			apiSecret:  "test-secret",
+			httpClient: mockCloudinary.Client(),
+			apiBaseURL: mockCloudinary.URL,
+		},
+	}
 
 	router := gin.New()
 	router.SetHTMLTemplate(template.Must(template.New("error.html").Parse("{{ .message }}")))
@@ -695,8 +711,8 @@ func TestSubmitPaymentProofDoesNotTrustSubmittedAmountField(t *testing.T) {
 	if service.submitPaymentProofInput.SubmittedAmount != 0 {
 		t.Fatalf("expected presentation layer to ignore tampered submitted_amount, got %d", service.submitPaymentProofInput.SubmittedAmount)
 	}
-	if service.submitPaymentProofInput.ProofFilePath == "" {
-		t.Fatalf("expected uploaded proof path to be passed to service")
+	if !strings.HasPrefix(service.submitPaymentProofInput.ProofFilePath, "https://res.cloudinary.com/") {
+		t.Fatalf("expected uploaded proof path to be a Cloudinary URL, got %q", service.submitPaymentProofInput.ProofFilePath)
 	}
 }
 

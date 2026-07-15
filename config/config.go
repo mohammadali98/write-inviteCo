@@ -8,15 +8,18 @@ import (
 )
 
 type Config struct {
-	DatabaseURL       string
-	Port              string
-	ResendAPIKey      string
-	ResendFromEmail   string
-	AdminEmail        string
-	AdminUser         string
-	AdminPass         string
-	AdminAuthDisabled bool
-	PublicBaseURL     string
+	DatabaseURL         string
+	Port                string
+	ResendAPIKey        string
+	ResendFromEmail     string
+	AdminEmail          string
+	AdminUser           string
+	AdminPass           string
+	AdminAuthDisabled   bool
+	PublicBaseURL       string
+	CloudinaryCloudName string
+	CloudinaryAPIKey    string
+	CloudinaryAPISecret string
 }
 
 func Load() Config {
@@ -44,6 +47,10 @@ func Load() Config {
 		AdminPass:         strings.TrimSpace(os.Getenv("ADMIN_PASS")),
 		AdminAuthDisabled: strings.TrimSpace(os.Getenv("ADMIN_AUTH_DISABLED")) == "true",
 		PublicBaseURL:     strings.TrimRight(getEnv("PUBLIC_BASE_URL", "http://localhost:8080"), "/"),
+
+		CloudinaryCloudName: strings.TrimSpace(os.Getenv("CLOUDINARY_CLOUD_NAME")),
+		CloudinaryAPIKey:    strings.TrimSpace(os.Getenv("CLOUDINARY_API_KEY")),
+		CloudinaryAPISecret: strings.TrimSpace(os.Getenv("CLOUDINARY_API_SECRET")),
 	}
 }
 

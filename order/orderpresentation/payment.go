@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -23,8 +24,9 @@ const (
 )
 
 var (
-	errInvalidPaymentProofFile = errors.New("invalid payment proof file")
-	allowedPaymentProofTypes   = map[string]string{
+	errInvalidPaymentProofFile        = errors.New("invalid payment proof file")
+	errPaymentProofStorageUnavailable = errors.New("payment proof storage not configured")
+	allowedPaymentProofTypes          = map[string]string{
 		".jpg":  "image/jpeg",
 		".jpeg": "image/jpeg",
 		".png":  "image/png",
@@ -40,8 +42,8 @@ var (
 )
 
 type savedPaymentProof struct {
-	Filename  string
-	SavedPath string
+	SecureURL string
+	PublicID  string
 }
 
 func (h *OrderHandler) BankTransferPage(c *gin.Context) {
@@ -114,7 +116,7 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		return
 	}
 
-	proof, err := h.savePaymentProof(c, "payment_proof")
+	proof, err := h.savePaymentProof(c, "payment_proof", payload.Order.ID)
 	if err != nil {
 		webui.RenderError(c, http.StatusBadRequest, "Invalid Proof Upload", "Upload a JPG, JPEG, PNG, WEBP, or PDF file up to 10 MB.")
 		return
@@ -129,10 +131,10 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		SenderName:           c.PostForm("sender_name"),
 		TransactionReference: c.PostForm("transaction_reference"),
 		CustomerNote:         c.PostForm("payment_note"),
-		ProofFilePath:        proof.Filename,
+		ProofFilePath:        proof.SecureURL,
 	})
 	if err != nil {
-		_ = os.Remove(proof.SavedPath)
+		h.proofUploader.destroy(proof.PublicID)
 		switch {
 		case errors.Is(err, orderapplication.ErrInvalidInput):
 			webui.RenderError(c, http.StatusBadRequest, "Invalid Payment Details", "Please review the submitted payment proof details and try again.")
@@ -147,7 +149,7 @@ func (h *OrderHandler) SubmitPaymentProof(c *gin.Context) {
 		return
 	}
 
-	if oldProofPath != "" && oldProofPath != proof.Filename {
+	if oldProofPath != "" && oldProofPath != proof.SecureURL && !isCloudinaryProofURL(oldProofPath) {
 		removeUploadedPaymentProof(h.paymentProofDir, oldProofPath)
 	}
 
@@ -218,7 +220,17 @@ func (h *OrderHandler) AdminServePaymentProof(c *gin.Context) {
 		return
 	}
 
-	filePath, ok := paymentProofFilePath(h.paymentProofDir, *payload.Payment.ProofFilePath)
+	proofPath := strings.TrimSpace(*payload.Payment.ProofFilePath)
+
+	if isCloudinaryProofURL(proofPath) {
+		c.Redirect(http.StatusFound, proofPath)
+		return
+	}
+
+	// Legacy local proof from before the Cloudinary migration (Railway's disk
+	// is ephemeral, so no new proofs are saved here — this path only serves
+	// pre-migration test orders that were never migrated).
+	filePath, ok := paymentProofFilePath(h.paymentProofDir, proofPath)
 	if !ok {
 		webui.RenderError(c, http.StatusNotFound, "No Proof Uploaded", "No payment proof has been uploaded for this order.")
 		return
@@ -232,6 +244,10 @@ func (h *OrderHandler) AdminServePaymentProof(c *gin.Context) {
 	c.File(filePath)
 }
 
+func isCloudinaryProofURL(raw string) bool {
+	return strings.HasPrefix(strings.TrimSpace(raw), "https://res.cloudinary.com/")
+}
+
 func canUploadPaymentProof(payment *orderdomain.OrderPayment) bool {
 	if payment == nil {
 		return false
@@ -240,7 +256,7 @@ func canUploadPaymentProof(payment *orderdomain.OrderPayment) bool {
 		payment.PaymentStatus == orderdomain.RejectedPaymentStatus
 }
 
-func (h *OrderHandler) savePaymentProof(c *gin.Context, field string) (*savedPaymentProof, error) {
+func (h *OrderHandler) savePaymentProof(c *gin.Context, field string, orderID int64) (*savedPaymentProof, error) {
 	fileHeader, err := c.FormFile(field)
 	if err != nil {
 		return nil, errInvalidPaymentProofFile
@@ -251,8 +267,8 @@ func (h *OrderHandler) savePaymentProof(c *gin.Context, field string) (*savedPay
 		return nil, errInvalidPaymentProofFile
 	}
 
-	if err := os.MkdirAll(h.paymentProofDir, 0o755); err != nil {
-		return nil, err
+	if !h.proofUploader.configured() {
+		return nil, errPaymentProofStorageUnavailable
 	}
 
 	filename, err := newPaymentProofFilename(canonicalExt)
@@ -260,14 +276,21 @@ func (h *OrderHandler) savePaymentProof(c *gin.Context, field string) (*savedPay
 		return nil, err
 	}
 
-	savePath := filepath.Join(h.paymentProofDir, filename)
-	if err := c.SaveUploadedFile(fileHeader, savePath); err != nil {
+	file, err := fileHeader.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	folder := fmt.Sprintf("payment-proofs/%d", orderID)
+	secureURL, publicID, err := h.proofUploader.upload(file, filename, folder)
+	if err != nil {
 		return nil, err
 	}
 
 	return &savedPaymentProof{
-		Filename:  filename,
-		SavedPath: savePath,
+		SecureURL: secureURL,
+		PublicID:  publicID,
 	}, nil
 }
 

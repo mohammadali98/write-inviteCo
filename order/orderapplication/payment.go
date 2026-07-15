@@ -22,6 +22,7 @@ const (
 	maxTransactionReferenceLength = 150
 	maxCustomerPaymentNoteLength  = 1000
 	maxAdminPaymentNoteLength     = 1000
+	maxProofFilePathLength        = 2048
 )
 
 type BankTransferDetails struct {
@@ -237,7 +238,10 @@ func validatePaymentProofInput(input PaymentProofInput) error {
 	if !containsLetterOrDigit(input.SenderName) || !containsLetterOrDigit(input.TransactionReference) {
 		return ErrInvalidInput
 	}
-	if strings.ContainsAny(input.ProofFilePath, "/\\") || strings.Contains(input.ProofFilePath, "..") {
+	if utf8.RuneCountInString(input.ProofFilePath) > maxProofFilePathLength {
+		return ErrInvalidInput
+	}
+	if !strings.HasPrefix(input.ProofFilePath, "https://res.cloudinary.com/") {
 		return ErrInvalidInput
 	}
 	return nil

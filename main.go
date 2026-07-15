@@ -97,7 +97,13 @@ func main() {
 		cfg.AdminEmail,
 		cfg.PublicBaseURL,
 	)
-	orderHandler := orderpresentation.NewOrderHandler(orderService, filepath.Join(appRoot, "private", "payment-proofs"))
+	orderHandler := orderpresentation.NewOrderHandler(
+		orderService,
+		filepath.Join(appRoot, "private", "payment-proofs"),
+		cfg.CloudinaryCloudName,
+		cfg.CloudinaryAPIKey,
+		cfg.CloudinaryAPISecret,
+	)
 	cardHandler := cardpresentation.NewCardHandler(cardRepo, productService)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
 
