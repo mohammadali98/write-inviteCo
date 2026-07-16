@@ -86,8 +86,14 @@ func (r *OrderRepository) GetOrdersByCustomerID(ctx context.Context, customerID 
 	return orders, nil
 }
 
-func (r *OrderRepository) GetAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error) {
-	rows, err := r.reader.GetAdminOrders(ctx)
+func (r *OrderRepository) GetAdminOrders(ctx context.Context, filter orderdomain.AdminOrderFilter) ([]*orderdomain.AdminOrder, error) {
+	rows, err := r.reader.GetAdminOrders(ctx, orderreader.GetAdminOrdersParams{
+		OrderStatus:   stringPtrOrNil(filter.OrderStatus),
+		PaymentStatus: stringPtrOrNil(filter.PaymentStatus),
+		Search:        stringPtrOrNil(filter.Search),
+		CreatedFrom:   toTimestamptz(filter.CreatedFrom),
+		CreatedTo:     toTimestamptz(filter.CreatedTo),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +103,9 @@ func (r *OrderRepository) GetAdminOrders(ctx context.Context) ([]*orderdomain.Ad
 		orders[i] = &orderdomain.AdminOrder{
 			ID:              row.ID,
 			CustomerName:    row.CustomerName,
+			ProductName:     row.ProductName,
+			CardCategory:    row.CardCategory,
+			Quantity:        row.Quantity,
 			TotalPrice:      row.TotalPrice,
 			Status:          toOrderStatus(row.Status),
 			PaymentStatus:   toPaymentStatus(row.PaymentStatus),
@@ -345,6 +354,20 @@ func toTimePtr(t pgtype.Timestamptz) *time.Time {
 		return nil
 	}
 	return &t.Time
+}
+
+func toTimestamptz(t *time.Time) pgtype.Timestamptz {
+	if t == nil {
+		return pgtype.Timestamptz{}
+	}
+	return pgtype.Timestamptz{Time: *t, Valid: true}
+}
+
+func stringPtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func toOrderStatus(s *string) orderdomain.OrderStatus {

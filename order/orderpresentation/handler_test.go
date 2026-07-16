@@ -36,6 +36,7 @@ type fakeOrderService struct {
 	submitPaymentProofOrderID     int64
 	submitPaymentProofInput       orderapplication.PaymentProofInput
 	submitPaymentProofErr         error
+	listAdminOrdersInput          orderapplication.AdminOrderListInput
 }
 
 func (f *fakeOrderService) PrepareCustomization(ctx context.Context, input orderapplication.CustomizationInput) (*orderapplication.CustomizationSummary, error) {
@@ -82,7 +83,8 @@ func (f *fakeOrderService) GetOrderStatusDetailByToken(ctx context.Context, toke
 	return nil, nil
 }
 
-func (f *fakeOrderService) ListAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error) {
+func (f *fakeOrderService) ListAdminOrders(ctx context.Context, input orderapplication.AdminOrderListInput) ([]*orderdomain.AdminOrder, error) {
+	f.listAdminOrdersInput = input
 	return nil, nil
 }
 
@@ -519,6 +521,62 @@ func TestCreateOrderIgnoresTamperedDisplayFields(t *testing.T) {
 		if _, ok := inputType.FieldByName(fieldName); ok {
 			t.Fatalf("trusted order input should not accept %s", fieldName)
 		}
+	}
+}
+
+func TestAdminOrdersThreadsQueryFiltersToService(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/orders?status=confirmed&payment_status=awaiting_verification&search=ali&date_range=week", nil)
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("admin_orders.html").Parse("ok")))
+	router.GET("/admin/orders", handler.AdminOrders)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%q", recorder.Code, recorder.Body.String())
+	}
+	if service.listAdminOrdersInput.OrderStatus != "confirmed" {
+		t.Fatalf("expected status filter 'confirmed', got %q", service.listAdminOrdersInput.OrderStatus)
+	}
+	if service.listAdminOrdersInput.PaymentStatus != "awaiting_verification" {
+		t.Fatalf("expected payment_status filter 'awaiting_verification', got %q", service.listAdminOrdersInput.PaymentStatus)
+	}
+	if service.listAdminOrdersInput.Search != "ali" {
+		t.Fatalf("expected search filter 'ali', got %q", service.listAdminOrdersInput.Search)
+	}
+	if service.listAdminOrdersInput.DateRange != "week" {
+		t.Fatalf("expected date_range filter 'week', got %q", service.listAdminOrdersInput.DateRange)
+	}
+}
+
+func TestAdminOrdersWithNoQueryParamsPassesEmptyFilter(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/orders", nil)
+	recorder := httptest.NewRecorder()
+	service := &fakeOrderService{}
+	handler := &OrderHandler{service: service, paymentProofDir: t.TempDir()}
+
+	router := gin.New()
+	router.SetHTMLTemplate(template.Must(template.New("admin_orders.html").Parse("ok")))
+	router.GET("/admin/orders", handler.AdminOrders)
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%q", recorder.Code, recorder.Body.String())
+	}
+	empty := orderapplication.AdminOrderListInput{}
+	if service.listAdminOrdersInput != empty {
+		t.Fatalf("expected an empty filter for the default view, got %+v", service.listAdminOrdersInput)
 	}
 }
 

@@ -85,6 +85,30 @@
             font-weight: 500;
         }
 
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 4px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .category-badge-bid-box {
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #4338ca;
+        }
+
+        .category-badge-nikkah {
+            background: #fdf2f8;
+            border: 1px solid #fbcfe8;
+            color: #a3245e;
+        }
+
         .view-link {
             text-decoration: none;
             font-size: 0.82rem;
@@ -104,6 +128,76 @@
             text-align: center;
         }
 
+        .admin-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 14px;
+            margin: 0 0 18px;
+            padding: 16px 18px;
+            background: var(--panel);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-soft);
+            box-shadow: var(--shadow-card);
+        }
+
+        .admin-filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .admin-filter-group label {
+            font-size: 0.76rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .admin-filter-group select,
+        .admin-filter-group input[type="search"] {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.88rem;
+            background: var(--bg-warm);
+            color: var(--text);
+            min-width: 180px;
+        }
+
+        .admin-filter-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .admin-filter-submit,
+        .admin-filter-reset {
+            border-radius: 999px;
+            padding: 9px 18px;
+            font-family: 'Jost', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .admin-filter-submit {
+            background: var(--brand, #8b6914);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .admin-filter-reset {
+            background: var(--panel);
+            color: var(--text-light);
+        }
+
         @media (max-width: 760px) {
             .admin-page {
                 padding: 22px 16px 40px;
@@ -114,7 +208,18 @@
             }
 
             .admin-table {
-                min-width: 760px;
+                min-width: 900px;
+            }
+
+            .admin-filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .admin-filter-group select,
+            .admin-filter-group input[type="search"] {
+                min-width: 0;
+                width: 100%;
             }
         }
     </style>
@@ -151,6 +256,49 @@
         <h1>Orders Dashboard</h1>
         <p class="admin-subtitle">All orders with their current order status and 50% advance bank transfer payment status.</p>
 
+        <form class="admin-filter-bar" action="/admin/orders" method="get">
+            <div class="admin-filter-group">
+                <label for="filter-status">Order Status</label>
+                <select id="filter-status" name="status">
+                    <option value="" {{ if not .filterStatus }}selected{{ end }}>All</option>
+                    <option value="pending" {{ if eq .filterStatus "pending" }}selected{{ end }}>Pending</option>
+                    <option value="confirmed" {{ if eq .filterStatus "confirmed" }}selected{{ end }}>Confirmed</option>
+                    <option value="completed" {{ if eq .filterStatus "completed" }}selected{{ end }}>Completed</option>
+                    <option value="cancelled" {{ if eq .filterStatus "cancelled" }}selected{{ end }}>Cancelled</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-group">
+                <label for="filter-payment-status">Advance Status</label>
+                <select id="filter-payment-status" name="payment_status">
+                    <option value="" {{ if not .filterPaymentStatus }}selected{{ end }}>All</option>
+                    <option value="pending_payment" {{ if eq .filterPaymentStatus "pending_payment" }}selected{{ end }}>Advance Payment Pending</option>
+                    <option value="awaiting_verification" {{ if eq .filterPaymentStatus "awaiting_verification" }}selected{{ end }}>Advance Awaiting Verification</option>
+                    <option value="payment_verified" {{ if eq .filterPaymentStatus "payment_verified" }}selected{{ end }}>Advance Payment Verified</option>
+                    <option value="payment_rejected" {{ if eq .filterPaymentStatus "payment_rejected" }}selected{{ end }}>Advance Payment Rejected</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-group">
+                <label for="filter-date-range">Date Range</label>
+                <select id="filter-date-range" name="date_range">
+                    <option value="" {{ if not .filterDateRange }}selected{{ end }}>All Time</option>
+                    <option value="week" {{ if eq .filterDateRange "week" }}selected{{ end }}>This Week</option>
+                    <option value="month" {{ if eq .filterDateRange "month" }}selected{{ end }}>This Month</option>
+                </select>
+            </div>
+
+            <div class="admin-filter-group" style="flex: 1 1 220px;">
+                <label for="filter-search">Search</label>
+                <input id="filter-search" type="search" name="search" placeholder="Order ID, customer name, or phone" value="{{ .filterSearch }}">
+            </div>
+
+            <div class="admin-filter-actions">
+                <button class="admin-filter-submit" type="submit">Apply</button>
+                <a class="admin-filter-reset" href="/admin/orders">Reset</a>
+            </div>
+        </form>
+
         <div class="admin-table-wrap">
             {{ if .orders }}
             <table class="admin-table">
@@ -158,6 +306,8 @@
                 <tr>
                     <th>Order ID</th>
                     <th>Customer</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
                     <th>Total</th>
                     <th>Advance Status</th>
                     <th>Advance Submitted</th>
@@ -171,6 +321,15 @@
                 <tr>
                     <td>#{{ .ID }}</td>
                     <td>{{ .CustomerName }}</td>
+                    <td>
+                        {{ if .ProductName }}{{ .ProductName }}{{ else }}(deleted product){{ end }}
+                        {{ if eq .CardCategory "bid-boxes" }}
+                        <br><span class="category-badge category-badge-bid-box">Bid Box</span>
+                        {{ else if eq .CardCategory "nikkah-certificate" }}
+                        <br><span class="category-badge category-badge-nikkah">Nikkah Certificate</span>
+                        {{ end }}
+                    </td>
+                    <td>{{ .Quantity }}</td>
                     <td>{{ if .Currency }}{{ .Currency }}{{ else }}PKR{{ end }} {{ .TotalPrice }}</td>
                     <td>
                         <span class="status-pill">

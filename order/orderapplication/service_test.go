@@ -4,10 +4,113 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"writeandinviteco/inviteandco/card/carddomain"
 	"writeandinviteco/inviteandco/order/orderdomain"
 )
+
+func TestListAdminOrdersNormalizesFilterInput(t *testing.T) {
+	t.Parallel()
+
+	captured := &orderdomain.AdminOrderFilter{}
+	service := &Service{
+		orderRepo: stubPaymentOrderRepo{capturedFilter: captured},
+	}
+
+	if _, err := service.ListAdminOrders(context.Background(), AdminOrderListInput{
+		OrderStatus:   "Confirmed",
+		PaymentStatus: "awaiting_verification",
+		Search:        "  Ali  ",
+		DateRange:     "week",
+	}); err != nil {
+		t.Fatalf("ListAdminOrders returned error: %v", err)
+	}
+
+	if captured.OrderStatus != string(orderdomain.ConfirmedOrderStatus) {
+		t.Fatalf("expected normalized order status %q, got %q", orderdomain.ConfirmedOrderStatus, captured.OrderStatus)
+	}
+	if captured.PaymentStatus != string(orderdomain.AwaitingVerificationPaymentStatus) {
+		t.Fatalf("expected normalized payment status %q, got %q", orderdomain.AwaitingVerificationPaymentStatus, captured.PaymentStatus)
+	}
+	if captured.Search != "Ali" {
+		t.Fatalf("expected sanitized search 'Ali', got %q", captured.Search)
+	}
+	if captured.CreatedFrom == nil {
+		t.Fatal("expected a CreatedFrom lower bound for date_range=week")
+	}
+}
+
+func TestListAdminOrdersIgnoresUnrecognizedFilterValues(t *testing.T) {
+	t.Parallel()
+
+	captured := &orderdomain.AdminOrderFilter{}
+	service := &Service{
+		orderRepo: stubPaymentOrderRepo{capturedFilter: captured},
+	}
+
+	if _, err := service.ListAdminOrders(context.Background(), AdminOrderListInput{
+		OrderStatus:   "not-a-real-status",
+		PaymentStatus: "not-a-real-payment-status",
+		DateRange:     "not-a-real-range",
+	}); err != nil {
+		t.Fatalf("ListAdminOrders returned error: %v", err)
+	}
+
+	if captured.OrderStatus != "" {
+		t.Fatalf("expected unrecognized order status to be ignored, got %q", captured.OrderStatus)
+	}
+	if captured.PaymentStatus != "" {
+		t.Fatalf("expected unrecognized payment status to be ignored, got %q", captured.PaymentStatus)
+	}
+	if captured.CreatedFrom != nil {
+		t.Fatalf("expected unrecognized date range to leave CreatedFrom unbounded, got %v", captured.CreatedFrom)
+	}
+}
+
+func TestListAdminOrdersWithNoFiltersMatchesDefaultView(t *testing.T) {
+	t.Parallel()
+
+	captured := &orderdomain.AdminOrderFilter{}
+	service := &Service{
+		orderRepo: stubPaymentOrderRepo{capturedFilter: captured},
+	}
+
+	if _, err := service.ListAdminOrders(context.Background(), AdminOrderListInput{}); err != nil {
+		t.Fatalf("ListAdminOrders returned error: %v", err)
+	}
+
+	if (*captured != orderdomain.AdminOrderFilter{}) {
+		t.Fatalf("expected an empty filter for the default (no query params) view, got %+v", captured)
+	}
+}
+
+func TestAdminOrderDateRangeStartWeekAndMonth(t *testing.T) {
+	t.Parallel()
+
+	weekStart := adminOrderDateRangeStart("week")
+	if weekStart == nil {
+		t.Fatal("expected a start time for 'week'")
+	}
+	if weekStart.Weekday() != time.Monday {
+		t.Fatalf("expected week range to start on Monday, got %v", weekStart.Weekday())
+	}
+
+	monthStart := adminOrderDateRangeStart("month")
+	if monthStart == nil {
+		t.Fatal("expected a start time for 'month'")
+	}
+	if monthStart.Day() != 1 {
+		t.Fatalf("expected month range to start on day 1, got %d", monthStart.Day())
+	}
+
+	if adminOrderDateRangeStart("") != nil {
+		t.Fatal("expected empty date range to be unbounded")
+	}
+	if adminOrderDateRangeStart("all") != nil {
+		t.Fatal("expected 'all' date range to be unbounded")
+	}
+}
 
 type stubCardRepo struct {
 	card *carddomain.Card

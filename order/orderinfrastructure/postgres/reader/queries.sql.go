@@ -14,7 +14,10 @@ import (
 const getAdminOrders = `-- name: GetAdminOrders :many
 SELECT
     o.id,
-    COALESCE(c.name, 'Unknown Customer') AS customer_name,
+    COALESCE(cu.name, 'Unknown Customer') AS customer_name,
+    COALESCE(ca.name, '') AS product_name,
+    COALESCE(ca.category, '') AS card_category,
+    o.quantity,
     o.total_price,
     o.status,
     op.payment_status,
@@ -23,14 +26,37 @@ SELECT
     o.currency,
     o.created_at
 FROM orders o
-LEFT JOIN customers c ON c.id = o.customer_id
+LEFT JOIN customers cu ON cu.id = o.customer_id
+LEFT JOIN cards ca ON ca.id = o.card_id
 LEFT JOIN order_payments op ON op.order_id = o.id
+WHERE
+    ($1::text IS NULL OR o.status = $1::text)
+    AND ($2::text IS NULL OR op.payment_status = $2::text)
+    AND (
+        $3::text IS NULL
+        OR cu.name ILIKE '%' || $3::text || '%'
+        OR cu.phone ILIKE '%' || $3::text || '%'
+        OR o.id::text ILIKE '%' || $3::text || '%'
+    )
+    AND ($4::timestamptz IS NULL OR o.created_at >= $4::timestamptz)
+    AND ($5::timestamptz IS NULL OR o.created_at < $5::timestamptz)
 ORDER BY o.created_at DESC
 `
+
+type GetAdminOrdersParams struct {
+	OrderStatus   *string
+	PaymentStatus *string
+	Search        *string
+	CreatedFrom   pgtype.Timestamptz
+	CreatedTo     pgtype.Timestamptz
+}
 
 type GetAdminOrdersRow struct {
 	ID              int64
 	CustomerName    string
+	ProductName     string
+	CardCategory    string
+	Quantity        int64
 	TotalPrice      int64
 	Status          *string
 	PaymentStatus   *string
@@ -40,8 +66,14 @@ type GetAdminOrdersRow struct {
 	CreatedAt       pgtype.Timestamptz
 }
 
-func (q *Queries) GetAdminOrders(ctx context.Context) ([]GetAdminOrdersRow, error) {
-	rows, err := q.db.Query(ctx, getAdminOrders)
+func (q *Queries) GetAdminOrders(ctx context.Context, arg GetAdminOrdersParams) ([]GetAdminOrdersRow, error) {
+	rows, err := q.db.Query(ctx, getAdminOrders,
+		arg.OrderStatus,
+		arg.PaymentStatus,
+		arg.Search,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +84,9 @@ func (q *Queries) GetAdminOrders(ctx context.Context) ([]GetAdminOrdersRow, erro
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerName,
+			&i.ProductName,
+			&i.CardCategory,
+			&i.Quantity,
 			&i.TotalPrice,
 			&i.Status,
 			&i.PaymentStatus,

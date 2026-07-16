@@ -32,22 +32,23 @@ var (
 )
 
 const (
-	maxQuantity            = 5000
-	maxRequestedInserts    = 20
-	bulkDiscountMinQty     = 70
-	bulkDiscountPercent    = 15
-	maxCustomerNameLength  = 120
-	maxEmailLength         = 254
-	maxPhoneLength         = 20
-	maxAddressLength       = 500
-	maxCityLength          = 100
-	maxPostalCodeLength    = 20
-	maxPersonNameLength    = 120
-	maxVenueNameLength     = 150
-	maxVenueAddressLength  = 500
-	maxNotesLength         = 2000
-	maxBidBoxLabelLength   = 120
-	maxBidBoxDetailsLength = 1000
+	maxQuantity               = 5000
+	maxRequestedInserts       = 20
+	bulkDiscountMinQty        = 70
+	bulkDiscountPercent       = 15
+	maxCustomerNameLength     = 120
+	maxEmailLength            = 254
+	maxPhoneLength            = 20
+	maxAddressLength          = 500
+	maxCityLength             = 100
+	maxPostalCodeLength       = 20
+	maxPersonNameLength       = 120
+	maxVenueNameLength        = 150
+	maxVenueAddressLength     = 500
+	maxNotesLength            = 2000
+	maxBidBoxLabelLength      = 120
+	maxBidBoxDetailsLength    = 1000
+	maxAdminOrderSearchLength = 100
 )
 
 type MinOrderError struct {
@@ -248,8 +249,83 @@ type AdminOrderDetail struct {
 	Payment  *orderdomain.OrderPayment
 }
 
-func (s *Service) ListAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error) {
-	return s.orderRepo.GetAdminOrders(ctx)
+// AdminOrderListInput carries the raw (untrusted) admin dashboard filter
+// values as submitted via GET query params.
+type AdminOrderListInput struct {
+	OrderStatus   string
+	PaymentStatus string
+	Search        string
+	DateRange     string
+}
+
+func (s *Service) ListAdminOrders(ctx context.Context, input AdminOrderListInput) ([]*orderdomain.AdminOrder, error) {
+	search := sanitizeSingleLine(input.Search)
+	if utf8.RuneCountInString(search) > maxAdminOrderSearchLength {
+		search = string([]rune(search)[:maxAdminOrderSearchLength])
+	}
+
+	filter := orderdomain.AdminOrderFilter{
+		OrderStatus:   normalizeAdminOrderStatusFilter(input.OrderStatus),
+		PaymentStatus: normalizeAdminPaymentStatusFilter(input.PaymentStatus),
+		Search:        search,
+		CreatedFrom:   adminOrderDateRangeStart(input.DateRange),
+	}
+	return s.orderRepo.GetAdminOrders(ctx, filter)
+}
+
+// normalizeAdminOrderStatusFilter is deliberately lenient: an unrecognized
+// value (bad/stale query param) is treated as "no filter" rather than an
+// error, so a malformed admin dashboard URL still shows the default view
+// instead of breaking the page.
+func normalizeAdminOrderStatusFilter(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(orderdomain.PendingOrderStatus):
+		return string(orderdomain.PendingOrderStatus)
+	case string(orderdomain.ConfirmedOrderStatus):
+		return string(orderdomain.ConfirmedOrderStatus)
+	case string(orderdomain.CancelledOrderStatus):
+		return string(orderdomain.CancelledOrderStatus)
+	case string(orderdomain.CompletedOrderStatus):
+		return string(orderdomain.CompletedOrderStatus)
+	default:
+		return ""
+	}
+}
+
+func normalizeAdminPaymentStatusFilter(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(orderdomain.PendingPaymentStatus):
+		return string(orderdomain.PendingPaymentStatus)
+	case string(orderdomain.AwaitingVerificationPaymentStatus):
+		return string(orderdomain.AwaitingVerificationPaymentStatus)
+	case string(orderdomain.VerifiedPaymentStatus):
+		return string(orderdomain.VerifiedPaymentStatus)
+	case string(orderdomain.RejectedPaymentStatus):
+		return string(orderdomain.RejectedPaymentStatus)
+	default:
+		return ""
+	}
+}
+
+// adminOrderDateRangeStart converts a quick date-range option into the
+// lower created_at bound. Anything other than "week"/"month" (including
+// "", "all", or an unrecognized value) means no lower bound.
+func adminOrderDateRangeStart(raw string) *time.Time {
+	now := time.Now().UTC()
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "week":
+		weekday := int(now.Weekday())
+		if weekday == 0 {
+			weekday = 7
+		}
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -(weekday - 1))
+		return &start
+	case "month":
+		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		return &start
+	default:
+		return nil
+	}
 }
 
 func (s *Service) GetAdminOrderDetail(ctx context.Context, orderID int64) (*AdminOrderDetail, error) {

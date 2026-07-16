@@ -33,6 +33,9 @@ type Order struct {
 type AdminOrder struct {
 	ID              int64
 	CustomerName    string
+	ProductName     string
+	CardCategory    string
+	Quantity        int64
 	TotalPrice      int64
 	Status          OrderStatus
 	PaymentStatus   PaymentStatus
@@ -103,11 +106,22 @@ type OrderWriter interface {
 	UpdateOrderStatus(ctx context.Context, id int64, status OrderStatus) error
 }
 
+// AdminOrderFilter narrows GetAdminOrders. Each field's zero value ("" or
+// nil) means "no filter" for that dimension, so an empty AdminOrderFilter
+// behaves exactly like the old unconditional query.
+type AdminOrderFilter struct {
+	OrderStatus   string
+	PaymentStatus string
+	Search        string
+	CreatedFrom   *time.Time
+	CreatedTo     *time.Time
+}
+
 type OrderReader interface {
 	GetOrderByID(ctx context.Context, id int64) (*Order, error)
 	GetOrderByPublicToken(ctx context.Context, token string) (*Order, error)
 	GetOrdersByCustomerID(ctx context.Context, customerID int64) ([]*Order, error)
-	GetAdminOrders(ctx context.Context) ([]*AdminOrder, error)
+	GetAdminOrders(ctx context.Context, filter AdminOrderFilter) ([]*AdminOrder, error)
 	GetOrderDetailByOrderID(ctx context.Context, orderID int64) (*OrderDetail, error)
 	GetOrderPaymentByOrderID(ctx context.Context, orderID int64) (*OrderPayment, error)
 }

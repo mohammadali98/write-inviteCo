@@ -26,7 +26,7 @@ type orderService interface {
 	PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error)
 	GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
 	GetOrderStatusDetailByToken(ctx context.Context, token string) (*orderapplication.AdminOrderDetail, error)
-	ListAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error)
+	ListAdminOrders(ctx context.Context, input orderapplication.AdminOrderListInput) ([]*orderdomain.AdminOrder, error)
 	GetAdminOrderDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
 	AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error
 	SubmitBankTransferProof(ctx context.Context, orderID int64, input orderapplication.PaymentProofInput) error
@@ -439,7 +439,14 @@ func joinedPostForm(c *gin.Context, key string) string {
 }
 
 func (h *OrderHandler) AdminOrders(c *gin.Context) {
-	orders, err := h.service.ListAdminOrders(c.Request.Context())
+	filterInput := orderapplication.AdminOrderListInput{
+		OrderStatus:   c.Query("status"),
+		PaymentStatus: c.Query("payment_status"),
+		Search:        c.Query("search"),
+		DateRange:     c.Query("date_range"),
+	}
+
+	orders, err := h.service.ListAdminOrders(c.Request.Context(), filterInput)
 	if err != nil {
 		log.Println("ADMIN ORDERS ERROR:", err)
 		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load admin orders right now.")
@@ -447,7 +454,11 @@ func (h *OrderHandler) AdminOrders(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "admin_orders.html", gin.H{
-		"orders": orders,
+		"orders":              orders,
+		"filterStatus":        filterInput.OrderStatus,
+		"filterPaymentStatus": filterInput.PaymentStatus,
+		"filterSearch":        filterInput.Search,
+		"filterDateRange":     filterInput.DateRange,
 	})
 }
 

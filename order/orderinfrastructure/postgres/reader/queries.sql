@@ -45,7 +45,10 @@ ORDER BY created_at DESC;
 -- name: GetAdminOrders :many
 SELECT
     o.id,
-    COALESCE(c.name, 'Unknown Customer') AS customer_name,
+    COALESCE(cu.name, 'Unknown Customer') AS customer_name,
+    COALESCE(ca.name, '') AS product_name,
+    COALESCE(ca.category, '') AS card_category,
+    o.quantity,
     o.total_price,
     o.status,
     op.payment_status,
@@ -54,8 +57,20 @@ SELECT
     o.currency,
     o.created_at
 FROM orders o
-LEFT JOIN customers c ON c.id = o.customer_id
+LEFT JOIN customers cu ON cu.id = o.customer_id
+LEFT JOIN cards ca ON ca.id = o.card_id
 LEFT JOIN order_payments op ON op.order_id = o.id
+WHERE
+    (sqlc.narg(order_status)::text IS NULL OR o.status = sqlc.narg(order_status)::text)
+    AND (sqlc.narg(payment_status)::text IS NULL OR op.payment_status = sqlc.narg(payment_status)::text)
+    AND (
+        sqlc.narg(search)::text IS NULL
+        OR cu.name ILIKE '%' || sqlc.narg(search)::text || '%'
+        OR cu.phone ILIKE '%' || sqlc.narg(search)::text || '%'
+        OR o.id::text ILIKE '%' || sqlc.narg(search)::text || '%'
+    )
+    AND (sqlc.narg(created_from)::timestamptz IS NULL OR o.created_at >= sqlc.narg(created_from)::timestamptz)
+    AND (sqlc.narg(created_to)::timestamptz IS NULL OR o.created_at < sqlc.narg(created_to)::timestamptz)
 ORDER BY o.created_at DESC;
 
 -- name: GetLatestOrderDetailByOrderID :many

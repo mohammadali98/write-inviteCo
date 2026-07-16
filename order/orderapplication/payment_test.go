@@ -59,7 +59,8 @@ func TestTrustedAdvanceAmountFallsBackToServerCalculatedAdvance(t *testing.T) {
 }
 
 type stubPaymentOrderRepo struct {
-	order *orderdomain.Order
+	order          *orderdomain.Order
+	capturedFilter *orderdomain.AdminOrderFilter
 }
 
 func (s stubPaymentOrderRepo) CreateOrder(ctx context.Context, customerID int64, cardID int64, quantity int64, totalPrice int64, status orderdomain.OrderStatus, currency string) (*orderdomain.Order, error) {
@@ -86,7 +87,10 @@ func (s stubPaymentOrderRepo) GetOrdersByCustomerID(ctx context.Context, custome
 	return nil, nil
 }
 
-func (s stubPaymentOrderRepo) GetAdminOrders(ctx context.Context) ([]*orderdomain.AdminOrder, error) {
+func (s stubPaymentOrderRepo) GetAdminOrders(ctx context.Context, filter orderdomain.AdminOrderFilter) ([]*orderdomain.AdminOrder, error) {
+	if s.capturedFilter != nil {
+		*s.capturedFilter = filter
+	}
 	return nil, nil
 }
 
