@@ -388,6 +388,7 @@
                     <input type="hidden" name="baraat_dinner_time" value="{{ .review.Input.BaraatDinnerTime }}">
                     <input type="hidden" name="baraat_arrival_time" value="{{ .review.Input.BaraatArrivalTime }}">
                     <input type="hidden" name="rukhsati_time" value="{{ .review.Input.RukhsatiTime }}">
+                    <input type="hidden" name="baraat_sehrabandi_time" value="{{ .review.Input.BaraatSehrabandiTime }}">
                     <input type="hidden" name="baraat_venue_name" value="{{ .review.Input.BaraatVenueName }}">
                     <input type="hidden" name="nikkah_date" value="{{ .review.Input.NikkahDate }}">
                     <input type="hidden" name="nikkah_day" value="{{ .review.Input.NikkahDay }}">
@@ -529,14 +530,14 @@
                                 <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.MehndiDay }}{{ .review.Input.MehndiDay }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.MehndiTime }}{{ .review.Input.MehndiTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.MehndiTimeType }}{{ .review.Input.MehndiTimeType }}{{ else }}Not provided{{ end }}</div></div>
-                                <div class="info-item"><span class="info-label">Dinner Time</span><div class="info-value">{{ if .review.Input.MehndiDinnerTime }}{{ .review.Input.MehndiDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.MehndiDinnerTime }}{{ .review.Input.MehndiDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.MehndiVenueName }}{{ .review.Input.MehndiVenueName }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.MehndiVenueAddress }}{{ .review.Input.MehndiVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
                             </div>
                         </div>
                         {{ end }}
 
-                        {{ if or .review.Input.BaraatDate .review.Input.BaraatDay .review.Input.BaraatTime .review.Input.BaraatDinnerTime .review.Input.BaraatArrivalTime .review.Input.RukhsatiTime .review.Input.BaraatVenueName .review.Input.BaraatVenueAddress .review.Input.BaraatTimeType }}
+                        {{ if or .review.Input.BaraatDate .review.Input.BaraatDay .review.Input.BaraatTime .review.Input.BaraatDinnerTime .review.Input.BaraatArrivalTime .review.Input.RukhsatiTime .review.Input.BaraatSehrabandiTime .review.Input.BaraatVenueName .review.Input.BaraatVenueAddress .review.Input.BaraatTimeType }}
                         <div class="detail-block">
                             <h3>Baraat</h3>
                             <div class="info-grid">
@@ -544,9 +545,10 @@
                                 <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.BaraatDay }}{{ .review.Input.BaraatDay }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.BaraatTime }}{{ .review.Input.BaraatTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.BaraatTimeType }}{{ .review.Input.BaraatTimeType }}{{ else }}Not provided{{ end }}</div></div>
-                                <div class="info-item"><span class="info-label">Dinner Time</span><div class="info-value">{{ if .review.Input.BaraatDinnerTime }}{{ .review.Input.BaraatDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.BaraatDinnerTime }}{{ .review.Input.BaraatDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Arrival Time</span><div class="info-value">{{ if .review.Input.BaraatArrivalTime }}{{ .review.Input.BaraatArrivalTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Rukhsati Time</span><div class="info-value">{{ if .review.Input.RukhsatiTime }}{{ .review.Input.RukhsatiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Sehrabandi Time</span><div class="info-value">{{ if .review.Input.BaraatSehrabandiTime }}{{ .review.Input.BaraatSehrabandiTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.BaraatVenueName }}{{ .review.Input.BaraatVenueName }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.BaraatVenueAddress }}{{ .review.Input.BaraatVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
                             </div>
@@ -561,7 +563,7 @@
                                 <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.NikkahDay }}{{ .review.Input.NikkahDay }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.NikkahTime }}{{ .review.Input.NikkahTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.NikkahTimeType }}{{ .review.Input.NikkahTimeType }}{{ else }}Not provided{{ end }}</div></div>
-                                <div class="info-item"><span class="info-label">Dinner Time</span><div class="info-value">{{ if .review.Input.NikkahDinnerTime }}{{ .review.Input.NikkahDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.NikkahDinnerTime }}{{ .review.Input.NikkahDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.NikkahVenueName }}{{ .review.Input.NikkahVenueName }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.NikkahVenueAddress }}{{ .review.Input.NikkahVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
                             </div>
@@ -576,7 +578,7 @@
                                 <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.WalimaDay }}{{ .review.Input.WalimaDay }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.WalimaTime }}{{ .review.Input.WalimaTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.WalimaTimeType }}{{ .review.Input.WalimaTimeType }}{{ else }}Not provided{{ end }}</div></div>
-                                <div class="info-item"><span class="info-label">Dinner Time</span><div class="info-value">{{ if .review.Input.WalimaDinnerTime }}{{ .review.Input.WalimaDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.WalimaDinnerTime }}{{ .review.Input.WalimaDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Reception Time</span><div class="info-value">{{ if .review.Input.ReceptionTime }}{{ .review.Input.ReceptionTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.WalimaVenueName }}{{ .review.Input.WalimaVenueName }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.WalimaVenueAddress }}{{ .review.Input.WalimaVenueAddress }}{{ else }}Not provided{{ end }}</div></div>

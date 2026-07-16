@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"writeandinviteco/inviteandco/accessory/accessorydomain"
 	"writeandinviteco/inviteandco/card/carddomain"
 	"writeandinviteco/inviteandco/product/productapplication"
 	"writeandinviteco/inviteandco/webui"
@@ -18,6 +19,7 @@ import (
 
 type CardHandler struct {
 	repo           carddomain.CardRepo
+	accessoryRepo  accessorydomain.AccessoryReader
 	productService *productapplication.Service
 }
 
@@ -77,9 +79,10 @@ const (
 	checkoutBulkDiscountPercent = 15
 )
 
-func NewCardHandler(repo carddomain.CardRepo, productService *productapplication.Service) *CardHandler {
+func NewCardHandler(repo carddomain.CardRepo, accessoryRepo accessorydomain.AccessoryReader, productService *productapplication.Service) *CardHandler {
 	return &CardHandler{
 		repo:           repo,
+		accessoryRepo:  accessoryRepo,
 		productService: productService,
 	}
 }
@@ -121,6 +124,69 @@ func (h *CardHandler) ListCardsByCategory(c *gin.Context) {
 		"category":     category,
 		"categoryName": validCategoryNames()[category],
 		"query":        query,
+	})
+}
+
+type accessoryGalleryItem struct {
+	ID          int64
+	Name        string
+	Description string
+	Images      []string
+}
+
+// ListAccessories renders the wedding-accessories showcase. This is a
+// deliberately separate route/handler from ListCardsByCategory: accessories
+// are never purchasable, have no price, and never link into the card or
+// checkout flow, so they're kept fully out of frontendProducts.
+func (h *CardHandler) ListAccessories(c *gin.Context) {
+	if h.accessoryRepo == nil {
+		c.HTML(http.StatusOK, "accessories.html", gin.H{
+			"categoryName": validCategoryNames()["wedding-accessories"],
+			"accessories":  []accessoryGalleryItem{},
+		})
+		return
+	}
+
+	accessories, err := h.accessoryRepo.ListActiveAccessories(c.Request.Context())
+	if err != nil {
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the collection right now.")
+		return
+	}
+
+	items := make([]accessoryGalleryItem, 0, len(accessories))
+	for _, a := range accessories {
+		if a == nil {
+			continue
+		}
+		images, err := h.accessoryRepo.GetAccessoryImagesByAccessoryID(c.Request.Context(), a.ID)
+		if err != nil {
+			webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the collection right now.")
+			return
+		}
+		imageURLs := make([]string, 0, len(images))
+		for _, img := range images {
+			if img == nil {
+				continue
+			}
+			imageURLs = append(imageURLs, imageOrFallback(img.ImageURL))
+		}
+
+		description := ""
+		if a.Description != nil {
+			description = *a.Description
+		}
+
+		items = append(items, accessoryGalleryItem{
+			ID:          a.ID,
+			Name:        a.Name,
+			Description: description,
+			Images:      imageURLs,
+		})
+	}
+
+	c.HTML(http.StatusOK, "accessories.html", gin.H{
+		"categoryName": validCategoryNames()["wedding-accessories"],
+		"accessories":  items,
 	})
 }
 

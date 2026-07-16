@@ -1,4 +1,4 @@
-\restrict OKOYg2zntAukzIAAYWB1hrheZ8iKIvXUVjQHRysjgiX6YXUzPu8N9BsiUO03j49
+\restrict gvlOq9JcGZu39PG1X8uXAQBl4ba2IcZNUxaFKdUSFpSI9JJAsuALqBQSilswVEE
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -17,6 +17,72 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: accessories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.accessories (
+    id bigint NOT NULL,
+    name text NOT NULL,
+    category text DEFAULT 'wax-seal'::text NOT NULL,
+    description text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: accessories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.accessories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accessories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.accessories_id_seq OWNED BY public.accessories.id;
+
+
+--
+-- Name: accessory_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.accessory_images (
+    id bigint NOT NULL,
+    accessory_id bigint NOT NULL,
+    image_url text NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: accessory_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.accessory_images_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accessory_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.accessory_images_id_seq OWNED BY public.accessory_images.id;
+
 
 --
 -- Name: card_images; Type: TABLE; Schema: public; Owner: -
@@ -182,6 +248,7 @@ CREATE TABLE public.order_details (
     couple_name text,
     bid_box_details text,
     extra_inserts_per_card bigint DEFAULT 0 NOT NULL,
+    baraat_sehrabandi_time time without time zone,
     CONSTRAINT chk_order_details_side CHECK ((side = ANY (ARRAY['bride'::text, 'groom'::text])))
 );
 
@@ -371,6 +438,20 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: accessories id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accessories ALTER COLUMN id SET DEFAULT nextval('public.accessories_id_seq'::regclass);
+
+
+--
+-- Name: accessory_images id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accessory_images ALTER COLUMN id SET DEFAULT nextval('public.accessory_images_id_seq'::regclass);
+
+
+--
 -- Name: card_images id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -424,6 +505,22 @@ ALTER TABLE ONLY public.product_images ALTER COLUMN id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.products ALTER COLUMN id SET DEFAULT nextval('public.products_id_seq'::regclass);
+
+
+--
+-- Name: accessories accessories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accessories
+    ADD CONSTRAINT accessories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accessory_images accessory_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accessory_images
+    ADD CONSTRAINT accessory_images_pkey PRIMARY KEY (id);
 
 
 --
@@ -507,6 +604,13 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: idx_accessory_images_accessory_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_accessory_images_accessory_id ON public.accessory_images USING btree (accessory_id);
+
+
+--
 -- Name: idx_card_images_card_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -577,6 +681,14 @@ CREATE INDEX idx_products_card_id ON public.products USING btree (card_id);
 
 
 --
+-- Name: accessory_images accessory_images_accessory_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accessory_images
+    ADD CONSTRAINT accessory_images_accessory_id_fkey FOREIGN KEY (accessory_id) REFERENCES public.accessories(id) ON DELETE CASCADE;
+
+
+--
 -- Name: card_images card_images_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -628,7 +740,7 @@ ALTER TABLE ONLY public.product_images
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OKOYg2zntAukzIAAYWB1hrheZ8iKIvXUVjQHRysjgiX6YXUzPu8N9BsiUO03j49
+\unrestrict gvlOq9JcGZu39PG1X8uXAQBl4ba2IcZNUxaFKdUSFpSI9JJAsuALqBQSilswVEE
 
 
 --
@@ -657,4 +769,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260429000001'),
     ('20260512000001'),
     ('20260712000001'),
-    ('20260712000002');
+    ('20260712000002'),
+    ('20260716113800'),
+    ('20260716153410');

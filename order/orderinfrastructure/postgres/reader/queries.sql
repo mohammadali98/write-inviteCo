@@ -101,6 +101,7 @@ SELECT
     COALESCE(baraat_dinner_time::text, '')::text AS baraat_dinner_time,
     COALESCE(baraat_arrival_time::text, '')::text AS baraat_arrival_time,
     COALESCE(rukhsati_time::text, '')::text AS rukhsati_time,
+    COALESCE(baraat_sehrabandi_time::text, '')::text AS baraat_sehrabandi_time,
     COALESCE(baraat_venue_name, '') AS baraat_venue_name,
     COALESCE(baraat_venue_address, '') AS baraat_venue_address,
     COALESCE(nikkah_date::text, '')::text AS nikkah_date,

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .categoryName }} — Write&InviteCo</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
+        .accessory-subtitle {
+            margin: 0 0 30px;
+            color: var(--text-light);
+            max-width: 640px;
+        }
+
+        .accessory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 28px;
+        }
+
+        .accessory-card {
+            background: var(--panel, #fff);
+            border: 1px solid var(--border-light, #ece4db);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .accessory-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 12px 0;
+        }
+
+        .accessory-gallery-main {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: var(--bg-warm, #f5f0eb);
+        }
+
+        .accessory-gallery-thumbs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .accessory-gallery-thumb {
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .accessory-gallery-thumb:hover,
+        .accessory-gallery-thumb.active-thumb {
+            border-color: #c4953a;
+        }
+
+        .accessory-body {
+            padding: 14px 16px 18px;
+        }
+
+        .accessory-body h2 {
+            margin: 0 0 6px;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .accessory-body p {
+            margin: 0;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .accessory-empty {
+            padding: 30px;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER / NAVBAR ===== -->
+<header class="top-header">
+    <div class="header-left">
+        <button class="menu-btn" type="button" aria-label="Open menu" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <a class="brand" href="/">Write&InviteCo</a>
+
+    <div class="header-right">
+        <a class="nav-link" href="/about">About</a>
+        <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
+        </div>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR (MOBILE) ===== -->
+<aside id="sidebar" class="sidebar">
+    <h3>Menu</h3>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/collections/wedding-cards">Wedding Cards</a>
+        <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
+        <a href="/track-order">Track Order & Payment</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+    </nav>
+</aside>
+<div id="overlay" class="overlay" onclick="toggleMenu()"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+    <section class="section-featured">
+        <div class="page-header animate-in">
+            <h1>{{ .categoryName }}</h1>
+            <p class="accessory-subtitle">Browse these designs for reference when ordering your wedding card — accessories are shown for inspiration only and aren't sold or ordered separately.</p>
+        </div>
+
+        {{ if .accessories }}
+        <div class="accessory-grid">
+            {{ range $a := .accessories }}
+            <article class="accessory-card">
+                {{ if $a.Images }}
+                <div class="accessory-gallery">
+                    <img id="accessory-main-{{ $a.ID }}" class="accessory-gallery-main" src="{{ safeImagePath (index $a.Images 0) }}" alt="{{ $a.Name }}">
+                    {{ if gt (len $a.Images) 1 }}
+                    <div class="accessory-gallery-thumbs">
+                        {{ range $img := $a.Images }}
+                        <img class="accessory-gallery-thumb" src="{{ safeImagePath $img }}" alt="{{ $a.Name }} detail view"
+                             onclick="document.getElementById('accessory-main-{{ $a.ID }}').src=this.src">
+                        {{ end }}
+                    </div>
+                    {{ end }}
+                </div>
+                {{ end }}
+                <div class="accessory-body">
+                    <h2>{{ $a.Name }}</h2>
+                    {{ if $a.Description }}<p>{{ $a.Description }}</p>{{ end }}
+                </div>
+            </article>
+            {{ end }}
+        </div>
+        {{ else }}
+        <div class="accessory-empty">No accessories available right now.</div>
+        {{ end }}
+    </section>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <div class="footer-inner">
+
+        <div class="footer-brand">
+            <a href="/">Write&InviteCo</a>
+        </div>
+
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h4>Shop</h4>
+                <a href="/collections/wedding-cards">Shop All</a>
+                <a href="/collections/wedding-cards">Wedding Cards</a>
+                <a href="/collections/bid-boxes">Bid Boxes</a>
+                <a href="/collections/wedding-accessories">Wedding Accessories</a>
+            </div>
+            <div class="footer-col">
+                <h4>Help</h4>
+                <a href="/track-order">Track Order & Payment</a>
+                <a href="/shipping-info">Shipping Info</a>
+                <a href="/returns-exchanges">Returns & Exchanges</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>writeandinvite.co@gmail.com</p>
+                <p>+92 303 9238299</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <span>© 2026 Write&InviteCo. All rights reserved.</span>
+            <a href="/terms-of-use">Terms of Use</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+        </div>
+
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.getElementById("overlay").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

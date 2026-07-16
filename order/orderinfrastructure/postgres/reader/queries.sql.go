@@ -133,6 +133,7 @@ SELECT
     COALESCE(baraat_dinner_time::text, '')::text AS baraat_dinner_time,
     COALESCE(baraat_arrival_time::text, '')::text AS baraat_arrival_time,
     COALESCE(rukhsati_time::text, '')::text AS rukhsati_time,
+    COALESCE(baraat_sehrabandi_time::text, '')::text AS baraat_sehrabandi_time,
     COALESCE(baraat_venue_name, '') AS baraat_venue_name,
     COALESCE(baraat_venue_address, '') AS baraat_venue_address,
     COALESCE(nikkah_date::text, '')::text AS nikkah_date,
@@ -161,53 +162,54 @@ LIMIT 1
 `
 
 type GetLatestOrderDetailByOrderIDRow struct {
-	ID                  int64
-	OrderID             int64
-	Side                string
-	ExtraInsertsPerCard int64
-	TopLabel            string
-	CoupleName          string
-	EventDate           string
-	BidBoxDetails       string
-	BrideName           *string
-	GroomName           *string
-	BrideFatherName     *string
-	GroomFatherName     *string
-	MehndiDate          string
-	MehndiDay           string
-	MehndiTimeType      *string
-	MehndiTime          string
-	MehndiDinnerTime    string
-	MehndiVenueName     string
-	MehndiVenueAddress  string
-	BaraatDate          string
-	BaraatDay           string
-	BaraatTimeType      *string
-	BaraatTime          string
-	BaraatDinnerTime    string
-	BaraatArrivalTime   string
-	RukhsatiTime        string
-	BaraatVenueName     string
-	BaraatVenueAddress  string
-	NikkahDate          string
-	NikkahDay           string
-	NikkahTimeType      *string
-	NikkahTime          string
-	NikkahDinnerTime    string
-	NikkahVenueName     string
-	NikkahVenueAddress  string
-	WalimaDate          string
-	WalimaDay           string
-	WalimaTimeType      *string
-	WalimaTime          string
-	WalimaDinnerTime    string
-	ReceptionTime       string
-	WalimaVenueName     string
-	WalimaVenueAddress  string
-	RsvpName            string
-	RsvpPhone           string
-	Notes               *string
-	CreatedAt           pgtype.Timestamptz
+	ID                   int64
+	OrderID              int64
+	Side                 string
+	ExtraInsertsPerCard  int64
+	TopLabel             string
+	CoupleName           string
+	EventDate            string
+	BidBoxDetails        string
+	BrideName            *string
+	GroomName            *string
+	BrideFatherName      *string
+	GroomFatherName      *string
+	MehndiDate           string
+	MehndiDay            string
+	MehndiTimeType       *string
+	MehndiTime           string
+	MehndiDinnerTime     string
+	MehndiVenueName      string
+	MehndiVenueAddress   string
+	BaraatDate           string
+	BaraatDay            string
+	BaraatTimeType       *string
+	BaraatTime           string
+	BaraatDinnerTime     string
+	BaraatArrivalTime    string
+	RukhsatiTime         string
+	BaraatSehrabandiTime string
+	BaraatVenueName      string
+	BaraatVenueAddress   string
+	NikkahDate           string
+	NikkahDay            string
+	NikkahTimeType       *string
+	NikkahTime           string
+	NikkahDinnerTime     string
+	NikkahVenueName      string
+	NikkahVenueAddress   string
+	WalimaDate           string
+	WalimaDay            string
+	WalimaTimeType       *string
+	WalimaTime           string
+	WalimaDinnerTime     string
+	ReceptionTime        string
+	WalimaVenueName      string
+	WalimaVenueAddress   string
+	RsvpName             string
+	RsvpPhone            string
+	Notes                *string
+	CreatedAt            pgtype.Timestamptz
 }
 
 func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int64) ([]GetLatestOrderDetailByOrderIDRow, error) {
@@ -246,6 +248,7 @@ func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int
 			&i.BaraatDinnerTime,
 			&i.BaraatArrivalTime,
 			&i.RukhsatiTime,
+			&i.BaraatSehrabandiTime,
 			&i.BaraatVenueName,
 			&i.BaraatVenueAddress,
 			&i.NikkahDate,

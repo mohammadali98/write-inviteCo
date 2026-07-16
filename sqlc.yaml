@@ -1,5 +1,30 @@
 version: "2"
 sql:
+  - name: "accessory-reader"
+    engine: "postgresql"
+    queries: "accessory/accessoryinfrastructure/postgres/reader/queries.sql"
+    schema: "db/migrations"
+    strict_function_checks: true
+    gen:
+      go:
+        out: "accessory/accessoryinfrastructure/postgres/reader"
+        package: "accessoryreader"
+        sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        omit_unused_structs: true
+        overrides:
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - engine: postgresql
+            db_type: "pg_catalog.timestamptz"
+            nullable: false
+            go_type:
+              type: "time.Time"
+              pointer: false
   - name: "card-reader"
     engine: "postgresql"
     queries: "card/cardinfrastructure/postgres/reader/queries.sql"

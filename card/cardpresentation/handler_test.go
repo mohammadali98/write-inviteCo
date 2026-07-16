@@ -120,7 +120,7 @@ func TestCheckoutPostAfterPersonalizationRendersCustomerInfo(t *testing.T) {
 		MinOrder:        50,
 		IncludedInserts: 2,
 		Category:        "wedding-cards",
-	}}, nil)
+	}}, nil, nil)
 
 	router := gin.New()
 	router.SetHTMLTemplate(template.Must(template.New("checkout.html").Parse(`{{ .cardName }}|extra={{ .extraInserts }}|bride={{ .personalization.BrideName }}|rsvp={{ .personalization.RsvpName }}|<form action="/review" method="post">`)))
@@ -172,7 +172,7 @@ func TestCheckoutPostCalculatesSelectedExtraInsertsAsAdditionalCharge(t *testing
 		MinOrder:        50,
 		IncludedInserts: 2,
 		Category:        "wedding-cards",
-	}}, nil)
+	}}, nil, nil)
 
 	router := gin.New()
 	router.SetHTMLTemplate(template.Must(template.New("checkout.html").Parse(`included={{ .includedInserts }}|extra={{ .extraInserts }}|extraCost={{ .extraInsertCostPerCard }}|perCard={{ .perCardTotal }}|total={{ .totalPrice }}|hidden=<input name="extra_inserts" value="{{ .requestedInserts }}">`)))

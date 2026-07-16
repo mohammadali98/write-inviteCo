@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	accessoryreader "writeandinviteco/inviteandco/accessory/accessoryinfrastructure/postgres/reader"
+	accessoryrepository "writeandinviteco/inviteandco/accessory/accessoryinfrastructure/postgres/repository"
 	cardreader "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/reader"
 	cardrepository "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/repository"
 	cardwriter "writeandinviteco/inviteandco/card/cardinfrastructure/postgres/writer"
@@ -63,6 +65,7 @@ func main() {
 	}
 
 	// sqlc queries
+	accessoryReader := accessoryreader.New(db)
 	cardReader := cardreader.New(db)
 	cardWriter := cardwriter.New(db)
 	customerReader := customerreader.New(db)
@@ -73,6 +76,7 @@ func main() {
 	productWriter := productwriter.New(db)
 
 	// repositories
+	accessoryRepo := accessoryrepository.NewAccessoryRepository(accessoryReader)
 	cardRepo := cardrepository.NewCardRepository(cardReader, cardWriter)
 	customerRepo := customerrepository.NewCustomerRepository(customerReader, customerWriter)
 	orderRepo := orderrepository.NewOrderRepository(orderReader, orderWriter)
@@ -104,7 +108,7 @@ func main() {
 		cfg.CloudinaryAPIKey,
 		cfg.CloudinaryAPISecret,
 	)
-	cardHandler := cardpresentation.NewCardHandler(cardRepo, productService)
+	cardHandler := cardpresentation.NewCardHandler(cardRepo, accessoryRepo, productService)
 	customerHandler := customerpresentation.NewCustomerHandler(customerRepo)
 
 	// router
@@ -153,6 +157,7 @@ func main() {
 	router.GET("/order/:token/payment", orderHandler.BankTransferPage)
 	router.POST("/order/:token/payment-proof", orderHandler.SubmitPaymentProof)
 	router.GET("/track-order", orderHandler.TrackOrderPage)
+	router.GET("/collections/wedding-accessories", cardHandler.ListAccessories)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
 	router.POST("/order", orderHandler.CreateOrder)
 
