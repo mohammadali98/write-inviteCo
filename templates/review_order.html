@@ -346,7 +346,7 @@
                 <div class="summary-row"><span>Per {{ if .review.IsBidBox }}Box{{ else }}Card{{ end }} Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.PerCardTotal }}</span></div>
                 <div class="summary-row"><span>Quantity</span><span>{{ .review.Summary.Quantity }}</span></div>
                 {{ if .review.Summary.DiscountApplied }}
-                <div class="summary-row"><span>Bulk discount (15%)</span><span>-{{ .review.Summary.Currency }} {{ .review.Summary.DiscountAmount }}</span></div>
+                <div class="summary-row"><span>Quantity discount (5%)</span><span>-{{ .review.Summary.Currency }} {{ .review.Summary.DiscountAmount }}</span></div>
                 {{ end }}
                 <div class="summary-total"><span>Total</span><span>{{ .review.Summary.Currency }} {{ .review.Summary.TotalPrice }}</span></div>
             </aside>

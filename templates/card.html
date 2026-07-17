@@ -23,7 +23,7 @@
             max-width: 100%;
         }
 
-        .gallery-main {
+        .card-gallery .gallery-main {
             width: 100%;
             height: 400px;
             object-fit: cover;
@@ -37,7 +37,7 @@
             padding-bottom: 8px;
         }
 
-        .gallery-thumb {
+        .card-gallery .gallery-thumb {
             width: 80px;
             height: 80px;
             object-fit: cover;
@@ -48,8 +48,136 @@
             flex-shrink: 0;
         }
 
-        .gallery-thumb:hover {
+        .gallery-thumb:hover,
+        .gallery-thumb.active-thumb {
             border-color: #c4953a;
+        }
+
+        .gallery-main-wrap {
+            position: relative;
+        }
+
+        .gallery-main-wrap .gallery-main {
+            cursor: zoom-in;
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            color: #2a2420;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.25s ease, transform 0.25s ease;
+            z-index: 5;
+        }
+
+        .gallery-nav:hover {
+            background: #ffffff;
+        }
+
+        .gallery-nav-prev {
+            left: 12px;
+        }
+
+        .gallery-nav-next {
+            right: 12px;
+        }
+
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 16, 12, 0.92);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-overlay.active {
+            display: flex;
+        }
+
+        .lightbox-img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 52px;
+            height: 52px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.8rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .lightbox-prev {
+            left: 18px;
+        }
+
+        .lightbox-next {
+            right: 18px;
+        }
+
+        @media (max-width: 760px) {
+            .gallery-nav {
+                width: 34px;
+                height: 34px;
+                font-size: 1.2rem;
+            }
+
+            .lightbox-nav {
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }
         }
 
         .foil-toggle {
@@ -136,11 +264,11 @@
         }
 
         @media (max-width: 760px) {
-            .gallery-main {
+            .card-gallery .gallery-main {
                 height: 280px;
             }
 
-            .gallery-thumb {
+            .card-gallery .gallery-thumb {
                 width: 60px;
                 height: 60px;
             }
@@ -206,11 +334,14 @@
 
         <section class="card-detail animate-in">
             <div class="card-gallery">
-                <img id="main-image" class="gallery-main" src="{{ safeImagePath .card.Image }}" alt="{{ .card.Name }}">
+                <div class="gallery-main-wrap">
+                    <button type="button" class="gallery-nav gallery-nav-prev" aria-label="Previous image">‹</button>
+                    <img id="main-image" class="gallery-main" src="{{ safeImagePath .card.Image }}" alt="{{ .card.Name }}" data-index="0">
+                    <button type="button" class="gallery-nav gallery-nav-next" aria-label="Next image">›</button>
+                </div>
                 <div class="gallery-thumbs">
-                    {{ range .images }}
-                    <img class="gallery-thumb" src="{{ safeImagePath .Image }}" alt="Detail view"
-                         onclick="document.getElementById('main-image').src=this.src">
+                    {{ range $i, $img := .images }}
+                    <img class="gallery-thumb" src="{{ safeImagePath $img.Image }}" alt="Detail view" data-index="{{ $i }}">
                     {{ end }}
                 </div>
             </div>
@@ -265,7 +396,7 @@
 
                     <div class="price-calculator">
                         <div class="subtotal-row" id="discount-row" style="display:none;">
-                            <span>Bulk discount (15%):</span>
+                            <span>Quantity discount (5%):</span>
                             <span id="discount-display">-PKR 0</span>
                         </div>
                         <div class="subtotal-row">
@@ -315,6 +446,13 @@
     </div>
 </footer>
 
+<div id="lightbox" class="lightbox-overlay">
+    <button type="button" class="lightbox-close" aria-label="Close">✕</button>
+    <button type="button" class="lightbox-nav lightbox-prev" aria-label="Previous image">‹</button>
+    <img id="lightbox-image" class="lightbox-img" alt="">
+    <button type="button" class="lightbox-nav lightbox-next" aria-label="Next image">›</button>
+</div>
+
 <script>
     function updatePrice() {
         var foilEl = document.querySelector('input[name="foil_option"]:checked');
@@ -335,7 +473,7 @@
         // order/orderapplication/service.go calculatePricing (server-side source of truth).
         var cardSubtotal = cardPrice * quantity;
         var discountApplied = quantity > 70;
-        var discountAmount = discountApplied ? Math.floor(cardSubtotal * 15 / 100) : 0;
+        var discountAmount = discountApplied ? Math.floor(cardSubtotal * 5 / 100) : 0;
         var insertSubtotal = (extraInserts * insertPrice) * quantity;
         var total = (cardSubtotal - discountAmount) + insertSubtotal;
 
@@ -370,6 +508,98 @@
         document.getElementById("overlay").classList.toggle("active");
     }
 
+    function initGallery() {
+        var mainImg = document.getElementById('main-image');
+        var thumbs = Array.prototype.slice.call(document.querySelectorAll('.gallery-thumb'));
+        if (!mainImg || thumbs.length === 0) {
+            return;
+        }
+
+        var images = thumbs.map(function(t) { return t.getAttribute('src'); });
+        var current = 0;
+
+        var lightbox = document.getElementById('lightbox');
+        var lightboxImg = document.getElementById('lightbox-image');
+
+        function showImage(index) {
+            var len = images.length;
+            current = ((index % len) + len) % len;
+
+            mainImg.src = images[current];
+            mainImg.setAttribute('data-index', current);
+
+            thumbs.forEach(function(t, i) {
+                t.classList.toggle('active-thumb', i === current);
+            });
+
+            if (lightbox.classList.contains('active')) {
+                lightboxImg.src = images[current];
+            }
+        }
+
+        function attachSwipe(el) {
+            var startX = null;
+            var startY = null;
+
+            el.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
+            el.addEventListener('touchend', function(e) {
+                if (startX === null || startY === null) {
+                    return;
+                }
+                var dx = e.changedTouches[0].clientX - startX;
+                var dy = e.changedTouches[0].clientY - startY;
+                startX = null;
+                startY = null;
+
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+                    showImage(current + (dx < 0 ? 1 : -1));
+                }
+            }, { passive: true });
+        }
+
+        function openLightbox() {
+            lightboxImg.src = images[current];
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        thumbs.forEach(function(t, i) {
+            t.addEventListener('click', function() { showImage(i); });
+        });
+
+        document.querySelector('.gallery-nav-prev').addEventListener('click', function() { showImage(current - 1); });
+        document.querySelector('.gallery-nav-next').addEventListener('click', function() { showImage(current + 1); });
+
+        mainImg.addEventListener('click', openLightbox);
+        attachSwipe(mainImg);
+
+        document.querySelector('.lightbox-prev').addEventListener('click', function() { showImage(current - 1); });
+        document.querySelector('.lightbox-next').addEventListener('click', function() { showImage(current + 1); });
+        document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+        attachSwipe(lightboxImg);
+
+        lightbox.addEventListener('click', function(e) {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                closeLightbox();
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         updatePrice();
         document.querySelectorAll('input[name="foil_option"]').forEach(function(el) {
@@ -377,6 +607,7 @@
         });
         document.getElementById('quantity').addEventListener('input', updatePrice);
         document.getElementById('extra-inserts').addEventListener('input', updatePrice);
+        initGallery();
     });
 </script>
 

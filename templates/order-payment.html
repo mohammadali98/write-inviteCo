@@ -6,6 +6,16 @@
     <title>Bank Transfer Payment — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
+        .menu-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay:not(.active) {
+            pointer-events: none;
+        }
+
         .payment-page {
             max-width: 1080px;
             margin: 0 auto;
@@ -211,6 +221,10 @@
     <div class="header-right">
         <a class="nav-link" href="/about">About</a>
         <a class="nav-link" href="/contact">Contact</a>
+        <div class="header-icons">
+            <a href="/search" class="header-icon" aria-label="Search" style="text-decoration:none;">⌕</a>
+            <a href="/wishlist" class="header-icon" aria-label="Wishlist" style="text-decoration:none;">♥</a>
+        </div>
     </div>
 </header>
 
@@ -220,6 +234,8 @@
         <a href="/">Home</a>
         <a href="/collections/wedding-cards">Wedding Cards</a>
         <a href="/collections/bid-boxes">Bid Boxes</a>
+        <a href="/collections/nikkah-certificate">Nikkah Certificate</a>
+        <a href="/collections/wedding-accessories">Wedding Accessories</a>
         <a href="/track-order">Track Order & Payment</a>
         <a href="/about">About</a>
         <a href="/contact">Contact</a>
@@ -256,7 +272,7 @@
                         <div class="meta-label">Order Total</div>
                         <div class="meta-value">PKR {{ .amountSummary.TotalAmount }}</div>
                         {{ if gt .order.Quantity 70 }}
-                        <div class="row-note">Includes 15% bulk discount on card price</div>
+                        <div class="row-note">Includes 5% quantity discount on card price</div>
                         {{ end }}
                     </div>
                     <div class="meta-row">

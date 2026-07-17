@@ -41,7 +41,7 @@ func (h *CustomerHandler) ReturnsExchangesPage(c *gin.Context) {
 		"Returns & Exchanges",
 		"Because most orders are personalized, returns are handled case by case after we review the production status and the issue reported.",
 		[]gin.H{
-			{"heading": "Custom Orders", "body": "Personalized and approved print jobs usually cannot be returned once production has started, but we will investigate any quality issue or fulfillment error promptly."},
+			{"heading": "Custom Orders", "body": "Personalized and approved print jobs usually cannot be returned once production has started, but we will investigate any issue or fulfillment error promptly."},
 			{"heading": "Before Production", "body": "If you need to change or cancel an order before approval and printing, contact us immediately so we can confirm what is still possible."},
 			{"heading": "Resolution", "body": "If something arrives damaged or incorrect, share your order number and photos with our team and we will review the next step as quickly as possible."},
 		},

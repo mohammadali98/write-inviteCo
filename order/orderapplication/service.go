@@ -35,7 +35,7 @@ const (
 	maxQuantity               = 5000
 	maxRequestedInserts       = 20
 	bulkDiscountMinQty        = 70
-	bulkDiscountPercent       = 15
+	bulkDiscountPercent       = 5
 	maxCustomerNameLength     = 120
 	maxEmailLength            = 254
 	maxPhoneLength            = 20
@@ -1170,7 +1170,7 @@ func orderDiscountEmailLine(discountApplied bool) string {
 	if !discountApplied {
 		return ""
 	}
-	return fmt.Sprintf("\nA %d%% bulk discount was applied to the card price for this order (orders over %d units).\n", bulkDiscountPercent, bulkDiscountMinQty)
+	return fmt.Sprintf("\nA %d%% quantity discount was applied to the card price for this order (orders over %d units).\n", bulkDiscountPercent, bulkDiscountMinQty)
 }
 
 func (s *Service) buildOrderPaymentLink(token string) string {

@@ -61,6 +61,42 @@
             fill: #e25555;
             stroke: #e25555;
         }
+
+        .promo-slider {
+            position: relative;
+            width: 100%;
+            min-height: 42px;
+            background: var(--brand);
+            overflow: hidden;
+        }
+
+        .promo-slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            text-align: center;
+            color: var(--accent-cream);
+            font-family: var(--font-body);
+            font-size: 0.86rem;
+            font-weight: 500;
+            letter-spacing: 0.6px;
+            text-decoration: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        .promo-slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        a.promo-slide:hover {
+            background: var(--brand-dark);
+        }
     </style>
 </head>
 <body>
@@ -100,6 +136,16 @@
 
 <!-- ===== MAIN ===== -->
 <main class="main-content">
+
+    <div class="promo-slider" aria-live="polite">
+        {{ range $i, $m := .promoMessages }}
+        {{ if $m.Link }}
+        <a href="{{ $m.Link }}" class="promo-slide{{ if eq $i 0 }} active{{ end }}">{{ $m.Text }}</a>
+        {{ else }}
+        <span class="promo-slide{{ if eq $i 0 }} active{{ end }}">{{ $m.Text }}</span>
+        {{ end }}
+        {{ end }}
+    </div>
 
     <!-- HERO / ABOUT SECTION -->
     <section class="hero-about">
@@ -283,7 +329,23 @@
         document.getElementById("overlay").classList.toggle("active");
     }
 
-    document.addEventListener('DOMContentLoaded', initFavs);
+    function initPromoSlider() {
+        var slides = document.querySelectorAll('.promo-slide');
+        if (slides.length < 2) {
+            return;
+        }
+        var current = 0;
+        setInterval(function() {
+            slides[current].classList.remove('active');
+            current = (current + 1) % slides.length;
+            slides[current].classList.add('active');
+        }, 4500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initFavs();
+        initPromoSlider();
+    });
 </script>
 
 </body>

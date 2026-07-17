@@ -312,7 +312,7 @@
                 </div>
                 {{ if .discountApplied }}
                 <div class="summary-row">
-                    <span>Bulk discount (15%)</span>
+                    <span>Quantity discount (5%)</span>
                     <span>-{{ .currency }} {{ .discountAmount }}</span>
                 </div>
                 {{ end }}
@@ -351,6 +351,7 @@
                     <input type="hidden" name="baraat_dinner_time" value="{{ .personalization.BaraatDinnerTime }}">
                     <input type="hidden" name="baraat_arrival_time" value="{{ .personalization.BaraatArrivalTime }}">
                     <input type="hidden" name="rukhsati_time" value="{{ .personalization.RukhsatiTime }}">
+                    <input type="hidden" name="baraat_sehrabandi_time" value="{{ .personalization.BaraatSehrabandiTime }}">
                     <input type="hidden" name="baraat_venue_name" value="{{ .personalization.BaraatVenueName }}">
                     <input type="hidden" name="nikkah_date" value="{{ .personalization.NikkahDate }}">
                     <input type="hidden" name="nikkah_day" value="{{ .personalization.NikkahDay }}">

@@ -361,7 +361,7 @@ func TestCalculatePricingBulkDiscount(t *testing.T) {
 			wantDiscount:     true,
 			wantCardSubtotal: 380 * 71,
 			wantInsertSub:    0,
-			wantTotal:        int64(float64(380*71) * 0.85),
+			wantTotal:        int64(float64(380*71) * 0.95),
 		},
 		{
 			name:             "quantity 100 with extra inserts, inserts not discounted",
@@ -370,7 +370,7 @@ func TestCalculatePricingBulkDiscount(t *testing.T) {
 			wantDiscount:     true,
 			wantCardSubtotal: 380 * 100,
 			wantInsertSub:    3 * 50 * 100,
-			wantTotal:        int64(float64(380*100)*0.85) + 3*50*100,
+			wantTotal:        int64(float64(380*100)*0.95) + 3*50*100,
 		},
 		{
 			name:             "quantity 1 no discount sanity check",
