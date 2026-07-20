@@ -140,50 +140,71 @@ type PlaceOrderInput struct {
 	City       string
 	PostalCode string
 
-	BidBoxTopLabel       string
-	BidBoxCoupleName     string
-	BidBoxEventDate      string
-	BidBoxDetails        string
-	Side                 string
-	BrideName            string
-	GroomName            string
-	BrideFatherName      string
-	GroomFatherName      string
-	MehndiDate           string
-	MehndiDay            string
-	MehndiTimeType       string
-	MehndiTime           string
-	MehndiDinnerTime     string
-	MehndiVenueName      string
-	MehndiVenueAddress   string
-	BaraatDate           string
-	BaraatDay            string
-	BaraatTimeType       string
-	BaraatTime           string
-	BaraatDinnerTime     string
-	BaraatArrivalTime    string
-	RukhsatiTime         string
-	BaraatSehrabandiTime string
-	BaraatVenueName      string
-	BaraatVenueAddress   string
-	NikkahDate           string
-	NikkahDay            string
-	NikkahTimeType       string
-	NikkahTime           string
-	NikkahDinnerTime     string
-	NikkahVenueName      string
-	NikkahVenueAddress   string
-	WalimaDate           string
-	WalimaDay            string
-	WalimaTimeType       string
-	WalimaTime           string
-	WalimaDinnerTime     string
-	WalimaVenueName      string
-	WalimaVenueAddress   string
-	ReceptionTime        string
-	RsvpName             string
-	RsvpPhone            string
-	Notes                string
+	BidBoxTopLabel        string
+	BidBoxCoupleName      string
+	BidBoxEventDate       string
+	BidBoxDetails         string
+	Side                  string
+	BrideName             string
+	GroomName             string
+	BrideFatherName       string
+	GroomFatherName       string
+	MehndiDate            string
+	MehndiDay             string
+	MehndiTimeType        string
+	MehndiTime            string
+	MehndiDinnerTime      string
+	MehndiVenueName       string
+	MehndiVenueAddress    string
+	BaraatDate            string
+	BaraatDay             string
+	BaraatTimeType        string
+	BaraatTime            string
+	BaraatDinnerTime      string
+	BaraatArrivalTime     string
+	RukhsatiTime          string
+	BaraatSehrabandiTime  string
+	BaraatVenueName       string
+	BaraatVenueAddress    string
+	NikkahDate            string
+	NikkahDay             string
+	NikkahTimeType        string
+	NikkahTime            string
+	NikkahDinnerTime      string
+	NikkahVenueName       string
+	NikkahVenueAddress    string
+	WalimaDate            string
+	WalimaDay             string
+	WalimaTimeType        string
+	WalimaTime            string
+	WalimaDinnerTime      string
+	WalimaVenueName       string
+	WalimaVenueAddress    string
+	ReceptionTime         string
+	ShendiDate            string
+	ShendiDay             string
+	ShendiTime            string
+	ShendiTimeType        string
+	ShendiDinnerTime      string
+	ShendiVenueName       string
+	ShendiVenueAddress    string
+	ShendiArrivalTime     string
+	ShendiRukhsatiTime    string
+	ShendiSehrabandiTime  string
+	ShalimaDate           string
+	ShalimaDay            string
+	ShalimaTime           string
+	ShalimaTimeType       string
+	ShalimaDinnerTime     string
+	ShalimaVenueName      string
+	ShalimaVenueAddress   string
+	ShalimaArrivalTime    string
+	ShalimaRukhsatiTime   string
+	ShalimaSehrabandiTime string
+	ShalimaReceptionTime  string
+	RsvpName              string
+	RsvpPhone             string
+	Notes                 string
 }
 
 type PlaceOrderResult struct {
@@ -573,52 +594,73 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 	}
 
 	_, err = s.orderWriter.WithTx(tx).CreateOrderDetail(ctx, orderwriter.CreateOrderDetailParams{
-		OrderID:              orderRow.ID,
-		Side:                 input.Side,
-		ExtraInsertsPerCard:  pricing.extraInserts,
-		TopLabel:             nullableString(input.BidBoxTopLabel),
-		CoupleName:           nullableString(input.BidBoxCoupleName),
-		BidBoxEventDate:      input.BidBoxEventDate,
-		BidBoxDetails:        nullableString(input.BidBoxDetails),
-		BrideName:            nullableString(input.BrideName),
-		GroomName:            nullableString(input.GroomName),
-		BrideFatherName:      nullableString(input.BrideFatherName),
-		GroomFatherName:      nullableString(input.GroomFatherName),
-		MehndiDate:           input.MehndiDate,
-		MehndiDay:            nullableString(input.MehndiDay),
-		MehndiTimeType:       nullableString(input.MehndiTimeType),
-		MehndiTime:           input.MehndiTime,
-		MehndiDinnerTime:     input.MehndiDinnerTime,
-		MehndiVenueName:      nullableString(input.MehndiVenueName),
-		MehndiVenueAddress:   nullableString(input.MehndiVenueAddress),
-		BaraatDate:           input.BaraatDate,
-		BaraatDay:            nullableString(input.BaraatDay),
-		BaraatTimeType:       nullableString(input.BaraatTimeType),
-		BaraatTime:           input.BaraatTime,
-		BaraatDinnerTime:     input.BaraatDinnerTime,
-		BaraatArrivalTime:    input.BaraatArrivalTime,
-		RukhsatiTime:         input.RukhsatiTime,
-		BaraatSehrabandiTime: input.BaraatSehrabandiTime,
-		BaraatVenueName:      nullableString(input.BaraatVenueName),
-		BaraatVenueAddress:   nullableString(input.BaraatVenueAddress),
-		NikkahDate:           input.NikkahDate,
-		NikkahDay:            nullableString(input.NikkahDay),
-		NikkahTimeType:       nullableString(input.NikkahTimeType),
-		NikkahTime:           input.NikkahTime,
-		NikkahDinnerTime:     input.NikkahDinnerTime,
-		NikkahVenueName:      nullableString(input.NikkahVenueName),
-		NikkahVenueAddress:   nullableString(input.NikkahVenueAddress),
-		WalimaDate:           input.WalimaDate,
-		WalimaDay:            nullableString(input.WalimaDay),
-		WalimaTimeType:       nullableString(input.WalimaTimeType),
-		WalimaTime:           input.WalimaTime,
-		WalimaDinnerTime:     input.WalimaDinnerTime,
-		WalimaVenueName:      nullableString(input.WalimaVenueName),
-		WalimaVenueAddress:   nullableString(input.WalimaVenueAddress),
-		ReceptionTime:        input.ReceptionTime,
-		RsvpName:             input.RsvpName,
-		RsvpPhone:            input.RsvpPhone,
-		Notes:                nullableString(input.Notes),
+		OrderID:               orderRow.ID,
+		Side:                  input.Side,
+		ExtraInsertsPerCard:   pricing.extraInserts,
+		TopLabel:              nullableString(input.BidBoxTopLabel),
+		CoupleName:            nullableString(input.BidBoxCoupleName),
+		BidBoxEventDate:       input.BidBoxEventDate,
+		BidBoxDetails:         nullableString(input.BidBoxDetails),
+		BrideName:             nullableString(input.BrideName),
+		GroomName:             nullableString(input.GroomName),
+		BrideFatherName:       nullableString(input.BrideFatherName),
+		GroomFatherName:       nullableString(input.GroomFatherName),
+		MehndiDate:            input.MehndiDate,
+		MehndiDay:             nullableString(input.MehndiDay),
+		MehndiTimeType:        nullableString(input.MehndiTimeType),
+		MehndiTime:            input.MehndiTime,
+		MehndiDinnerTime:      input.MehndiDinnerTime,
+		MehndiVenueName:       nullableString(input.MehndiVenueName),
+		MehndiVenueAddress:    nullableString(input.MehndiVenueAddress),
+		BaraatDate:            input.BaraatDate,
+		BaraatDay:             nullableString(input.BaraatDay),
+		BaraatTimeType:        nullableString(input.BaraatTimeType),
+		BaraatTime:            input.BaraatTime,
+		BaraatDinnerTime:      input.BaraatDinnerTime,
+		BaraatArrivalTime:     input.BaraatArrivalTime,
+		RukhsatiTime:          input.RukhsatiTime,
+		BaraatSehrabandiTime:  input.BaraatSehrabandiTime,
+		BaraatVenueName:       nullableString(input.BaraatVenueName),
+		BaraatVenueAddress:    nullableString(input.BaraatVenueAddress),
+		NikkahDate:            input.NikkahDate,
+		NikkahDay:             nullableString(input.NikkahDay),
+		NikkahTimeType:        nullableString(input.NikkahTimeType),
+		NikkahTime:            input.NikkahTime,
+		NikkahDinnerTime:      input.NikkahDinnerTime,
+		NikkahVenueName:       nullableString(input.NikkahVenueName),
+		NikkahVenueAddress:    nullableString(input.NikkahVenueAddress),
+		WalimaDate:            input.WalimaDate,
+		WalimaDay:             nullableString(input.WalimaDay),
+		WalimaTimeType:        nullableString(input.WalimaTimeType),
+		WalimaTime:            input.WalimaTime,
+		WalimaDinnerTime:      input.WalimaDinnerTime,
+		WalimaVenueName:       nullableString(input.WalimaVenueName),
+		WalimaVenueAddress:    nullableString(input.WalimaVenueAddress),
+		ReceptionTime:         input.ReceptionTime,
+		ShendiDate:            input.ShendiDate,
+		ShendiDay:             nullableString(input.ShendiDay),
+		ShendiTimeType:        nullableString(input.ShendiTimeType),
+		ShendiTime:            input.ShendiTime,
+		ShendiDinnerTime:      input.ShendiDinnerTime,
+		ShendiVenueName:       nullableString(input.ShendiVenueName),
+		ShendiVenueAddress:    nullableString(input.ShendiVenueAddress),
+		ShendiArrivalTime:     input.ShendiArrivalTime,
+		ShendiRukhsatiTime:    input.ShendiRukhsatiTime,
+		ShendiSehrabandiTime:  input.ShendiSehrabandiTime,
+		ShalimaDate:           input.ShalimaDate,
+		ShalimaDay:            nullableString(input.ShalimaDay),
+		ShalimaTimeType:       nullableString(input.ShalimaTimeType),
+		ShalimaTime:           input.ShalimaTime,
+		ShalimaDinnerTime:     input.ShalimaDinnerTime,
+		ShalimaVenueName:      nullableString(input.ShalimaVenueName),
+		ShalimaVenueAddress:   nullableString(input.ShalimaVenueAddress),
+		ShalimaArrivalTime:    input.ShalimaArrivalTime,
+		ShalimaRukhsatiTime:   input.ShalimaRukhsatiTime,
+		ShalimaSehrabandiTime: input.ShalimaSehrabandiTime,
+		ShalimaReceptionTime:  input.ShalimaReceptionTime,
+		RsvpName:              input.RsvpName,
+		RsvpPhone:             input.RsvpPhone,
+		Notes:                 nullableString(input.Notes),
 	})
 	if err != nil {
 		return nil, err
@@ -895,6 +937,27 @@ func sanitizePlaceOrderInput(input PlaceOrderInput) PlaceOrderInput {
 	input.WalimaVenueName = sanitizeSingleLine(input.WalimaVenueName)
 	input.WalimaVenueAddress = sanitizeMultiline(input.WalimaVenueAddress)
 	input.ReceptionTime = strings.TrimSpace(input.ReceptionTime)
+	input.ShendiDate = strings.TrimSpace(input.ShendiDate)
+	input.ShendiDay = normalizeOptionalDay(input.ShendiDay)
+	input.ShendiTimeType = normalizeOptionalTimeType(input.ShendiTimeType)
+	input.ShendiTime = strings.TrimSpace(input.ShendiTime)
+	input.ShendiDinnerTime = strings.TrimSpace(input.ShendiDinnerTime)
+	input.ShendiVenueName = sanitizeSingleLine(input.ShendiVenueName)
+	input.ShendiVenueAddress = sanitizeMultiline(input.ShendiVenueAddress)
+	input.ShendiArrivalTime = strings.TrimSpace(input.ShendiArrivalTime)
+	input.ShendiRukhsatiTime = strings.TrimSpace(input.ShendiRukhsatiTime)
+	input.ShendiSehrabandiTime = strings.TrimSpace(input.ShendiSehrabandiTime)
+	input.ShalimaDate = strings.TrimSpace(input.ShalimaDate)
+	input.ShalimaDay = normalizeOptionalDay(input.ShalimaDay)
+	input.ShalimaTimeType = normalizeOptionalTimeType(input.ShalimaTimeType)
+	input.ShalimaTime = strings.TrimSpace(input.ShalimaTime)
+	input.ShalimaDinnerTime = strings.TrimSpace(input.ShalimaDinnerTime)
+	input.ShalimaVenueName = sanitizeSingleLine(input.ShalimaVenueName)
+	input.ShalimaVenueAddress = sanitizeMultiline(input.ShalimaVenueAddress)
+	input.ShalimaArrivalTime = strings.TrimSpace(input.ShalimaArrivalTime)
+	input.ShalimaRukhsatiTime = strings.TrimSpace(input.ShalimaRukhsatiTime)
+	input.ShalimaSehrabandiTime = strings.TrimSpace(input.ShalimaSehrabandiTime)
+	input.ShalimaReceptionTime = strings.TrimSpace(input.ShalimaReceptionTime)
 	input.RsvpName = normalizeRSVPNameList(input.RsvpName)
 	input.RsvpPhone = normalizeOptionalPhoneList(input.RsvpPhone)
 	input.Notes = sanitizeMultiline(input.Notes)
@@ -1014,6 +1077,12 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 	if _, err := parseOptionalDay(input.WalimaDay); err != nil {
 		return InvalidFieldError{Field: "walima_day"}
 	}
+	if _, err := parseOptionalDay(input.ShendiDay); err != nil {
+		return InvalidFieldError{Field: "shendi_day"}
+	}
+	if _, err := parseOptionalDay(input.ShalimaDay); err != nil {
+		return InvalidFieldError{Field: "shalima_day"}
+	}
 	if _, err := parseOptionalTimeType(input.MehndiTimeType); err != nil {
 		return InvalidFieldError{Field: "mehndi_time_type"}
 	}
@@ -1026,6 +1095,12 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 	if _, err := parseOptionalTimeType(input.WalimaTimeType); err != nil {
 		return InvalidFieldError{Field: "walima_time_type"}
 	}
+	if _, err := parseOptionalTimeType(input.ShendiTimeType); err != nil {
+		return InvalidFieldError{Field: "shendi_time_type"}
+	}
+	if _, err := parseOptionalTimeType(input.ShalimaTimeType); err != nil {
+		return InvalidFieldError{Field: "shalima_time_type"}
+	}
 	for _, field := range []struct {
 		name  string
 		value string
@@ -1034,6 +1109,8 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 		{name: "baraat_date", value: input.BaraatDate},
 		{name: "nikkah_date", value: input.NikkahDate},
 		{name: "walima_date", value: input.WalimaDate},
+		{name: "shendi_date", value: input.ShendiDate},
+		{name: "shalima_date", value: input.ShalimaDate},
 	} {
 		if err := validateOptionalDate(field.value); err != nil {
 			return InvalidFieldError{Field: field.name}
@@ -1055,6 +1132,17 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 		{name: "walima_time", value: input.WalimaTime},
 		{name: "walima_dinner_time", value: input.WalimaDinnerTime},
 		{name: "reception_time", value: input.ReceptionTime},
+		{name: "shendi_time", value: input.ShendiTime},
+		{name: "shendi_dinner_time", value: input.ShendiDinnerTime},
+		{name: "shendi_arrival_time", value: input.ShendiArrivalTime},
+		{name: "shendi_rukhsati_time", value: input.ShendiRukhsatiTime},
+		{name: "shendi_sehrabandi_time", value: input.ShendiSehrabandiTime},
+		{name: "shalima_time", value: input.ShalimaTime},
+		{name: "shalima_dinner_time", value: input.ShalimaDinnerTime},
+		{name: "shalima_arrival_time", value: input.ShalimaArrivalTime},
+		{name: "shalima_rukhsati_time", value: input.ShalimaRukhsatiTime},
+		{name: "shalima_sehrabandi_time", value: input.ShalimaSehrabandiTime},
+		{name: "shalima_reception_time", value: input.ShalimaReceptionTime},
 	} {
 		if err := validateOptionalTime(field.value); err != nil {
 			return InvalidFieldError{Field: field.name}
@@ -1084,6 +1172,8 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 		{name: "baraat_venue_name", value: input.BaraatVenueName},
 		{name: "nikkah_venue_name", value: input.NikkahVenueName},
 		{name: "walima_venue_name", value: input.WalimaVenueName},
+		{name: "shendi_venue_name", value: input.ShendiVenueName},
+		{name: "shalima_venue_name", value: input.ShalimaVenueName},
 	} {
 		if utf8.RuneCountInString(field.value) > maxVenueNameLength {
 			return InvalidFieldError{Field: field.name}
@@ -1097,6 +1187,8 @@ func validateWeddingCustomizationFields(input PlaceOrderInput) error {
 		{name: "baraat_venue_address", value: input.BaraatVenueAddress},
 		{name: "nikkah_venue_address", value: input.NikkahVenueAddress},
 		{name: "walima_venue_address", value: input.WalimaVenueAddress},
+		{name: "shendi_venue_address", value: input.ShendiVenueAddress},
+		{name: "shalima_venue_address", value: input.ShalimaVenueAddress},
 	} {
 		if utf8.RuneCountInString(field.value) > maxVenueAddressLength {
 			return InvalidFieldError{Field: field.name}

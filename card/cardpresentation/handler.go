@@ -24,50 +24,71 @@ type CardHandler struct {
 }
 
 type CheckoutPersonalization struct {
-	BidBoxTopLabel       string
-	BidBoxCoupleName     string
-	BidBoxEventDate      string
-	BidBoxDetails        string
-	Side                 string
-	BrideName            string
-	GroomName            string
-	BrideFatherName      string
-	GroomFatherName      string
-	MehndiDate           string
-	MehndiDay            string
-	MehndiTimeType       string
-	MehndiTime           string
-	MehndiDinnerTime     string
-	MehndiVenueName      string
-	MehndiVenueAddress   string
-	BaraatDate           string
-	BaraatDay            string
-	BaraatTimeType       string
-	BaraatTime           string
-	BaraatDinnerTime     string
-	BaraatArrivalTime    string
-	RukhsatiTime         string
-	BaraatSehrabandiTime string
-	BaraatVenueName      string
-	BaraatVenueAddress   string
-	NikkahDate           string
-	NikkahDay            string
-	NikkahTimeType       string
-	NikkahTime           string
-	NikkahDinnerTime     string
-	NikkahVenueName      string
-	NikkahVenueAddress   string
-	WalimaDate           string
-	WalimaDay            string
-	WalimaTimeType       string
-	WalimaTime           string
-	WalimaDinnerTime     string
-	WalimaVenueName      string
-	WalimaVenueAddress   string
-	ReceptionTime        string
-	RsvpName             string
-	RsvpPhone            string
-	Notes                string
+	BidBoxTopLabel        string
+	BidBoxCoupleName      string
+	BidBoxEventDate       string
+	BidBoxDetails         string
+	Side                  string
+	BrideName             string
+	GroomName             string
+	BrideFatherName       string
+	GroomFatherName       string
+	MehndiDate            string
+	MehndiDay             string
+	MehndiTimeType        string
+	MehndiTime            string
+	MehndiDinnerTime      string
+	MehndiVenueName       string
+	MehndiVenueAddress    string
+	BaraatDate            string
+	BaraatDay             string
+	BaraatTimeType        string
+	BaraatTime            string
+	BaraatDinnerTime      string
+	BaraatArrivalTime     string
+	RukhsatiTime          string
+	BaraatSehrabandiTime  string
+	BaraatVenueName       string
+	BaraatVenueAddress    string
+	NikkahDate            string
+	NikkahDay             string
+	NikkahTimeType        string
+	NikkahTime            string
+	NikkahDinnerTime      string
+	NikkahVenueName       string
+	NikkahVenueAddress    string
+	WalimaDate            string
+	WalimaDay             string
+	WalimaTimeType        string
+	WalimaTime            string
+	WalimaDinnerTime      string
+	WalimaVenueName       string
+	WalimaVenueAddress    string
+	ReceptionTime         string
+	ShendiDate            string
+	ShendiDay             string
+	ShendiTime            string
+	ShendiTimeType        string
+	ShendiDinnerTime      string
+	ShendiVenueName       string
+	ShendiVenueAddress    string
+	ShendiArrivalTime     string
+	ShendiRukhsatiTime    string
+	ShendiSehrabandiTime  string
+	ShalimaDate           string
+	ShalimaDay            string
+	ShalimaTime           string
+	ShalimaTimeType       string
+	ShalimaDinnerTime     string
+	ShalimaVenueName      string
+	ShalimaVenueAddress   string
+	ShalimaArrivalTime    string
+	ShalimaRukhsatiTime   string
+	ShalimaSehrabandiTime string
+	ShalimaReceptionTime  string
+	RsvpName              string
+	RsvpPhone             string
+	Notes                 string
 }
 
 const (
@@ -406,9 +427,10 @@ func (h *CardHandler) CardDetail(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "card.html", gin.H{
-		"card":      card,
-		"images":    images,
-		"csrfToken": webui.EnsureCSRFToken(c),
+		"card":         card,
+		"images":       images,
+		"cardCategory": card.Category,
+		"csrfToken":    webui.EnsureCSRFToken(c),
 	})
 }
 
@@ -421,50 +443,71 @@ func checkoutValue(c *gin.Context, key string) string {
 
 func readCheckoutPersonalization(c *gin.Context) CheckoutPersonalization {
 	return CheckoutPersonalization{
-		BidBoxTopLabel:       checkoutValue(c, "top_label"),
-		BidBoxCoupleName:     checkoutValue(c, "couple_name"),
-		BidBoxEventDate:      checkoutValue(c, "event_date"),
-		BidBoxDetails:        checkoutValue(c, "details"),
-		Side:                 checkoutValue(c, "side"),
-		BrideName:            checkoutValue(c, "bride_name"),
-		GroomName:            checkoutValue(c, "groom_name"),
-		BrideFatherName:      checkoutValue(c, "bride_father_name"),
-		GroomFatherName:      checkoutValue(c, "groom_father_name"),
-		MehndiDate:           checkoutValue(c, "mehndi_date"),
-		MehndiDay:            checkoutValue(c, "mehndi_day"),
-		MehndiTimeType:       checkoutValue(c, "mehndi_time_type"),
-		MehndiTime:           checkoutValue(c, "mehndi_time"),
-		MehndiDinnerTime:     checkoutValue(c, "mehndi_dinner_time"),
-		MehndiVenueName:      checkoutValue(c, "mehndi_venue_name"),
-		MehndiVenueAddress:   checkoutValue(c, "mehndi_venue_address"),
-		BaraatDate:           checkoutValue(c, "baraat_date"),
-		BaraatDay:            checkoutValue(c, "baraat_day"),
-		BaraatTimeType:       checkoutValue(c, "baraat_time_type"),
-		BaraatTime:           checkoutValue(c, "baraat_time"),
-		BaraatDinnerTime:     checkoutValue(c, "baraat_dinner_time"),
-		BaraatArrivalTime:    checkoutValue(c, "baraat_arrival_time"),
-		RukhsatiTime:         checkoutValue(c, "rukhsati_time"),
-		BaraatSehrabandiTime: checkoutValue(c, "baraat_sehrabandi_time"),
-		BaraatVenueName:      checkoutValue(c, "baraat_venue_name"),
-		BaraatVenueAddress:   checkoutValue(c, "baraat_venue_address"),
-		NikkahDate:           checkoutValue(c, "nikkah_date"),
-		NikkahDay:            checkoutValue(c, "nikkah_day"),
-		NikkahTimeType:       checkoutValue(c, "nikkah_time_type"),
-		NikkahTime:           checkoutValue(c, "nikkah_time"),
-		NikkahDinnerTime:     checkoutValue(c, "nikkah_dinner_time"),
-		NikkahVenueName:      checkoutValue(c, "nikkah_venue_name"),
-		NikkahVenueAddress:   checkoutValue(c, "nikkah_venue_address"),
-		WalimaDate:           checkoutValue(c, "walima_date"),
-		WalimaDay:            checkoutValue(c, "walima_day"),
-		WalimaTimeType:       checkoutValue(c, "walima_time_type"),
-		WalimaTime:           checkoutValue(c, "walima_time"),
-		WalimaDinnerTime:     checkoutValue(c, "walima_dinner_time"),
-		WalimaVenueName:      checkoutValue(c, "walima_venue_name"),
-		WalimaVenueAddress:   checkoutValue(c, "walima_venue_address"),
-		ReceptionTime:        checkoutValue(c, "reception_time"),
-		RsvpName:             joinedCheckoutValue(c, "rsvp_name"),
-		RsvpPhone:            joinedCheckoutValue(c, "rsvp_phone"),
-		Notes:                checkoutValue(c, "notes"),
+		BidBoxTopLabel:        checkoutValue(c, "top_label"),
+		BidBoxCoupleName:      checkoutValue(c, "couple_name"),
+		BidBoxEventDate:       checkoutValue(c, "event_date"),
+		BidBoxDetails:         checkoutValue(c, "details"),
+		Side:                  checkoutValue(c, "side"),
+		BrideName:             checkoutValue(c, "bride_name"),
+		GroomName:             checkoutValue(c, "groom_name"),
+		BrideFatherName:       checkoutValue(c, "bride_father_name"),
+		GroomFatherName:       checkoutValue(c, "groom_father_name"),
+		MehndiDate:            checkoutValue(c, "mehndi_date"),
+		MehndiDay:             checkoutValue(c, "mehndi_day"),
+		MehndiTimeType:        checkoutValue(c, "mehndi_time_type"),
+		MehndiTime:            checkoutValue(c, "mehndi_time"),
+		MehndiDinnerTime:      checkoutValue(c, "mehndi_dinner_time"),
+		MehndiVenueName:       checkoutValue(c, "mehndi_venue_name"),
+		MehndiVenueAddress:    checkoutValue(c, "mehndi_venue_address"),
+		BaraatDate:            checkoutValue(c, "baraat_date"),
+		BaraatDay:             checkoutValue(c, "baraat_day"),
+		BaraatTimeType:        checkoutValue(c, "baraat_time_type"),
+		BaraatTime:            checkoutValue(c, "baraat_time"),
+		BaraatDinnerTime:      checkoutValue(c, "baraat_dinner_time"),
+		BaraatArrivalTime:     checkoutValue(c, "baraat_arrival_time"),
+		RukhsatiTime:          checkoutValue(c, "rukhsati_time"),
+		BaraatSehrabandiTime:  checkoutValue(c, "baraat_sehrabandi_time"),
+		BaraatVenueName:       checkoutValue(c, "baraat_venue_name"),
+		BaraatVenueAddress:    checkoutValue(c, "baraat_venue_address"),
+		NikkahDate:            checkoutValue(c, "nikkah_date"),
+		NikkahDay:             checkoutValue(c, "nikkah_day"),
+		NikkahTimeType:        checkoutValue(c, "nikkah_time_type"),
+		NikkahTime:            checkoutValue(c, "nikkah_time"),
+		NikkahDinnerTime:      checkoutValue(c, "nikkah_dinner_time"),
+		NikkahVenueName:       checkoutValue(c, "nikkah_venue_name"),
+		NikkahVenueAddress:    checkoutValue(c, "nikkah_venue_address"),
+		WalimaDate:            checkoutValue(c, "walima_date"),
+		WalimaDay:             checkoutValue(c, "walima_day"),
+		WalimaTimeType:        checkoutValue(c, "walima_time_type"),
+		WalimaTime:            checkoutValue(c, "walima_time"),
+		WalimaDinnerTime:      checkoutValue(c, "walima_dinner_time"),
+		WalimaVenueName:       checkoutValue(c, "walima_venue_name"),
+		WalimaVenueAddress:    checkoutValue(c, "walima_venue_address"),
+		ReceptionTime:         checkoutValue(c, "reception_time"),
+		ShendiDate:            checkoutValue(c, "shendi_date"),
+		ShendiDay:             checkoutValue(c, "shendi_day"),
+		ShendiTime:            checkoutValue(c, "shendi_time"),
+		ShendiTimeType:        checkoutValue(c, "shendi_time_type"),
+		ShendiDinnerTime:      checkoutValue(c, "shendi_dinner_time"),
+		ShendiVenueName:       checkoutValue(c, "shendi_venue_name"),
+		ShendiVenueAddress:    checkoutValue(c, "shendi_venue_address"),
+		ShendiArrivalTime:     checkoutValue(c, "shendi_arrival_time"),
+		ShendiRukhsatiTime:    checkoutValue(c, "shendi_rukhsati_time"),
+		ShendiSehrabandiTime:  checkoutValue(c, "shendi_sehrabandi_time"),
+		ShalimaDate:           checkoutValue(c, "shalima_date"),
+		ShalimaDay:            checkoutValue(c, "shalima_day"),
+		ShalimaTime:           checkoutValue(c, "shalima_time"),
+		ShalimaTimeType:       checkoutValue(c, "shalima_time_type"),
+		ShalimaDinnerTime:     checkoutValue(c, "shalima_dinner_time"),
+		ShalimaVenueName:      checkoutValue(c, "shalima_venue_name"),
+		ShalimaVenueAddress:   checkoutValue(c, "shalima_venue_address"),
+		ShalimaArrivalTime:    checkoutValue(c, "shalima_arrival_time"),
+		ShalimaRukhsatiTime:   checkoutValue(c, "shalima_rukhsati_time"),
+		ShalimaSehrabandiTime: checkoutValue(c, "shalima_sehrabandi_time"),
+		ShalimaReceptionTime:  checkoutValue(c, "shalima_reception_time"),
+		RsvpName:              joinedCheckoutValue(c, "rsvp_name"),
+		RsvpPhone:             joinedCheckoutValue(c, "rsvp_phone"),
+		Notes:                 checkoutValue(c, "notes"),
 	}
 }
 

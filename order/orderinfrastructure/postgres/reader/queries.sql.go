@@ -151,6 +151,27 @@ SELECT
     COALESCE(reception_time::text, '')::text AS reception_time,
     COALESCE(walima_venue_name, '') AS walima_venue_name,
     COALESCE(walima_venue_address, '') AS walima_venue_address,
+    COALESCE(shendi_date::text, '')::text AS shendi_date,
+    COALESCE(shendi_day, '') AS shendi_day,
+    COALESCE(shendi_time::text, '')::text AS shendi_time,
+    shendi_time_type,
+    COALESCE(shendi_dinner_time::text, '')::text AS shendi_dinner_time,
+    COALESCE(shendi_venue_name, '') AS shendi_venue_name,
+    COALESCE(shendi_venue_address, '') AS shendi_venue_address,
+    COALESCE(shendi_arrival_time::text, '')::text AS shendi_arrival_time,
+    COALESCE(shendi_rukhsati_time::text, '')::text AS shendi_rukhsati_time,
+    COALESCE(shendi_sehrabandi_time::text, '')::text AS shendi_sehrabandi_time,
+    COALESCE(shalima_date::text, '')::text AS shalima_date,
+    COALESCE(shalima_day, '') AS shalima_day,
+    COALESCE(shalima_time::text, '')::text AS shalima_time,
+    shalima_time_type,
+    COALESCE(shalima_dinner_time::text, '')::text AS shalima_dinner_time,
+    COALESCE(shalima_venue_name, '') AS shalima_venue_name,
+    COALESCE(shalima_venue_address, '') AS shalima_venue_address,
+    COALESCE(shalima_arrival_time::text, '')::text AS shalima_arrival_time,
+    COALESCE(shalima_rukhsati_time::text, '')::text AS shalima_rukhsati_time,
+    COALESCE(shalima_sehrabandi_time::text, '')::text AS shalima_sehrabandi_time,
+    COALESCE(shalima_reception_time::text, '')::text AS shalima_reception_time,
     COALESCE(rsvp_name, '') AS rsvp_name,
     COALESCE(rsvp_phone, '') AS rsvp_phone,
     notes,
@@ -162,54 +183,75 @@ LIMIT 1
 `
 
 type GetLatestOrderDetailByOrderIDRow struct {
-	ID                   int64
-	OrderID              int64
-	Side                 string
-	ExtraInsertsPerCard  int64
-	TopLabel             string
-	CoupleName           string
-	EventDate            string
-	BidBoxDetails        string
-	BrideName            *string
-	GroomName            *string
-	BrideFatherName      *string
-	GroomFatherName      *string
-	MehndiDate           string
-	MehndiDay            string
-	MehndiTimeType       *string
-	MehndiTime           string
-	MehndiDinnerTime     string
-	MehndiVenueName      string
-	MehndiVenueAddress   string
-	BaraatDate           string
-	BaraatDay            string
-	BaraatTimeType       *string
-	BaraatTime           string
-	BaraatDinnerTime     string
-	BaraatArrivalTime    string
-	RukhsatiTime         string
-	BaraatSehrabandiTime string
-	BaraatVenueName      string
-	BaraatVenueAddress   string
-	NikkahDate           string
-	NikkahDay            string
-	NikkahTimeType       *string
-	NikkahTime           string
-	NikkahDinnerTime     string
-	NikkahVenueName      string
-	NikkahVenueAddress   string
-	WalimaDate           string
-	WalimaDay            string
-	WalimaTimeType       *string
-	WalimaTime           string
-	WalimaDinnerTime     string
-	ReceptionTime        string
-	WalimaVenueName      string
-	WalimaVenueAddress   string
-	RsvpName             string
-	RsvpPhone            string
-	Notes                *string
-	CreatedAt            pgtype.Timestamptz
+	ID                    int64
+	OrderID               int64
+	Side                  string
+	ExtraInsertsPerCard   int64
+	TopLabel              string
+	CoupleName            string
+	EventDate             string
+	BidBoxDetails         string
+	BrideName             *string
+	GroomName             *string
+	BrideFatherName       *string
+	GroomFatherName       *string
+	MehndiDate            string
+	MehndiDay             string
+	MehndiTimeType        *string
+	MehndiTime            string
+	MehndiDinnerTime      string
+	MehndiVenueName       string
+	MehndiVenueAddress    string
+	BaraatDate            string
+	BaraatDay             string
+	BaraatTimeType        *string
+	BaraatTime            string
+	BaraatDinnerTime      string
+	BaraatArrivalTime     string
+	RukhsatiTime          string
+	BaraatSehrabandiTime  string
+	BaraatVenueName       string
+	BaraatVenueAddress    string
+	NikkahDate            string
+	NikkahDay             string
+	NikkahTimeType        *string
+	NikkahTime            string
+	NikkahDinnerTime      string
+	NikkahVenueName       string
+	NikkahVenueAddress    string
+	WalimaDate            string
+	WalimaDay             string
+	WalimaTimeType        *string
+	WalimaTime            string
+	WalimaDinnerTime      string
+	ReceptionTime         string
+	WalimaVenueName       string
+	WalimaVenueAddress    string
+	ShendiDate            string
+	ShendiDay             string
+	ShendiTime            string
+	ShendiTimeType        *string
+	ShendiDinnerTime      string
+	ShendiVenueName       string
+	ShendiVenueAddress    string
+	ShendiArrivalTime     string
+	ShendiRukhsatiTime    string
+	ShendiSehrabandiTime  string
+	ShalimaDate           string
+	ShalimaDay            string
+	ShalimaTime           string
+	ShalimaTimeType       *string
+	ShalimaDinnerTime     string
+	ShalimaVenueName      string
+	ShalimaVenueAddress   string
+	ShalimaArrivalTime    string
+	ShalimaRukhsatiTime   string
+	ShalimaSehrabandiTime string
+	ShalimaReceptionTime  string
+	RsvpName              string
+	RsvpPhone             string
+	Notes                 *string
+	CreatedAt             pgtype.Timestamptz
 }
 
 func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int64) ([]GetLatestOrderDetailByOrderIDRow, error) {
@@ -266,6 +308,27 @@ func (q *Queries) GetLatestOrderDetailByOrderID(ctx context.Context, orderID int
 			&i.ReceptionTime,
 			&i.WalimaVenueName,
 			&i.WalimaVenueAddress,
+			&i.ShendiDate,
+			&i.ShendiDay,
+			&i.ShendiTime,
+			&i.ShendiTimeType,
+			&i.ShendiDinnerTime,
+			&i.ShendiVenueName,
+			&i.ShendiVenueAddress,
+			&i.ShendiArrivalTime,
+			&i.ShendiRukhsatiTime,
+			&i.ShendiSehrabandiTime,
+			&i.ShalimaDate,
+			&i.ShalimaDay,
+			&i.ShalimaTime,
+			&i.ShalimaTimeType,
+			&i.ShalimaDinnerTime,
+			&i.ShalimaVenueName,
+			&i.ShalimaVenueAddress,
+			&i.ShalimaArrivalTime,
+			&i.ShalimaRukhsatiTime,
+			&i.ShalimaSehrabandiTime,
+			&i.ShalimaReceptionTime,
 			&i.RsvpName,
 			&i.RsvpPhone,
 			&i.Notes,

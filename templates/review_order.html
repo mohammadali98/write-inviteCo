@@ -403,6 +403,25 @@
                     <input type="hidden" name="walima_dinner_time" value="{{ .review.Input.WalimaDinnerTime }}">
                     <input type="hidden" name="walima_venue_name" value="{{ .review.Input.WalimaVenueName }}">
                     <input type="hidden" name="reception_time" value="{{ .review.Input.ReceptionTime }}">
+                    <input type="hidden" name="shendi_date" value="{{ .review.Input.ShendiDate }}">
+                    <input type="hidden" name="shendi_day" value="{{ .review.Input.ShendiDay }}">
+                    <input type="hidden" name="shendi_time_type" value="{{ .review.Input.ShendiTimeType }}">
+                    <input type="hidden" name="shendi_time" value="{{ .review.Input.ShendiTime }}">
+                    <input type="hidden" name="shendi_dinner_time" value="{{ .review.Input.ShendiDinnerTime }}">
+                    <input type="hidden" name="shendi_arrival_time" value="{{ .review.Input.ShendiArrivalTime }}">
+                    <input type="hidden" name="shendi_rukhsati_time" value="{{ .review.Input.ShendiRukhsatiTime }}">
+                    <input type="hidden" name="shendi_sehrabandi_time" value="{{ .review.Input.ShendiSehrabandiTime }}">
+                    <input type="hidden" name="shendi_venue_name" value="{{ .review.Input.ShendiVenueName }}">
+                    <input type="hidden" name="shalima_date" value="{{ .review.Input.ShalimaDate }}">
+                    <input type="hidden" name="shalima_day" value="{{ .review.Input.ShalimaDay }}">
+                    <input type="hidden" name="shalima_time_type" value="{{ .review.Input.ShalimaTimeType }}">
+                    <input type="hidden" name="shalima_time" value="{{ .review.Input.ShalimaTime }}">
+                    <input type="hidden" name="shalima_dinner_time" value="{{ .review.Input.ShalimaDinnerTime }}">
+                    <input type="hidden" name="shalima_arrival_time" value="{{ .review.Input.ShalimaArrivalTime }}">
+                    <input type="hidden" name="shalima_rukhsati_time" value="{{ .review.Input.ShalimaRukhsatiTime }}">
+                    <input type="hidden" name="shalima_sehrabandi_time" value="{{ .review.Input.ShalimaSehrabandiTime }}">
+                    <input type="hidden" name="shalima_reception_time" value="{{ .review.Input.ShalimaReceptionTime }}">
+                    <input type="hidden" name="shalima_venue_name" value="{{ .review.Input.ShalimaVenueName }}">
                     <textarea name="rsvp_name" hidden>{{ .review.Input.RsvpName }}</textarea>
                     <textarea name="rsvp_phone" hidden>{{ .review.Input.RsvpPhone }}</textarea>
                     <textarea name="details" hidden>{{ .review.Input.BidBoxDetails }}</textarea>
@@ -410,6 +429,8 @@
                     <textarea name="baraat_venue_address" hidden>{{ .review.Input.BaraatVenueAddress }}</textarea>
                     <textarea name="nikkah_venue_address" hidden>{{ .review.Input.NikkahVenueAddress }}</textarea>
                     <textarea name="walima_venue_address" hidden>{{ .review.Input.WalimaVenueAddress }}</textarea>
+                    <textarea name="shendi_venue_address" hidden>{{ .review.Input.ShendiVenueAddress }}</textarea>
+                    <textarea name="shalima_venue_address" hidden>{{ .review.Input.ShalimaVenueAddress }}</textarea>
                     <textarea name="notes" hidden>{{ .review.Input.Notes }}</textarea>
 
                     <section class="review-card">
@@ -582,6 +603,43 @@
                                 <div class="info-item"><span class="info-label">Reception Time</span><div class="info-value">{{ if .review.Input.ReceptionTime }}{{ .review.Input.ReceptionTime }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.WalimaVenueName }}{{ .review.Input.WalimaVenueName }}{{ else }}Not provided{{ end }}</div></div>
                                 <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.WalimaVenueAddress }}{{ .review.Input.WalimaVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
+                            </div>
+                        </div>
+                        {{ end }}
+
+                        {{ if or .review.Input.ShendiDate .review.Input.ShendiDay .review.Input.ShendiTime .review.Input.ShendiDinnerTime .review.Input.ShendiArrivalTime .review.Input.ShendiRukhsatiTime .review.Input.ShendiSehrabandiTime .review.Input.ShendiVenueName .review.Input.ShendiVenueAddress .review.Input.ShendiTimeType }}
+                        <div class="detail-block">
+                            <h3>Shendi</h3>
+                            <div class="info-grid">
+                                <div class="info-item"><span class="info-label">Date</span><div class="info-value">{{ if .review.Input.ShendiDate }}{{ .review.Input.ShendiDate }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.ShendiDay }}{{ .review.Input.ShendiDay }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.ShendiTime }}{{ .review.Input.ShendiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.ShendiTimeType }}{{ .review.Input.ShendiTimeType }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.ShendiDinnerTime }}{{ .review.Input.ShendiDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Arrival Time</span><div class="info-value">{{ if .review.Input.ShendiArrivalTime }}{{ .review.Input.ShendiArrivalTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Rukhsati Time</span><div class="info-value">{{ if .review.Input.ShendiRukhsatiTime }}{{ .review.Input.ShendiRukhsatiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Sehrabandi Time</span><div class="info-value">{{ if .review.Input.ShendiSehrabandiTime }}{{ .review.Input.ShendiSehrabandiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.ShendiVenueName }}{{ .review.Input.ShendiVenueName }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.ShendiVenueAddress }}{{ .review.Input.ShendiVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
+                            </div>
+                        </div>
+                        {{ end }}
+
+                        {{ if or .review.Input.ShalimaDate .review.Input.ShalimaDay .review.Input.ShalimaTime .review.Input.ShalimaDinnerTime .review.Input.ShalimaArrivalTime .review.Input.ShalimaRukhsatiTime .review.Input.ShalimaSehrabandiTime .review.Input.ShalimaReceptionTime .review.Input.ShalimaVenueName .review.Input.ShalimaVenueAddress .review.Input.ShalimaTimeType }}
+                        <div class="detail-block">
+                            <h3>Shalima</h3>
+                            <div class="info-grid">
+                                <div class="info-item"><span class="info-label">Date</span><div class="info-value">{{ if .review.Input.ShalimaDate }}{{ .review.Input.ShalimaDate }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Day</span><div class="info-value">{{ if .review.Input.ShalimaDay }}{{ .review.Input.ShalimaDay }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Time</span><div class="info-value">{{ if .review.Input.ShalimaTime }}{{ .review.Input.ShalimaTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Time Type</span><div class="info-value">{{ if .review.Input.ShalimaTimeType }}{{ .review.Input.ShalimaTimeType }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Dinner/Lunch Time</span><div class="info-value">{{ if .review.Input.ShalimaDinnerTime }}{{ .review.Input.ShalimaDinnerTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Arrival Time</span><div class="info-value">{{ if .review.Input.ShalimaArrivalTime }}{{ .review.Input.ShalimaArrivalTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Rukhsati Time</span><div class="info-value">{{ if .review.Input.ShalimaRukhsatiTime }}{{ .review.Input.ShalimaRukhsatiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Sehrabandi Time</span><div class="info-value">{{ if .review.Input.ShalimaSehrabandiTime }}{{ .review.Input.ShalimaSehrabandiTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Reception Time</span><div class="info-value">{{ if .review.Input.ShalimaReceptionTime }}{{ .review.Input.ShalimaReceptionTime }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item"><span class="info-label">Venue Name</span><div class="info-value">{{ if .review.Input.ShalimaVenueName }}{{ .review.Input.ShalimaVenueName }}{{ else }}Not provided{{ end }}</div></div>
+                                <div class="info-item full-width"><span class="info-label">Venue Address</span><div class="info-value">{{ if .review.Input.ShalimaVenueAddress }}{{ .review.Input.ShalimaVenueAddress }}{{ else }}Not provided{{ end }}</div></div>
                             </div>
                         </div>
                         {{ end }}

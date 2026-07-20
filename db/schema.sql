@@ -1,4 +1,4 @@
-\restrict gvlOq9JcGZu39PG1X8uXAQBl4ba2IcZNUxaFKdUSFpSI9JJAsuALqBQSilswVEE
+\restrict 5fYhItLLbyodAJHXqj8FmReoIQy0BASl35tX4589ZmMPf35EOaoVym5cGGIbClH
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -249,6 +249,27 @@ CREATE TABLE public.order_details (
     bid_box_details text,
     extra_inserts_per_card bigint DEFAULT 0 NOT NULL,
     baraat_sehrabandi_time time without time zone,
+    shendi_date date,
+    shendi_day text,
+    shendi_time time without time zone,
+    shendi_time_type text,
+    shendi_dinner_time time without time zone,
+    shendi_venue_name text,
+    shendi_venue_address text,
+    shendi_arrival_time time without time zone,
+    shendi_rukhsati_time time without time zone,
+    shendi_sehrabandi_time time without time zone,
+    shalima_date date,
+    shalima_day text,
+    shalima_time time without time zone,
+    shalima_time_type text,
+    shalima_dinner_time time without time zone,
+    shalima_venue_name text,
+    shalima_venue_address text,
+    shalima_arrival_time time without time zone,
+    shalima_rukhsati_time time without time zone,
+    shalima_sehrabandi_time time without time zone,
+    shalima_reception_time time without time zone,
     CONSTRAINT chk_order_details_side CHECK ((side = ANY (ARRAY['bride'::text, 'groom'::text])))
 );
 
@@ -740,7 +761,7 @@ ALTER TABLE ONLY public.product_images
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gvlOq9JcGZu39PG1X8uXAQBl4ba2IcZNUxaFKdUSFpSI9JJAsuALqBQSilswVEE
+\unrestrict 5fYhItLLbyodAJHXqj8FmReoIQy0BASl35tX4589ZmMPf35EOaoVym5cGGIbClH
 
 
 --
@@ -771,4 +792,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260712000001'),
     ('20260712000002'),
     ('20260716113800'),
-    ('20260716153410');
+    ('20260716153410'),
+    ('20260719000000');

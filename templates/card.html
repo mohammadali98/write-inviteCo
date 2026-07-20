@@ -348,15 +348,17 @@
 
             <div class="detail-content">
                 <h1>{{ .card.Name }}</h1>
-                <p class="price" id="unit-price-display">PKR {{ .card.PriceFoilPKR }} per card</p>
+                <p class="price" id="unit-price-display">PKR {{ .card.PriceFoilPKR }} per {{ if eq .cardCategory "bid-boxes" }}box{{ else }}card{{ end }}</p>
                 {{ if .card.Description }}
                 <p>{{ .card.Description }}</p>
                 {{ end }}
 
+                {{ if ne .cardCategory "bid-boxes" }}
                 <div class="insert-info">
                     {{ if gt .card.IncludedInserts 0 }}Includes {{ .card.IncludedInserts }} inserts per card.<br>{{ end }}
                     {{ if gt .card.InsertPricePKR 0 }}Additional inserts: PKR {{ .card.InsertPricePKR }} each.{{ else }}No additional insert charges for this design.{{ end }}
                 </div>
+                {{ end }}
 
                 <form class="order-form" action="/customize" method="post">
                     <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
@@ -367,6 +369,7 @@
                     <input type="hidden" id="included-inserts" value="{{ .card.IncludedInserts }}">
                     <input type="hidden" id="min-order" value="{{ .card.MinOrder }}">
                     <input type="hidden" id="has-foil-choice" value="{{ if ne .card.PriceFoilPKR .card.PriceNofoilPKR }}1{{ else }}0{{ end }}">
+                    <input type="hidden" id="unit-label" value="{{ if eq .cardCategory "bid-boxes" }}box{{ else }}card{{ end }}">
 
                     {{ if ne .card.PriceFoilPKR .card.PriceNofoilPKR }}
                     <div class="foil-toggle">
@@ -386,13 +389,17 @@
                     <input type="hidden" name="foil_option" value="foil">
                     {{ end }}
 
+                    {{ if ne .cardCategory "bid-boxes" }}
                     <label for="extra-inserts">Extra Inserts (per card)</label>
                     <input id="extra-inserts" name="extra_inserts" type="number" value="0" min="0" required>
                     <p class="insert-help">An insert is an additional printed card placed inside the invitation, such as a Mehndi, Baraat, Walima, Nikkah, RSVP, or details card. This design includes {{ .card.IncludedInserts }} inserts per card. Choose extra inserts only if you need more printed cards inside each invitation.</p>
+                    {{ else }}
+                    <input type="hidden" name="extra_inserts" value="0">
+                    {{ end }}
 
                     <label for="quantity">Quantity</label>
                     <input id="quantity" name="quantity" type="number" value="{{ .card.MinOrder }}" min="{{ .card.MinOrder }}" required>
-                    <p class="min-order-note">Minimum order: {{ .card.MinOrder }} card(s)</p>
+                    <p class="min-order-note">Minimum order: {{ .card.MinOrder }} {{ if eq .cardCategory "bid-boxes" }}box(es){{ else }}card(s){{ end }}</p>
 
                     <div class="price-calculator">
                         <div class="subtotal-row" id="discount-row" style="display:none;">
@@ -461,8 +468,11 @@
         var priceNofoil = parseInt(document.getElementById('price-nofoil').value, 10) || 0;
         var insertPrice = parseInt(document.getElementById('insert-price').value, 10) || 0;
         var quantity = parseInt(document.getElementById('quantity').value, 10) || 0;
-        var extraInserts = parseInt(document.getElementById('extra-inserts').value, 10) || 0;
+        var extraInsertsEl = document.getElementById('extra-inserts');
+        var extraInserts = extraInsertsEl ? (parseInt(extraInsertsEl.value, 10) || 0) : 0;
         var hasFoilChoice = document.getElementById('has-foil-choice').value === '1';
+        var unitLabelEl = document.getElementById('unit-label');
+        var unitLabel = unitLabelEl ? unitLabelEl.value : 'card';
 
         var cardPrice = (foil === 'foil') ? priceFoil : priceNofoil;
         if (priceNofoil === 0) {
@@ -477,7 +487,7 @@
         var insertSubtotal = (extraInserts * insertPrice) * quantity;
         var total = (cardSubtotal - discountAmount) + insertSubtotal;
 
-        var unitText = 'PKR ' + cardPrice.toLocaleString() + ' per card';
+        var unitText = 'PKR ' + cardPrice.toLocaleString() + ' per ' + unitLabel;
         if (hasFoilChoice) {
             unitText += foil === 'foil' ? ' (with foil)' : ' (without foil)';
         }
@@ -606,7 +616,10 @@
             el.addEventListener('change', updatePrice);
         });
         document.getElementById('quantity').addEventListener('input', updatePrice);
-        document.getElementById('extra-inserts').addEventListener('input', updatePrice);
+        var extraInsertsInput = document.getElementById('extra-inserts');
+        if (extraInsertsInput) {
+            extraInsertsInput.addEventListener('input', updatePrice);
+        }
         initGallery();
     });
 </script>
