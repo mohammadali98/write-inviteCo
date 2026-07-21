@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"writeandinviteco/inviteandco/order/orderapplication"
 	"writeandinviteco/inviteandco/order/orderdomain"
@@ -26,11 +27,16 @@ type orderService interface {
 	PlaceOrder(ctx context.Context, input orderapplication.PlaceOrderInput) (*orderapplication.PlaceOrderResult, error)
 	GetOrderStatusDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
 	GetOrderStatusDetailByToken(ctx context.Context, token string) (*orderapplication.AdminOrderDetail, error)
+	GetOrderByID(ctx context.Context, orderID int64) (*orderdomain.Order, error)
+	GetOrderByIDAndPhone(ctx context.Context, orderID int64, phone string) (*orderdomain.Order, error)
+	GetOrdersByPhone(ctx context.Context, phone string) ([]*orderdomain.Order, error)
 	ListAdminOrders(ctx context.Context, input orderapplication.AdminOrderListInput) ([]*orderdomain.AdminOrder, error)
 	GetAdminOrderDetail(ctx context.Context, orderID int64) (*orderapplication.AdminOrderDetail, error)
 	AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error
 	SubmitBankTransferProof(ctx context.Context, orderID int64, input orderapplication.PaymentProofInput) error
 	AdminProcessPayment(ctx context.Context, orderID int64, action string, adminNote string) error
+	SubmitFinalPaymentProof(ctx context.Context, orderID int64, input orderapplication.FinalPaymentProofInput) error
+	AdminProcessFinalPayment(ctx context.Context, orderID int64, action string, adminNote string) error
 }
 
 type OrderHandler struct {
@@ -368,6 +374,43 @@ func (h *OrderHandler) OrderStatus(c *gin.Context) {
 		"amountSummary":        paymentAmountSummary(payload.Order, payload.Payment),
 		"paymentStatusDisplay": paymentStatusDisplay(payload.Payment),
 		"remainingStatus":      remainingBalanceStatus(payload.Order, payload.Payment),
+		"originalAmount":       payload.OriginalAmount,
+		"insertAmount":         payload.InsertAmount,
+		"discountAmount":       payload.DiscountAmount,
+	})
+}
+
+func (h *OrderHandler) FinalPaymentPage(c *gin.Context) {
+	token, err := parsePublicToken(c.Param("token"))
+	if err != nil {
+		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
+		return
+	}
+
+	payload, err := h.service.GetOrderStatusDetailByToken(c.Request.Context(), token)
+	if err != nil {
+		if errors.Is(err, orderapplication.ErrInvalidInput) {
+			webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please use a valid order tracking link.")
+			return
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			webui.RenderError(c, http.StatusNotFound, "Order Not Found", "We could not find an order with that tracking link.")
+			return
+		}
+
+		log.Println("FINAL PAYMENT PAGE ERROR:", err)
+		webui.RenderError(c, http.StatusInternalServerError, "Server Error", "We could not load the final payment page right now.")
+		return
+	}
+
+	c.HTML(http.StatusOK, "final-payment.html", gin.H{
+		"order":              payload.Order,
+		"customer":           payload.Customer,
+		"csrfToken":          webui.EnsureCSRFToken(c),
+		"proofSubmitted":     c.Query("proof_submitted") == "1",
+		"canUploadProof":     canUploadFinalPaymentProof(payload.Order),
+		"amountSummary":      paymentAmountSummary(payload.Order, payload.Payment),
+		"finalPaymentStatus": finalPaymentStatusDisplay(payload.Order),
 	})
 }
 
@@ -530,12 +573,14 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 	}
 
 	canConfirmOrder := canConfirmOrderFromPayment(payload.Payment)
+	canMarkShipped := payload.Order != nil && payload.Order.FinalPaymentStatus == orderdomain.VerifiedPaymentStatus
 	alertTone, alertMessage := adminOrderDetailAlert(c)
 	paymentStatusLabel := paymentStatusDisplay(payload.Payment)
 	paymentCanBeReviewed := false
 	if payload.Payment != nil {
 		paymentCanBeReviewed = payload.Payment.PaymentStatus == orderdomain.AwaitingVerificationPaymentStatus
 	}
+	finalPaymentCanBeReviewed := payload.Order != nil && payload.Order.FinalPaymentStatus == orderdomain.AwaitingVerificationPaymentStatus
 	amountSummary := paymentAmountSummary(payload.Order, payload.Payment)
 	submittedAmountBelowExpected := paymentSubmittedAmountBelowExpected(payload.Payment, amountSummary)
 
@@ -551,12 +596,18 @@ func (h *OrderHandler) AdminOrderDetail(c *gin.Context) {
 		"isNikkahCertificate":          isNikkahCertificateOrder(payload.Order),
 		"csrfToken":                    webui.EnsureCSRFToken(c),
 		"canConfirmOrder":              canConfirmOrder,
+		"canMarkShipped":               canMarkShipped,
 		"paymentNeedsReview":           !canConfirmOrder,
 		"paymentCanBeReviewed":         paymentCanBeReviewed,
 		"paymentStatusDisplay":         paymentStatusLabel,
 		"submittedAmountBelowExpected": submittedAmountBelowExpected,
 		"amountSummary":                amountSummary,
 		"remainingStatus":              remainingBalanceStatus(payload.Order, payload.Payment),
+		"originalAmount":               payload.OriginalAmount,
+		"insertAmount":                 payload.InsertAmount,
+		"discountAmount":               payload.DiscountAmount,
+		"finalPaymentStatusDisplay":    finalPaymentStatusDisplay(payload.Order),
+		"finalPaymentCanBeReviewed":    finalPaymentCanBeReviewed,
 		"adminAlertTone":               alertTone,
 		"adminAlertMessage":            alertMessage,
 	})
@@ -603,19 +654,69 @@ func (h *OrderHandler) AdminUpdateOrderStatus(c *gin.Context) {
 }
 
 func (h *OrderHandler) TrackOrderPage(c *gin.Context) {
-	rawToken := strings.TrimSpace(c.Query("token"))
-	if rawToken == "" {
+	rawOrderID := strings.TrimSpace(c.Query("order_id"))
+	rawOrderIDPhone := strings.TrimSpace(c.Query("order_id_phone"))
+	rawPhone := strings.TrimSpace(c.Query("phone"))
+
+	if rawOrderID == "" && rawOrderIDPhone == "" && rawPhone == "" {
 		c.HTML(http.StatusOK, "track-order.html", nil)
 		return
 	}
 
-	token, err := parsePublicToken(rawToken)
-	if err != nil {
-		webui.RenderError(c, http.StatusBadRequest, "Invalid Order", "Please enter a valid order tracking code.")
+	if rawOrderID != "" || rawOrderIDPhone != "" {
+		h.trackOrderByID(c, rawOrderID, rawOrderIDPhone)
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/order/"+token)
+	h.trackOrdersByPhone(c, rawPhone)
+}
+
+func (h *OrderHandler) trackOrderByID(c *gin.Context, rawOrderID string, rawPhone string) {
+	if rawOrderID == "" || rawPhone == "" {
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "Please enter both your order ID and phone number"})
+		return
+	}
+
+	orderID, err := parsePositiveInt64(rawOrderID)
+	if err != nil {
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "No order found. Please check your order ID and phone number"})
+		return
+	}
+
+	order, err := h.service.GetOrderByIDAndPhone(c.Request.Context(), orderID, rawPhone)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, orderapplication.ErrInvalidInput) {
+			c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "No order found. Please check your order ID and phone number"})
+			return
+		}
+		log.Println("TRACK ORDER BY ID ERROR:", err)
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "We could not look up that order right now. Please try again."})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/order/"+order.PublicToken)
+}
+
+func (h *OrderHandler) trackOrdersByPhone(c *gin.Context, rawPhone string) {
+	orders, err := h.service.GetOrdersByPhone(c.Request.Context(), rawPhone)
+	if err != nil {
+		if errors.Is(err, orderapplication.ErrInvalidInput) {
+			c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "No orders found for that phone number"})
+			return
+		}
+		log.Println("TRACK ORDERS BY PHONE ERROR:", err)
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "We could not look up orders right now. Please try again."})
+		return
+	}
+
+	switch len(orders) {
+	case 0:
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"trackError": "No orders found for that phone number"})
+	case 1:
+		c.Redirect(http.StatusSeeOther, "/order/"+orders[0].PublicToken)
+	default:
+		c.HTML(http.StatusOK, "track-order.html", gin.H{"phoneOrders": orders})
+	}
 }
 
 func orderStatusMessage(status orderdomain.OrderStatus) string {
@@ -623,13 +724,74 @@ func orderStatusMessage(status orderdomain.OrderStatus) string {
 	case orderdomain.PendingOrderStatus:
 		return "Your order is pending review and production confirmation."
 	case orderdomain.ConfirmedOrderStatus:
-		return "Your order has been confirmed and is moving through production."
+		return "Your order is processing and moving through production."
+	case orderdomain.ReadyToShipOrderStatus:
+		return "Your order is ready to ship. Please pay the remaining balance to proceed with delivery."
+	case orderdomain.ShippedOrderStatus:
+		return "Your order has been shipped."
 	case orderdomain.CancelledOrderStatus:
 		return "This order has been cancelled. Contact us if you need help."
 	case orderdomain.CompletedOrderStatus:
 		return "Your order is completed."
 	default:
 		return "Your order status has been updated."
+	}
+}
+
+// FormatEventTime converts a stored "HH:MM" or "HH:MM:SS" clock-time string
+// into a 12-hour "h:mm AM/PM" display string. Times are stored/submitted in
+// 24-hour form (Postgres time columns, HTML5 time inputs); this is purely a
+// display transform applied at render time. Values that don't parse as a
+// time (empty, already-formatted, unexpected input) are returned unchanged.
+func FormatEventTime(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return trimmed
+	}
+	for _, layout := range []string{"15:04:05", "15:04"} {
+		if t, err := time.Parse(layout, trimmed); err == nil {
+			return t.Format("3:04 PM")
+		}
+	}
+	return trimmed
+}
+
+// OrderStatusLabel returns the short, admin/customer-facing display label for
+// an order status. Registered as a template func so both customer and admin
+// templates can show a friendly label without exposing the raw status word
+// stored in the database.
+func OrderStatusLabel(status orderdomain.OrderStatus) string {
+	switch status {
+	case orderdomain.PendingOrderStatus:
+		return "Pending"
+	case orderdomain.ConfirmedOrderStatus:
+		return "Processing"
+	case orderdomain.ReadyToShipOrderStatus:
+		return "Ready to Ship"
+	case orderdomain.ShippedOrderStatus:
+		return "Shipped"
+	case orderdomain.CancelledOrderStatus:
+		return "Cancelled"
+	case orderdomain.CompletedOrderStatus:
+		return "Completed"
+	default:
+		return string(status)
+	}
+}
+
+// TimeTypeLabel returns the display label for a stored event time_type
+// value. The stored value is still "evening" for what the UI now calls
+// "Morning" (label-only rename; see customize.html) — this keeps every
+// other place time_type is displayed consistent with that relabel without
+// touching the stored data.
+func TimeTypeLabel(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "evening":
+		return "Morning"
+	case "night":
+		return "Night"
+	default:
+		return raw
 	}
 }
 
@@ -686,6 +848,25 @@ func paymentStatusDisplay(payment *orderdomain.OrderPayment) string {
 		return orderapplication.PaymentStatusDisplay(orderdomain.PaymentStatus(""))
 	}
 	return orderapplication.PaymentStatusDisplay(payment.PaymentStatus)
+}
+
+func canUploadFinalPaymentProof(order *orderdomain.Order) bool {
+	if order == nil || order.Status != orderdomain.ReadyToShipOrderStatus {
+		return false
+	}
+	switch order.FinalPaymentStatus {
+	case orderdomain.PendingPaymentStatus, orderdomain.RejectedPaymentStatus:
+		return true
+	default:
+		return false
+	}
+}
+
+func finalPaymentStatusDisplay(order *orderdomain.Order) string {
+	if order == nil {
+		return orderapplication.FinalPaymentStatusDisplay(orderdomain.PaymentStatus(""))
+	}
+	return orderapplication.FinalPaymentStatusDisplay(order.FinalPaymentStatus)
 }
 
 func adminOrderDetailRedirect(orderID int64, rawQuery string) string {

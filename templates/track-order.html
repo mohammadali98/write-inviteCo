@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track Order & Payment — Write&InviteCo</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <style>
         .menu-btn {
             display: flex !important;
@@ -85,6 +85,131 @@
             cursor: pointer;
         }
 
+        .track-divider {
+            border: none;
+            border-top: 1px solid #ece4db;
+            margin: 26px 0;
+        }
+
+        .track-section-title {
+            margin: 0 0 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #3a2f26;
+        }
+
+        .track-section-hint {
+            margin: 0 0 14px;
+            font-size: 0.82rem;
+            color: #6b5e54;
+            line-height: 1.6;
+        }
+
+        .track-error {
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fceaea;
+            color: #9f3131;
+            border: 1px solid #f4c6c6;
+            font-size: 0.88rem;
+        }
+
+        .track-results {
+            margin: 0 0 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .track-results-title {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #3a2f26;
+        }
+
+        .track-result-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid #e0d6cc;
+            border-radius: 14px;
+            background: #f5f0eb;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .track-result-row:hover {
+            border-color: #c4953a;
+        }
+
+        .track-result-info {
+            display: grid;
+            gap: 2px;
+        }
+
+        .track-result-id {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #3a2f26;
+        }
+
+        .track-result-date {
+            font-size: 0.8rem;
+            color: #6b5e54;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            font-weight: 600;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: #f7eed8;
+            color: #8b6914;
+            border-color: #e6d7b0;
+        }
+
+        .status-confirmed {
+            background: #e9f6ea;
+            color: #2d7a39;
+            border-color: #c7e8cb;
+        }
+
+        .status-ready_to_ship {
+            background: #fff1e0;
+            color: #a8620c;
+            border-color: #f5d8ad;
+        }
+
+        .status-shipped {
+            background: #e6f4fb;
+            color: #206a92;
+            border-color: #bfe2f2;
+        }
+
+        .status-cancelled {
+            background: #fceaea;
+            color: #9f3131;
+            border-color: #f4c6c6;
+        }
+
+        .status-completed {
+            background: #ebf0ff;
+            color: #3450a0;
+            border-color: #cad6fa;
+        }
+
         @media (max-width: 760px) {
             .track-page {
                 padding: 22px 16px 40px;
@@ -96,6 +221,11 @@
 
             .track-card h1 {
                 font-size: 2.2rem;
+            }
+
+            .track-result-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -127,15 +257,54 @@
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
+<a class="whatsapp-float" href="https://wa.me/923039238299" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+    <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16.004 3C9.377 3 4 8.373 4 15c0 2.386.703 4.605 1.912 6.47L4 29l7.72-1.86A11.94 11.94 0 0 0 16.004 27C22.63 27 28 21.627 28 15S22.63 3 16.004 3Zm7.03 17.09c-.293.826-1.454 1.514-2.404 1.717-.64.135-1.474.243-4.29-.92-3.6-1.49-5.916-5.12-6.096-5.36-.174-.24-1.454-1.938-1.454-3.696 0-1.758.917-2.622 1.244-2.984.293-.325.71-.47 1.113-.47.156 0 .295.008.42.014.367.016.552.037.79.606.293.71.995 2.468 1.08 2.65.088.183.147.397.03.638-.11.24-.166.39-.33.6-.166.21-.348.47-.497.63-.166.18-.34.373-.146.71.196.334.87 1.427 1.87 2.312 1.286 1.14 2.34 1.5 2.68 1.667.34.166.54.14.738-.086.196-.226.85-.988 1.076-1.328.226-.34.452-.28.762-.166.31.113 1.964.926 2.3 1.093.34.168.564.253.646.393.083.14.083.81-.21 1.636Z"/>
+    </svg>
+</a>
+
 <main class="main-content">
     <section class="track-page">
         <div class="track-card animate-in">
             <h1>Track Order & Payment</h1>
-            <p>Enter the order tracking code from your confirmation email to check order progress, view payment status, and reopen the bank transfer proof page when a re-upload is needed.</p>
+            <p>Look up your order using the order ID or phone number from your confirmation email.</p>
 
+            {{ if .trackError }}
+            <p class="track-error">{{ .trackError }}</p>
+            {{ end }}
+
+            {{ if .phoneOrders }}
+            <div class="track-results">
+                <p class="track-results-title">We found {{ len .phoneOrders }} orders for that phone number. Select one to view its status:</p>
+                {{ range .phoneOrders }}
+                <a class="track-result-row" href="/order/{{ .PublicToken }}">
+                    <span class="track-result-info">
+                        <span class="track-result-id">Order #{{ .ID }}</span>
+                        <span class="track-result-date">{{ if .CreatedAt }}{{ .CreatedAt.Format "02 Jan 2006 15:04" }}{{ else }}-{{ end }}</span>
+                    </span>
+                    <span class="status-badge status-{{ .Status }}">{{ orderStatusLabel .Status }}</span>
+                </a>
+                {{ end }}
+            </div>
+            {{ end }}
+
+            <p class="track-section-title">Track by Order ID</p>
+            <p class="track-section-hint">Enter the numeric order ID from your confirmation email.</p>
             <form class="track-form" action="/track-order" method="get">
-                <label for="token">Order Tracking Code</label>
-                <input id="token" name="token" type="text" placeholder="e.g. 8e2b6b3a-4c11-4e77-9c2d-2ab6b6e2b0f1" required>
+                <label for="order_id">Order ID</label>
+                <input id="order_id" name="order_id" type="text" inputmode="numeric" placeholder="e.g. 1024" required>
+                <label for="order_id_phone">Phone Number</label>
+                <input id="order_id_phone" name="order_id_phone" type="text" placeholder="e.g. 03001234567" required>
+                <button class="track-submit" type="submit">View Order & Payment</button>
+            </form>
+
+            <hr class="track-divider">
+
+            <p class="track-section-title">Track by Phone Number</p>
+            <p class="track-section-hint">Enter the phone number used when placing the order.</p>
+            <form class="track-form" action="/track-order" method="get">
+                <label for="phone">Phone Number</label>
+                <input id="phone" name="phone" type="text" placeholder="e.g. 03001234567" required>
                 <button class="track-submit" type="submit">View Order & Payment</button>
             </form>
         </div>

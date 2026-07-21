@@ -8,6 +8,13 @@ SELECT
     o.status,
     o.currency,
     o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -16,6 +23,33 @@ SELECT
 FROM orders o
 LEFT JOIN cards c ON o.card_id = c.id
 WHERE o.id = $1;
+
+-- name: GetOrderByIDAndPhone :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.card_id,
+    o.quantity,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
+    o.created_at,
+    o.updated_at,
+    COALESCE(c.name, '') AS card_name,
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
+FROM orders o
+LEFT JOIN cards c ON o.card_id = c.id
+JOIN customers cu ON cu.id = o.customer_id
+WHERE o.id = $1 AND cu.phone = $2;
 
 -- name: GetOrderByPublicToken :one
 SELECT
@@ -27,6 +61,13 @@ SELECT
     o.status,
     o.currency,
     o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -42,6 +83,17 @@ FROM orders
 WHERE customer_id = $1
 ORDER BY created_at DESC;
 
+-- name: GetOrdersByPhone :many
+SELECT
+    o.id,
+    o.created_at,
+    o.status,
+    o.public_token::text AS public_token
+FROM orders o
+JOIN customers cu ON cu.id = o.customer_id
+WHERE cu.phone = $1
+ORDER BY o.created_at DESC;
+
 -- name: GetAdminOrders :many
 SELECT
     o.id,
@@ -52,6 +104,7 @@ SELECT
     o.total_price,
     o.status,
     op.payment_status,
+    o.final_payment_status,
     op.submitted_amount,
     op.submitted_at,
     o.currency,

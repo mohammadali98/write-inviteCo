@@ -1048,3 +1048,48 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== WHATSAPP FLOAT BUTTON ===== */
+.whatsapp-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    background-color: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+
+.whatsapp-float svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    fill: #ffffff;
+}
+
+@media (max-width: 600px) {
+    .whatsapp-float {
+        right: 16px;
+        bottom: 16px;
+        width: 50px;
+        height: 50px;
+    }
+
+    .whatsapp-float svg {
+        width: 26px;
+        height: 26px;
+    }
+}

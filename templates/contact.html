@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact — Write&InviteCo</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <style>
         .menu-btn {
             display: flex !important;
@@ -382,6 +382,12 @@
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
+<a class="whatsapp-float" href="https://wa.me/923039238299" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+    <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16.004 3C9.377 3 4 8.373 4 15c0 2.386.703 4.605 1.912 6.47L4 29l7.72-1.86A11.94 11.94 0 0 0 16.004 27C22.63 27 28 21.627 28 15S22.63 3 16.004 3Zm7.03 17.09c-.293.826-1.454 1.514-2.404 1.717-.64.135-1.474.243-4.29-.92-3.6-1.49-5.916-5.12-6.096-5.36-.174-.24-1.454-1.938-1.454-3.696 0-1.758.917-2.622 1.244-2.984.293-.325.71-.47 1.113-.47.156 0 .295.008.42.014.367.016.552.037.79.606.293.71.995 2.468 1.08 2.65.088.183.147.397.03.638-.11.24-.166.39-.33.6-.166.21-.348.47-.497.63-.166.18-.34.373-.146.71.196.334.87 1.427 1.87 2.312 1.286 1.14 2.34 1.5 2.68 1.667.34.166.54.14.738-.086.196-.226.85-.988 1.076-1.328.226-.34.452-.28.762-.166.31.113 1.964.926 2.3 1.093.34.168.564.253.646.393.083.14.083.81-.21 1.636Z"/>
+    </svg>
+</a>
+
 <main class="main-content">
     <section class="contact-hero">
         <h1 class="animate-in">Get in Touch</h1>
@@ -391,17 +397,22 @@
         </p>
     </section>
 
+    <section class="hours-wrap">
+        <div class="hours-card animate-in delay-1">
+            <h2>Working Hours</h2>
+            <p>Monday – Saturday: 11am – 7pm<br>Sunday: Closed</p>
+        </div>
+    </section>
+
     <section class="contact-cards">
         <article class="contact-card animate-in delay-1">
             <div class="contact-card-icon" aria-hidden="true">
                 <svg viewBox="0 0 48 48">
-                    <path d="M24 6C16.3 6 10 12.1 10 19.8c0 9.8 14 21.8 14 21.8s14-12 14-21.8C38 12.1 31.7 6 24 6z"/>
-                    <circle cx="24" cy="20" r="4.5"/>
+                    <path d="M15 8h8l2 8-5 4c2.2 4.3 5.7 7.8 10 10l4-5 8 2v8c0 2.2-1.8 4-4 4C22.6 39 9 25.4 9 12c0-2.2 1.8-4 4-4h2z"/>
                 </svg>
             </div>
-            <h3>Visit Us</h3>
-            <p>Lahore, Punjab, Pakistan</p>
-            <p>By appointment only</p>
+            <h3>Call / WhatsApp</h3>
+            <a href="https://wa.me/923039238299" target="_blank" rel="noopener">+92 303 9238299</a>
         </article>
 
         <article class="contact-card animate-in delay-2">
@@ -418,55 +429,14 @@
         <article class="contact-card animate-in delay-3">
             <div class="contact-card-icon" aria-hidden="true">
                 <svg viewBox="0 0 48 48">
-                    <path d="M15 8h8l2 8-5 4c2.2 4.3 5.7 7.8 10 10l4-5 8 2v8c0 2.2-1.8 4-4 4C22.6 39 9 25.4 9 12c0-2.2 1.8-4 4-4h2z"/>
+                    <path d="M24 6C16.3 6 10 12.1 10 19.8c0 9.8 14 21.8 14 21.8s14-12 14-21.8C38 12.1 31.7 6 24 6z"/>
+                    <circle cx="24" cy="20" r="4.5"/>
                 </svg>
             </div>
-            <h3>Call / WhatsApp</h3>
-            <a href="https://wa.me/923039238299" target="_blank" rel="noopener">+92 303 9238299</a>
+            <h3>Visit Us</h3>
+            <p>Lahore, Punjab, Pakistan</p>
+            <p>By appointment only</p>
         </article>
-    </section>
-
-    <section class="hours-wrap">
-        <div class="hours-card animate-in delay-1">
-            <h2>Working Hours</h2>
-            <p>Monday – Saturday: 11am – 7pm<br>Sunday: Closed</p>
-        </div>
-    </section>
-
-    <section class="message-wrap">
-        <div class="message-card animate-in delay-2">
-            <h2>Send Us a Message</h2>
-            <form>
-                <div class="message-grid">
-                    <div class="form-group">
-                        <label for="full_name">Full Name</label>
-                        <input id="full_name" name="full_name" type="text" placeholder="Your name">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input id="email" name="email" type="email" placeholder="you@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input id="phone" name="phone" type="tel" placeholder="+92">
-                    </div>
-                    <div class="form-group full">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" placeholder="Tell us about your event or question"></textarea>
-                    </div>
-                </div>
-
-                <div class="message-actions">
-                    <button class="pill-btn pill-btn-btn" type="button">
-                        Send Message <span class="arrow">→</span>
-                    </button>
-                    <p class="message-note">
-                        Or reach us directly on WhatsApp:
-                        <a href="https://wa.me/923039238299" target="_blank" rel="noopener">Chat now</a>
-                    </p>
-                </div>
-            </form>
-        </div>
     </section>
 
     <section class="social-wrap">

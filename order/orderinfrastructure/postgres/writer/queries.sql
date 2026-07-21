@@ -121,6 +121,73 @@ RETURNING
     created_at,
     updated_at;
 
+-- name: SubmitOrderFinalPaymentProof :one
+UPDATE orders
+SET
+    final_payment_status = $2,
+    final_payment_proof_url = $3,
+    final_payment_sender_name = $4,
+    final_payment_submitted_at = CURRENT_TIMESTAMP,
+    final_payment_verified_at = NULL,
+    final_payment_rejected_at = NULL,
+    final_payment_admin_note = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at;
+
+-- name: VerifyOrderFinalPayment :one
+UPDATE orders
+SET
+    final_payment_status = 'payment_verified',
+    final_payment_admin_note = $2,
+    final_payment_verified_at = CURRENT_TIMESTAMP,
+    final_payment_rejected_at = NULL,
+    status = 'shipped',
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at;
+
+-- name: RejectOrderFinalPayment :one
+UPDATE orders
+SET
+    final_payment_status = 'payment_rejected',
+    final_payment_admin_note = $2,
+    final_payment_rejected_at = CURRENT_TIMESTAMP,
+    final_payment_verified_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at;
+
 -- name: CreateOrderDetail :one
 INSERT INTO order_details (
     order_id,

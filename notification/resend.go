@@ -5,10 +5,29 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"regexp"
 	"strings"
 
 	resend "github.com/resend/resend-go/v2"
 )
+
+var emailURLPattern = regexp.MustCompile(`https?://[^\s<]+`)
+
+// buildHTMLEmail converts a plain-text email body into an HTML body: the text
+// is escaped, any URLs are turned into clickable anchor tags, and newlines
+// become <br> tags so the message still reads the same as the plain-text
+// version.
+func buildHTMLEmail(body string) string {
+	escaped := html.EscapeString(body)
+	linked := emailURLPattern.ReplaceAllStringFunc(escaped, func(url string) string {
+		return fmt.Sprintf(`<a href="%s" style="color:#8B7535;word-break:break-all;">%s</a>`, url, url)
+	})
+	withBreaks := strings.ReplaceAll(linked, "\n", "<br>")
+	return fmt.Sprintf(
+		"<div style=\"font-family:Arial,sans-serif;line-height:1.6;overflow-wrap:break-word;word-break:break-word;\">%s</div>",
+		withBreaks,
+	)
+}
 
 type ResendSender struct {
 	apiKey    string
@@ -73,10 +92,7 @@ func (s *ResendSender) sendOrderEmail(ctx context.Context, to string, subject st
 		To:      []string{email},
 		Subject: subject,
 		Text:    body,
-		Html: fmt.Sprintf(
-			"<div style=\"font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6;\">%s</div>",
-			html.EscapeString(body),
-		),
+		Html:    buildHTMLEmail(body),
 	}
 
 	sent, err := s.client.Emails.Send(params)

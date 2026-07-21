@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bank Transfer Payment — Write&InviteCo</title>
+    <title>Final Payment — Write&InviteCo</title>
     <link rel="stylesheet" href="/static/style.css?v=2">
     <style>
         .menu-btn {
@@ -108,6 +108,17 @@
             overflow-wrap: anywhere;
         }
 
+        .final-thumb {
+            width: 100%;
+            max-width: 220px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            object-fit: cover;
+            aspect-ratio: 4 / 3;
+            background: var(--bg);
+            margin-top: 12px;
+        }
+
         .proof-grid {
             display: grid;
             gap: 14px;
@@ -132,11 +143,6 @@
             color: var(--text);
         }
 
-        .proof-grid textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
-
         .proof-submit {
             border: none;
             border-radius: 999px;
@@ -153,20 +159,6 @@
 
         .proof-submit:hover {
             background: var(--brand-dark);
-        }
-
-        .proof-preview {
-            margin-top: 16px;
-            display: grid;
-            gap: 12px;
-        }
-
-        .proof-preview img {
-            width: 100%;
-            max-width: 420px;
-            border-radius: 14px;
-            border: 1px solid var(--border-light);
-            background: var(--bg);
         }
 
         .actions-row {
@@ -253,12 +245,12 @@
     <section class="payment-page animate-in">
         <div class="payment-grid">
             <section class="payment-card">
-                <h1>Bank Transfer Instructions</h1>
-                <p class="payment-copy">To confirm your order, please transfer 50% of the total amount as advance payment. The remaining 50% will be collected after your order is completed and before delivery.</p>
+                <h1>Final Payment</h1>
+                <p class="payment-copy">Your order is ready to ship. Please pay the remaining balance below and upload your receipt or screenshot so our team can confirm and dispatch your order.</p>
 
                 {{ if .proofSubmitted }}
                 <div class="status-banner status-success">
-                    <div class="status-copy">Your payment proof has been submitted. Our team will verify your advance payment shortly.</div>
+                    <div class="status-copy">Your final payment proof has been submitted. Our team will verify it shortly.</div>
                     <div class="actions-row">
                         <a class="pill-btn" href="/order/{{ .order.PublicToken }}">Track Order & Payment <span class="arrow">→</span></a>
                     </div>
@@ -266,7 +258,7 @@
                 {{ end }}
 
                 <div class="status-banner">
-                    <div class="status-copy">{{ .paymentMessage }}</div>
+                    <div class="status-copy">Final Payment Status: {{ .finalPaymentStatus }}</div>
                 </div>
 
                 <div class="payment-meta">
@@ -274,166 +266,82 @@
                         <div class="meta-label">Order ID / Reference</div>
                         <div class="meta-value">#{{ .order.ID }}</div>
                     </div>
-                    {{ if gt .order.Quantity 70 }}
                     <div class="meta-row">
-                        <div class="meta-label">Card Total</div>
-                        <div class="meta-value">PKR {{ .originalAmount }}</div>
+                        <div class="meta-label">Card / Design</div>
+                        <div class="meta-value">{{ if .order.CardName }}{{ .order.CardName }}{{ else }}-{{ end }}</div>
                     </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Quantity discount (5%)</div>
-                        <div class="meta-value">-PKR {{ .discountAmount }}</div>
-                    </div>
-                    {{ end }}
-                    {{ if gt .insertAmount 0 }}
-                    <div class="meta-row">
-                        <div class="meta-label">Inserts</div>
-                        <div class="meta-value">PKR {{ .insertAmount }}</div>
-                    </div>
-                    {{ end }}
                     <div class="meta-row">
                         <div class="meta-label">Order Total</div>
                         <div class="meta-value">PKR {{ .amountSummary.TotalAmount }}</div>
-                        {{ if gt .order.Quantity 70 }}
-                        <div class="row-note">Includes 5% quantity discount on card price</div>
-                        {{ end }}
                     </div>
                     <div class="meta-row">
-                        <div class="meta-label">Advance Payment Required Now</div>
-                        <div class="meta-value">PKR {{ .amountSummary.AdvanceAmount }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Remaining Balance</div>
+                        <div class="meta-label">Remaining Balance Due</div>
                         <div class="meta-value">PKR {{ .amountSummary.RemainingBalance }}</div>
                     </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Payment Method</div>
-                        <div class="meta-value">Bank Transfer</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Account Title</div>
-                        <div class="meta-value">{{ .bankDetails.AccountTitle }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Bank</div>
-                        <div class="meta-value">{{ .bankDetails.BankName }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Branch</div>
-                        <div class="meta-value">{{ .bankDetails.BranchName }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">Account Number</div>
-                        <div class="meta-value">{{ .bankDetails.AccountNumber }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">IBAN</div>
-                        <div class="meta-value">{{ .bankDetails.IBAN }}</div>
-                    </div>
                 </div>
 
-                <div class="proof-preview">
-                    <p class="instruction-copy">Use your Order ID as the payment reference if your banking app allows it.</p>
-                    <p class="instruction-copy">After making the advance payment, upload your receipt or screenshot along with your transaction reference number. Our team will verify your payment and confirm your order shortly.</p>
-                    <p class="instruction-copy">Advance Payment Status: {{ .paymentStatusDisplay }}</p>
+                {{ if .order.CardImage }}
+                <img class="final-thumb" src="{{ safeImagePath .order.CardImage }}" alt="{{ if .order.CardName }}{{ .order.CardName }}{{ else }}Selected product{{ end }}">
+                {{ end }}
 
-                    {{ if and .payment .payment.AdminNote }}
-                    <div class="status-banner">
-                        <div class="meta-label">Admin Note</div>
-                        <div class="status-copy">{{ .payment.AdminNote }}</div>
-                    </div>
-                    {{ end }}
-
-                    {{ if and .payment .payment.ProofFilePath }}
-                    <div>
-                        <div class="meta-label">Latest Advance Payment Proof</div>
-                        {{ if isPDFPath .payment.ProofFilePath }}
-                        <p><a href="{{ proofURL .payment.ProofFilePath }}" target="_blank" rel="noopener">Open uploaded PDF proof</a></p>
-                        {{ else }}
-                        <img src="{{ proofURL .payment.ProofFilePath }}" alt="Uploaded advance payment proof">
-                        <p><a href="{{ proofURL .payment.ProofFilePath }}" target="_blank" rel="noopener">Open full-size proof</a></p>
-                        {{ end }}
-                    </div>
-                    {{ end }}
+                {{ if and .order.FinalPaymentAdminNote (ne .order.FinalPaymentStatus "payment_verified") }}
+                <div class="status-banner">
+                    <div class="meta-label">Admin Note</div>
+                    <div class="status-copy">{{ .order.FinalPaymentAdminNote }}</div>
                 </div>
-
+                {{ end }}
             </section>
 
             <section class="payment-card">
-                <h2>Advance Payment Proof</h2>
+                <h2>Final Payment Proof</h2>
                 {{ if .canUploadProof }}
-                <form class="proof-grid" method="post" action="/order/{{ .order.PublicToken }}/payment-proof" enctype="multipart/form-data">
+                <form class="proof-grid" method="post" action="/order/{{ .order.PublicToken }}/final-payment-proof" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ .csrfToken }}">
+                    <input type="hidden" name="order_id" value="{{ .order.ID }}">
 
                     <div>
                         <label for="sender_name">Sender Name</label>
-                        <input id="sender_name" name="sender_name" type="text" value="{{ if and .payment .payment.SenderName }}{{ .payment.SenderName }}{{ end }}" required>
+                        <input id="sender_name" name="sender_name" type="text" value="{{ if .order.FinalPaymentSenderName }}{{ .order.FinalPaymentSenderName }}{{ end }}" required>
                     </div>
 
                     <div>
-                        <div class="meta-label">Advance Amount Required</div>
-                        <div class="meta-value" style="text-align:left;">PKR {{ .amountSummary.AdvanceAmount }}</div>
-                        <input type="hidden" name="submitted_amount" value="{{ .amountSummary.AdvanceAmount }}">
-                        <p class="instruction-copy" style="margin: 8px 0 0;">Transfer this exact advance amount. Our team will verify the amount from your uploaded receipt.</p>
+                        <label for="final_payment_proof">Final Payment Receipt Screenshot or PDF</label>
+                        <input id="final_payment_proof" name="final_payment_proof" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
                     </div>
 
-                    <div>
-                        <label for="transaction_reference">Transaction / Reference ID</label>
-                        <input id="transaction_reference" name="transaction_reference" type="text" value="{{ if and .payment .payment.TransactionReference }}{{ .payment.TransactionReference }}{{ end }}" required>
-                    </div>
-
-                    <div>
-                        <label for="payment_proof">Advance Payment Receipt Screenshot or PDF</label>
-                        <input id="payment_proof" name="payment_proof" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
-                    </div>
-
-                    <div>
-                        <label for="payment_note">Optional Note</label>
-                        <textarea id="payment_note" name="payment_note">{{ if and .payment .payment.CustomerNote }}{{ .payment.CustomerNote }}{{ end }}</textarea>
-                    </div>
-
-                    <button class="proof-submit" type="submit">Submit Advance Payment Proof</button>
+                    <button class="proof-submit" type="submit">Submit Final Payment Proof</button>
                 </form>
                 <p class="instruction-copy secondary-track-link"><a href="/order/{{ .order.PublicToken }}">Already submitted proof? Track Order & Payment <span class="arrow">→</span></a></p>
-                {{ else }}
-                <p class="status-copy">No new upload is required right now. We will keep this page updated as your advance payment status changes.</p>
-                {{ if and .payment .payment.SubmittedAmount }}
+                {{ else if eq .order.Status "ready_to_ship" }}
+                <p class="status-copy">No new upload is required right now. We will keep this page updated as your final payment status changes.</p>
+                {{ if .order.FinalPaymentSenderName }}
                 <div class="payment-meta">
                     <div class="meta-row">
-                        <div class="meta-label">Advance Submitted Amount</div>
-                        <div class="meta-value">PKR {{ .payment.SubmittedAmount }}</div>
-                    </div>
-                    {{ if .payment.SenderName }}
-                    <div class="meta-row">
                         <div class="meta-label">Sender Name</div>
-                        <div class="meta-value">{{ .payment.SenderName }}</div>
+                        <div class="meta-value">{{ .order.FinalPaymentSenderName }}</div>
                     </div>
-                    {{ end }}
-                    {{ if .payment.TransactionReference }}
-                    <div class="meta-row">
-                        <div class="meta-label">Transaction Reference</div>
-                        <div class="meta-value">{{ .payment.TransactionReference }}</div>
-                    </div>
-                    {{ end }}
-                    {{ if .payment.SubmittedAt }}
+                    {{ if .order.FinalPaymentSubmittedAt }}
                     <div class="meta-row">
                         <div class="meta-label">Submitted At</div>
-                        <div class="meta-value">{{ .payment.SubmittedAt.Format "02 Jan 2006 15:04" }}</div>
+                        <div class="meta-value">{{ .order.FinalPaymentSubmittedAt.Format "02 Jan 2006 15:04" }}</div>
                     </div>
                     {{ end }}
-                    {{ if .payment.VerifiedAt }}
+                    {{ if .order.FinalPaymentVerifiedAt }}
                     <div class="meta-row">
-                        <div class="meta-label">Advance Verified At</div>
-                        <div class="meta-value">{{ .payment.VerifiedAt.Format "02 Jan 2006 15:04" }}</div>
+                        <div class="meta-label">Verified At</div>
+                        <div class="meta-value">{{ .order.FinalPaymentVerifiedAt.Format "02 Jan 2006 15:04" }}</div>
                     </div>
                     {{ end }}
-                    {{ if .payment.RejectedAt }}
+                    {{ if .order.FinalPaymentRejectedAt }}
                     <div class="meta-row">
-                        <div class="meta-label">Advance Rejected At</div>
-                        <div class="meta-value">{{ .payment.RejectedAt.Format "02 Jan 2006 15:04" }}</div>
+                        <div class="meta-label">Rejected At</div>
+                        <div class="meta-value">{{ .order.FinalPaymentRejectedAt.Format "02 Jan 2006 15:04" }}</div>
                     </div>
                     {{ end }}
                 </div>
                 {{ end }}
+                {{ else }}
+                <p class="status-copy">This order is not yet ready for final payment. We will notify you by email once your order is ready to ship and the remaining balance is due.</p>
                 {{ end }}
             </section>
         </div>

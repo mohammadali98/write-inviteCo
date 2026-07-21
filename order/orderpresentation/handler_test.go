@@ -20,23 +20,36 @@ import (
 )
 
 type fakeOrderService struct {
-	prepareCustomizationInput     orderapplication.CustomizationInput
-	prepareCustomizationSummary   *orderapplication.CustomizationSummary
-	prepareCustomizationErr       error
-	prepareOrderReviewInput       orderapplication.PlaceOrderInput
-	placeOrderInput               orderapplication.PlaceOrderInput
-	adminUpdateOrderStatusOrderID int64
-	adminUpdateOrderStatusStatus  string
-	adminUpdateOrderStatusErr     error
-	adminProcessPaymentOrderID    int64
-	adminProcessPaymentAction     string
-	adminProcessPaymentNote       string
-	adminProcessPaymentErr        error
-	statusDetail                  *orderapplication.AdminOrderDetail
-	submitPaymentProofOrderID     int64
-	submitPaymentProofInput       orderapplication.PaymentProofInput
-	submitPaymentProofErr         error
-	listAdminOrdersInput          orderapplication.AdminOrderListInput
+	prepareCustomizationInput       orderapplication.CustomizationInput
+	prepareCustomizationSummary     *orderapplication.CustomizationSummary
+	prepareCustomizationErr         error
+	prepareOrderReviewInput         orderapplication.PlaceOrderInput
+	placeOrderInput                 orderapplication.PlaceOrderInput
+	adminUpdateOrderStatusOrderID   int64
+	adminUpdateOrderStatusStatus    string
+	adminUpdateOrderStatusErr       error
+	adminProcessPaymentOrderID      int64
+	adminProcessPaymentAction       string
+	adminProcessPaymentNote         string
+	adminProcessPaymentErr          error
+	statusDetail                    *orderapplication.AdminOrderDetail
+	submitPaymentProofOrderID       int64
+	submitPaymentProofInput         orderapplication.PaymentProofInput
+	submitPaymentProofErr           error
+	listAdminOrdersInput            orderapplication.AdminOrderListInput
+	submitFinalPaymentProofOrderID  int64
+	submitFinalPaymentProofInput    orderapplication.FinalPaymentProofInput
+	submitFinalPaymentProofErr      error
+	adminProcessFinalPaymentOrderID int64
+	adminProcessFinalPaymentAction  string
+	adminProcessFinalPaymentNote    string
+	adminProcessFinalPaymentErr     error
+	getOrderByIDOrder               *orderdomain.Order
+	getOrderByIDErr                 error
+	getOrderByIDAndPhoneOrder       *orderdomain.Order
+	getOrderByIDAndPhoneErr         error
+	getOrdersByPhoneOrders          []*orderdomain.Order
+	getOrdersByPhoneErr             error
 }
 
 func (f *fakeOrderService) PrepareCustomization(ctx context.Context, input orderapplication.CustomizationInput) (*orderapplication.CustomizationSummary, error) {
@@ -92,6 +105,18 @@ func (f *fakeOrderService) GetAdminOrderDetail(ctx context.Context, orderID int6
 	return nil, nil
 }
 
+func (f *fakeOrderService) GetOrderByID(ctx context.Context, orderID int64) (*orderdomain.Order, error) {
+	return f.getOrderByIDOrder, f.getOrderByIDErr
+}
+
+func (f *fakeOrderService) GetOrderByIDAndPhone(ctx context.Context, orderID int64, phone string) (*orderdomain.Order, error) {
+	return f.getOrderByIDAndPhoneOrder, f.getOrderByIDAndPhoneErr
+}
+
+func (f *fakeOrderService) GetOrdersByPhone(ctx context.Context, phone string) ([]*orderdomain.Order, error) {
+	return f.getOrdersByPhoneOrders, f.getOrdersByPhoneErr
+}
+
 func (f *fakeOrderService) AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error {
 	f.adminUpdateOrderStatusOrderID = orderID
 	f.adminUpdateOrderStatusStatus = statusRaw
@@ -109,6 +134,19 @@ func (f *fakeOrderService) AdminProcessPayment(ctx context.Context, orderID int6
 	f.adminProcessPaymentAction = action
 	f.adminProcessPaymentNote = adminNote
 	return f.adminProcessPaymentErr
+}
+
+func (f *fakeOrderService) SubmitFinalPaymentProof(ctx context.Context, orderID int64, input orderapplication.FinalPaymentProofInput) error {
+	f.submitFinalPaymentProofOrderID = orderID
+	f.submitFinalPaymentProofInput = input
+	return f.submitFinalPaymentProofErr
+}
+
+func (f *fakeOrderService) AdminProcessFinalPayment(ctx context.Context, orderID int64, action string, adminNote string) error {
+	f.adminProcessFinalPaymentOrderID = orderID
+	f.adminProcessFinalPaymentAction = action
+	f.adminProcessFinalPaymentNote = adminNote
+	return f.adminProcessFinalPaymentErr
 }
 
 func TestCustomizePageReadsProductOptionsFromPostBodyAndIgnoresQueryPII(t *testing.T) {
@@ -677,9 +715,14 @@ func TestTrackOrderPageRedirectsToOrderStatus(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 
-	req := httptest.NewRequest(http.MethodGet, "/track-order?token="+fakeOrderToken, nil)
+	req := httptest.NewRequest(http.MethodGet, "/track-order?order_id=42&order_id_phone=03001234567", nil)
 	recorder := httptest.NewRecorder()
-	handler := &OrderHandler{service: &fakeOrderService{}, paymentProofDir: t.TempDir()}
+	handler := &OrderHandler{
+		service: &fakeOrderService{
+			getOrderByIDAndPhoneOrder: &orderdomain.Order{ID: 42, PublicToken: fakeOrderToken},
+		},
+		paymentProofDir: t.TempDir(),
+	}
 
 	router := gin.New()
 	router.SetHTMLTemplate(template.Must(template.New("error.html").Parse("{{ .message }}")))
@@ -808,6 +851,49 @@ func TestOrderStatusTemplateShowsCustomizationAndRSVPDetails(t *testing.T) {
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("expected order status template to contain %q", want)
+		}
+	}
+}
+
+func TestTimeTypeLabel(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		raw  string
+		want string
+	}{
+		{"evening", "Morning"},
+		{"night", "Night"},
+		{"", ""},
+		{"unexpected", "unexpected"},
+	}
+
+	for _, tc := range cases {
+		if got := TimeTypeLabel(tc.raw); got != tc.want {
+			t.Errorf("TimeTypeLabel(%q) = %q, want %q", tc.raw, got, tc.want)
+		}
+	}
+}
+
+func TestFormatEventTime(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		raw  string
+		want string
+	}{
+		{"19:00", "7:00 PM"},
+		{"19:00:00", "7:00 PM"},
+		{"07:05", "7:05 AM"},
+		{"00:00", "12:00 AM"},
+		{"12:00", "12:00 PM"},
+		{"", ""},
+		{"not-a-time", "not-a-time"},
+	}
+
+	for _, tc := range cases {
+		if got := FormatEventTime(tc.raw); got != tc.want {
+			t.Errorf("FormatEventTime(%q) = %q, want %q", tc.raw, got, tc.want)
 		}
 	}
 }

@@ -265,10 +265,13 @@ func NewService(
 }
 
 type AdminOrderDetail struct {
-	Order    *orderdomain.Order
-	Customer *customerdomain.Customer
-	Details  *orderdomain.OrderDetail
-	Payment  *orderdomain.OrderPayment
+	Order          *orderdomain.Order
+	Customer       *customerdomain.Customer
+	Details        *orderdomain.OrderDetail
+	Payment        *orderdomain.OrderPayment
+	OriginalAmount int64
+	InsertAmount   int64
+	DiscountAmount int64
 }
 
 // AdminOrderListInput carries the raw (untrusted) admin dashboard filter
@@ -305,6 +308,10 @@ func normalizeAdminOrderStatusFilter(raw string) string {
 		return string(orderdomain.PendingOrderStatus)
 	case string(orderdomain.ConfirmedOrderStatus):
 		return string(orderdomain.ConfirmedOrderStatus)
+	case string(orderdomain.ReadyToShipOrderStatus):
+		return string(orderdomain.ReadyToShipOrderStatus)
+	case string(orderdomain.ShippedOrderStatus):
+		return string(orderdomain.ShippedOrderStatus)
 	case string(orderdomain.CancelledOrderStatus):
 		return string(orderdomain.CancelledOrderStatus)
 	case string(orderdomain.CompletedOrderStatus):
@@ -372,6 +379,29 @@ func (s *Service) GetOrderStatusDetailByToken(ctx context.Context, token string)
 	return s.buildOrderDetail(ctx, order)
 }
 
+func (s *Service) GetOrderByID(ctx context.Context, orderID int64) (*orderdomain.Order, error) {
+	if orderID <= 0 {
+		return nil, ErrInvalidInput
+	}
+	return s.orderRepo.GetOrderByID(ctx, orderID)
+}
+
+func (s *Service) GetOrdersByPhone(ctx context.Context, phone string) ([]*orderdomain.Order, error) {
+	phone = normalizePhone(phone)
+	if phone == "" {
+		return nil, ErrInvalidInput
+	}
+	return s.orderRepo.GetOrdersByPhone(ctx, phone)
+}
+
+func (s *Service) GetOrderByIDAndPhone(ctx context.Context, orderID int64, phone string) (*orderdomain.Order, error) {
+	phone = normalizePhone(phone)
+	if orderID <= 0 || phone == "" {
+		return nil, ErrInvalidInput
+	}
+	return s.orderRepo.GetOrderByIDAndPhone(ctx, orderID, phone)
+}
+
 func (s *Service) getOrderDetail(ctx context.Context, orderID int64) (*AdminOrderDetail, error) {
 	if orderID <= 0 {
 		return nil, ErrInvalidInput
@@ -407,12 +437,65 @@ func (s *Service) buildOrderDetail(ctx context.Context, order *orderdomain.Order
 		return nil, err
 	}
 
+	insertAmount := s.insertAmount(ctx, order, details)
+	originalAmount := s.originalCardAmount(order, insertAmount)
+	discountAmount := int64(0)
+	if originalAmount > 0 {
+		discountAmount = originalAmount - (order.TotalPrice - insertAmount)
+	}
+
 	return &AdminOrderDetail{
-		Order:    order,
-		Customer: customer,
-		Details:  details,
-		Payment:  payment,
+		Order:          order,
+		Customer:       customer,
+		Details:        details,
+		Payment:        payment,
+		OriginalAmount: originalAmount,
+		InsertAmount:   insertAmount,
+		DiscountAmount: discountAmount,
 	}, nil
+}
+
+// insertAmount computes the total insert cost for an already-placed order
+// (extra inserts per card × current insert unit price × quantity). Orders
+// don't persist the insert unit price at creation time, so this looks up the
+// card's CURRENT insert price; it is exact as long as pricing hasn't changed
+// since the order was placed. Returns 0 if there are no extra inserts or the
+// card can no longer be found.
+func (s *Service) insertAmount(ctx context.Context, order *orderdomain.Order, details *orderdomain.OrderDetail) int64 {
+	if order == nil || details == nil || details.ExtraInsertsPerCard <= 0 {
+		return 0
+	}
+
+	card, err := s.cardRepo.GetCardByID(ctx, order.CardID)
+	if err != nil {
+		return 0
+	}
+
+	insertPricePKR := card.InsertPricePKR
+	if insertPricePKR < 0 {
+		insertPricePKR = 0
+	}
+
+	return details.ExtraInsertsPerCard * insertPricePKR * order.Quantity
+}
+
+// originalCardAmount backsolves the pre-discount, card-only subtotal (i.e.
+// excluding insert costs) for an already-placed order from its stored
+// TotalPrice and the already-computed insertAmount, then reverses the 5%
+// bulk discount. It is exact as long as pricing hasn't changed since the
+// order was placed; returns 0 (hidden by callers) if the discount doesn't
+// apply.
+func (s *Service) originalCardAmount(order *orderdomain.Order, insertAmount int64) int64 {
+	if order == nil || order.Quantity <= bulkDiscountMinQty {
+		return 0
+	}
+
+	discountedCardSubtotal := order.TotalPrice - insertAmount
+	if discountedCardSubtotal <= 0 {
+		return 0
+	}
+
+	return discountedCardSubtotal * 100 / (100 - bulkDiscountPercent)
 }
 
 func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, statusRaw string) error {
@@ -463,9 +546,23 @@ func (s *Service) AdminUpdateOrderStatus(ctx context.Context, orderID int64, sta
 		paymentStatusLogValue(payment),
 	)
 
-	if (newStatus == orderdomain.ConfirmedOrderStatus || newStatus == orderdomain.CompletedOrderStatus) &&
+	// Completed is retired: Shipped is now the true final state. Existing
+	// completed orders (from before this change) keep their status and may
+	// still be moved elsewhere, but no order can newly transition into
+	// Completed going forward.
+	if newStatus == orderdomain.CompletedOrderStatus && order.Status != orderdomain.CompletedOrderStatus {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d status=%q completed is retired", orderID, newStatus)
+		return ErrInvalidInput
+	}
+
+	if (newStatus == orderdomain.ConfirmedOrderStatus || newStatus == orderdomain.CompletedOrderStatus || newStatus == orderdomain.ReadyToShipOrderStatus) &&
 		(payment == nil || payment.PaymentStatus != orderdomain.VerifiedPaymentStatus) {
 		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d status=%q payment not verified", orderID, newStatus)
+		return ErrPaymentVerificationRequired
+	}
+
+	if newStatus == orderdomain.ShippedOrderStatus && order.FinalPaymentStatus != orderdomain.VerifiedPaymentStatus {
+		log.Printf("ADMIN STATUS FLOW ERROR: order_id=%d status=%q final payment not verified", orderID, newStatus)
 		return ErrPaymentVerificationRequired
 	}
 
@@ -675,7 +772,7 @@ func (s *Service) PlaceOrder(ctx context.Context, input PlaceOrderInput) (*Place
 		cardName = "Invitation Card"
 	}
 
-	s.sendOrderCreatedEmailsAsync(orderEmailPayload{
+	s.sendOrderCustomerConfirmationAsync(orderEmailPayload{
 		OrderID:         orderRow.ID,
 		OrderToken:      orderRow.PublicToken,
 		PaymentLink:     s.buildOrderPaymentLink(orderRow.PublicToken),
@@ -1229,6 +1326,10 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 		return orderdomain.PendingOrderStatus, nil
 	case string(orderdomain.ConfirmedOrderStatus):
 		return orderdomain.ConfirmedOrderStatus, nil
+	case string(orderdomain.ReadyToShipOrderStatus):
+		return orderdomain.ReadyToShipOrderStatus, nil
+	case string(orderdomain.ShippedOrderStatus):
+		return orderdomain.ShippedOrderStatus, nil
 	case string(orderdomain.CancelledOrderStatus):
 		return orderdomain.CancelledOrderStatus, nil
 	case string(orderdomain.CompletedOrderStatus):
@@ -1239,23 +1340,24 @@ func normalizeOrderStatus(raw string) (orderdomain.OrderStatus, error) {
 }
 
 type orderEmailPayload struct {
-	OrderID         int64
-	OrderToken      string
-	PaymentLink     string
-	StatusLink      string
-	CustomerID      int64
-	CustomerName    string
-	CustomerEmail   string
-	CustomerPhone   string
-	ProductName     string
-	Quantity        int64
-	TotalPrice      int64
-	AdvanceAmount   int64
-	Remaining       int64
-	Currency        string
-	PaymentStatus   orderdomain.PaymentStatus
-	Status          orderdomain.OrderStatus
-	DiscountApplied bool
+	OrderID          int64
+	OrderToken       string
+	PaymentLink      string
+	StatusLink       string
+	FinalPaymentLink string
+	CustomerID       int64
+	CustomerName     string
+	CustomerEmail    string
+	CustomerPhone    string
+	ProductName      string
+	Quantity         int64
+	TotalPrice       int64
+	AdvanceAmount    int64
+	Remaining        int64
+	Currency         string
+	PaymentStatus    orderdomain.PaymentStatus
+	Status           orderdomain.OrderStatus
+	DiscountApplied  bool
 }
 
 func orderDiscountEmailLine(discountApplied bool) string {
@@ -1281,7 +1383,27 @@ func (s *Service) buildOrderStatusLink(token string) string {
 	return s.publicBaseURL + "/order/" + token
 }
 
-func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
+func (s *Service) buildOrderFinalPaymentLink(token string) string {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return ""
+	}
+	return s.publicBaseURL + "/order/" + token + "/final-payment"
+}
+
+func (s *Service) buildAdminOrderDetailLink(orderID int64) string {
+	if orderID <= 0 {
+		return ""
+	}
+	return s.publicBaseURL + "/admin/orders/" + fmt.Sprintf("%d", orderID)
+}
+
+// sendOrderCustomerConfirmationAsync sends only the customer order-received
+// confirmation. The admin is deliberately not notified at order creation —
+// they are notified once the customer actually submits advance payment
+// proof (see sendPaymentProofSubmittedEmailsAsync), since there is nothing
+// for the admin to act on before that.
+func (s *Service) sendOrderCustomerConfirmationAsync(payload orderEmailPayload) {
 	if s.emailSender == nil {
 		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", payload.OrderID)
 		return
@@ -1291,15 +1413,6 @@ func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()
 
-		adminEmail := strings.TrimSpace(s.adminEmail)
-		if adminEmail == "" {
-			log.Printf("ORDER EMAIL SKIPPED: order_id=%d admin email not configured", payload.OrderID)
-		} else {
-			if err := s.sendOrderEmail(ctx, adminEmail, newOrderAdminSubject(payload.OrderID), buildNewOrderAdminEmailBody(payload)); err != nil {
-				log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=admin err=%v", payload.OrderID, err)
-			}
-		}
-
 		customerEmail := strings.TrimSpace(payload.CustomerEmail)
 		if customerEmail == "" {
 			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing", payload.OrderID)
@@ -1307,6 +1420,66 @@ func (s *Service) sendOrderCreatedEmailsAsync(payload orderEmailPayload) {
 		}
 		if err := s.sendOrderEmail(ctx, customerEmail, newOrderCustomerSubject(payload.OrderID), buildNewOrderCustomerEmailBody(payload)); err != nil {
 			log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=customer err=%v", payload.OrderID, err)
+		}
+	}()
+}
+
+// sendPaymentProofSubmittedEmailsAsync notifies the admin that an advance
+// payment proof is awaiting review, and reassures the customer that their
+// proof was received. It loads the order and customer itself since callers
+// (e.g. SubmitBankTransferProof) only have the order ID and payment input on
+// hand.
+func (s *Service) sendPaymentProofSubmittedEmailsAsync(orderID int64) {
+	if s.emailSender == nil {
+		log.Printf("ORDER EMAIL SKIPPED: order_id=%d sender not configured", orderID)
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+
+		// Admin email needs only the orderID (to build the admin link and
+		// subject/body) — it must not depend on the order/customer lookups
+		// below, so it is sent first and independently of them.
+		adminEmail := strings.TrimSpace(s.adminEmail)
+		if adminEmail == "" {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d admin email not configured for payment proof", orderID)
+		} else {
+			adminLink := s.buildAdminOrderDetailLink(orderID)
+			if err := s.sendOrderEmail(ctx, adminEmail, paymentProofSubmittedAdminSubject(orderID), buildPaymentProofSubmittedAdminEmailBody(orderID, adminLink)); err != nil {
+				log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=admin payment_proof err=%v", orderID, err)
+			}
+		}
+
+		// Customer email needs the order (for the status link) and the
+		// customer record (for the email address/name) — load those
+		// separately so a failure here can never suppress the admin email
+		// above.
+		order, err := s.orderRepo.GetOrderByID(ctx, orderID)
+		if err != nil {
+			log.Printf("ORDER EMAIL ERROR: order_id=%d failed to load order for payment proof email err=%v", orderID, err)
+			return
+		}
+
+		if order.CustomerID <= 0 {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer id missing for payment proof", orderID)
+			return
+		}
+		customer, err := s.customerRepo.GetCustomerByID(ctx, order.CustomerID)
+		if err != nil {
+			log.Printf("ORDER EMAIL ERROR: order_id=%d failed to load customer for payment proof email err=%v", orderID, err)
+			return
+		}
+		if customer.Email == nil || strings.TrimSpace(*customer.Email) == "" {
+			log.Printf("ORDER EMAIL SKIPPED: order_id=%d customer email missing for payment proof", orderID)
+			return
+		}
+
+		statusLink := s.buildOrderStatusLink(order.PublicToken)
+		customerEmail := strings.TrimSpace(*customer.Email)
+		if err := s.sendOrderEmail(ctx, customerEmail, paymentProofSubmittedCustomerSubject(orderID), buildPaymentProofSubmittedCustomerEmailBody(orderID, customer.Name, statusLink)); err != nil {
+			log.Printf("ORDER EMAIL ERROR: order_id=%d recipient=customer payment_proof err=%v", orderID, err)
 		}
 	}()
 }
@@ -1357,23 +1530,24 @@ func (s *Service) sendOrderStatusEmailAsync(order *orderdomain.Order, status ord
 		}
 
 		payload := orderEmailPayload{
-			OrderID:         order.ID,
-			OrderToken:      order.PublicToken,
-			PaymentLink:     s.buildOrderPaymentLink(order.PublicToken),
-			StatusLink:      s.buildOrderStatusLink(order.PublicToken),
-			CustomerID:      order.CustomerID,
-			CustomerName:    customer.Name,
-			CustomerEmail:   strings.TrimSpace(*customer.Email),
-			CustomerPhone:   customerPhone,
-			ProductName:     defaultProductName(order.CardName),
-			Quantity:        order.Quantity,
-			TotalPrice:      order.TotalPrice,
-			AdvanceAmount:   paymentSummary.AdvanceAmount,
-			Remaining:       paymentSummary.RemainingBalance,
-			Currency:        defaultCurrency(order.Currency),
-			PaymentStatus:   paymentStatus,
-			Status:          status,
-			DiscountApplied: order.Quantity > bulkDiscountMinQty,
+			OrderID:          order.ID,
+			OrderToken:       order.PublicToken,
+			PaymentLink:      s.buildOrderPaymentLink(order.PublicToken),
+			StatusLink:       s.buildOrderStatusLink(order.PublicToken),
+			FinalPaymentLink: s.buildOrderFinalPaymentLink(order.PublicToken),
+			CustomerID:       order.CustomerID,
+			CustomerName:     customer.Name,
+			CustomerEmail:    strings.TrimSpace(*customer.Email),
+			CustomerPhone:    customerPhone,
+			ProductName:      defaultProductName(order.CardName),
+			Quantity:         order.Quantity,
+			TotalPrice:       order.TotalPrice,
+			AdvanceAmount:    paymentSummary.AdvanceAmount,
+			Remaining:        paymentSummary.RemainingBalance,
+			Currency:         defaultCurrency(order.Currency),
+			PaymentStatus:    paymentStatus,
+			Status:           status,
+			DiscountApplied:  order.Quantity > bulkDiscountMinQty,
 		}
 
 		adminEmail := strings.TrimSpace(s.adminEmail)
@@ -1395,25 +1569,6 @@ func (s *Service) sendOrderEmail(ctx context.Context, to string, subject string,
 	return s.emailSender.SendOrderEmail(ctx, to, subject, body)
 }
 
-func buildNewOrderAdminEmailBody(payload orderEmailPayload) string {
-	return fmt.Sprintf(
-		"New order received.\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nAdmin reminder:\nWait for the customer to transfer and submit the 50%% advance payment. Confirm the order only after the advance payment is verified.",
-		payload.OrderID,
-		defaultCustomerName(payload.CustomerName),
-		defaultCustomerPhone(payload.CustomerPhone),
-		defaultCustomerEmail(payload.CustomerEmail),
-		defaultProductName(payload.ProductName),
-		payload.Quantity,
-		defaultCurrency(payload.Currency),
-		payload.TotalPrice,
-		orderDiscountEmailLine(payload.DiscountApplied),
-		defaultCurrency(payload.Currency),
-		payload.AdvanceAmount,
-		defaultCurrency(payload.Currency),
-		payload.Remaining,
-	)
-}
-
 func buildNewOrderCustomerEmailBody(payload orderEmailPayload) string {
 	return fmt.Sprintf(
 		"Dear %s,\n\nThank you for your order. We have received it.\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Required Now: %s %d\nRemaining Balance: %s %d\n\nPayment Status: Advance Payment Pending / Final Payment Pending\n\nPlease transfer the 50%% advance payment and upload your payment proof from the bank transfer page below. We will confirm your order for processing after the advance payment is verified.\n\nBank transfer instructions and payment proof upload:\n%s\n\nBest regards,\nWrite & InviteCo",
@@ -1429,6 +1584,23 @@ func buildNewOrderCustomerEmailBody(payload orderEmailPayload) string {
 		defaultCurrency(payload.Currency),
 		payload.Remaining,
 		defaultOrderLink(payload.PaymentLink),
+	)
+}
+
+func buildPaymentProofSubmittedAdminEmailBody(orderID int64, adminLink string) string {
+	return fmt.Sprintf(
+		"New advance payment proof received for order #%d — please review and verify.\n\nReview and verify the payment here:\n%s",
+		orderID,
+		defaultOrderLink(adminLink),
+	)
+}
+
+func buildPaymentProofSubmittedCustomerEmailBody(orderID int64, customerName string, statusLink string) string {
+	return fmt.Sprintf(
+		"Dear %s,\n\nWe've received your advance payment proof for order #%d. Our team will verify your payment and confirm your order shortly.\n\nView your order and payment status here:\n%s\n\nBest regards,\nWrite & InviteCo",
+		defaultCustomerName(customerName),
+		orderID,
+		defaultOrderLink(statusLink),
 	)
 }
 
@@ -1464,6 +1636,33 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 			payload.AdvanceAmount,
 			defaultCurrency(payload.Currency),
 			payload.Remaining,
+			defaultOrderLink(payload.StatusLink),
+		)
+	case orderdomain.ShippedOrderStatus:
+		return fmt.Sprintf(
+			"Dear %s,\n\nYour order has been shipped! 🎉\n\nOrder ID: #%d\nProduct: %s\n\nThank you for choosing Write & InviteCo — we hope your special day is everything you dreamed of. We'd love to see you again for future celebrations.\n\nView your order here:\n%s\n\nWith warm wishes,\nWrite & InviteCo",
+			defaultCustomerName(payload.CustomerName),
+			payload.OrderID,
+			defaultProductName(payload.ProductName),
+			defaultOrderLink(payload.StatusLink),
+		)
+	case orderdomain.ReadyToShipOrderStatus:
+		return fmt.Sprintf(
+			"Dear %s,\n\nGreat news — your order is ready to ship!\n\nOrder ID: #%d\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%sAdvance Payment Received: %s %d\nRemaining Balance Due: %s %d\n\nPayment Status: Advance Payment Received / Final Payment Due\n\nBefore we dispatch your order, please pay the remaining balance of %s %d using the link below.\n\nPay your remaining balance here:\n%s\n\nView your order and payment status here:\n%s\n\nThank you for trusting Write & InviteCo. We truly appreciate your kindness and support. 🤍\n\nBest regards,\nWrite & InviteCo",
+			defaultCustomerName(payload.CustomerName),
+			payload.OrderID,
+			defaultProductName(payload.ProductName),
+			payload.Quantity,
+			defaultCurrency(payload.Currency),
+			payload.TotalPrice,
+			orderDiscountEmailLine(payload.DiscountApplied),
+			defaultCurrency(payload.Currency),
+			payload.AdvanceAmount,
+			defaultCurrency(payload.Currency),
+			payload.Remaining,
+			defaultCurrency(payload.Currency),
+			payload.Remaining,
+			defaultOrderLink(payload.FinalPaymentLink),
 			defaultOrderLink(payload.StatusLink),
 		)
 	case orderdomain.CancelledOrderStatus:
@@ -1505,6 +1704,20 @@ func buildCustomerOrderStatusEmailBody(payload orderEmailPayload) string {
 }
 
 func buildAdminOrderStatusEmailBody(payload orderEmailPayload) string {
+	if payload.Status == orderdomain.ShippedOrderStatus {
+		return fmt.Sprintf(
+			"Order shipped. Advance and final payment are both verified — order is fully paid.\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n\nPayment Status: Advance Verified / Final Payment Verified",
+			payload.OrderID,
+			defaultCustomerName(payload.CustomerName),
+			defaultCustomerPhone(payload.CustomerPhone),
+			defaultCustomerEmail(payload.CustomerEmail),
+			defaultProductName(payload.ProductName),
+			payload.Quantity,
+			defaultCurrency(payload.Currency),
+			payload.TotalPrice,
+		)
+	}
+
 	return fmt.Sprintf(
 		"%s\n\nOrder ID: #%d\nCustomer: %s\nPhone/WhatsApp: %s\nEmail: %s\nProduct: %s\nQuantity: %d\n\nOrder Total: %s %d\n%s%s: %s %d\nRemaining Balance: %s %d\n\nPayment Status: %s\n\nAdmin reminder:\n%s",
 		adminOrderStatusIntro(payload.Status),
@@ -1527,18 +1740,26 @@ func buildAdminOrderStatusEmailBody(payload orderEmailPayload) string {
 	)
 }
 
-func newOrderAdminSubject(orderID int64) string {
-	return fmt.Sprintf("New Order Received (#%d)", orderID)
-}
-
 func newOrderCustomerSubject(orderID int64) string {
 	return fmt.Sprintf("Order Received (#%d)", orderID)
+}
+
+func paymentProofSubmittedAdminSubject(orderID int64) string {
+	return fmt.Sprintf("Advance Payment Proof Received (#%d)", orderID)
+}
+
+func paymentProofSubmittedCustomerSubject(orderID int64) string {
+	return fmt.Sprintf("We received your payment proof (#%d)", orderID)
 }
 
 func orderStatusSubject(orderID int64, status orderdomain.OrderStatus) string {
 	switch status {
 	case orderdomain.ConfirmedOrderStatus:
 		return fmt.Sprintf("Your order #%d is confirmed", orderID)
+	case orderdomain.ReadyToShipOrderStatus:
+		return fmt.Sprintf("Your order #%d is ready to ship — remaining balance due", orderID)
+	case orderdomain.ShippedOrderStatus:
+		return fmt.Sprintf("Your order #%d has been shipped!", orderID)
 	case orderdomain.CancelledOrderStatus:
 		return fmt.Sprintf("Your order #%d has been cancelled", orderID)
 	case orderdomain.CompletedOrderStatus:
@@ -1552,6 +1773,10 @@ func adminOrderStatusSubject(orderID int64, status orderdomain.OrderStatus) stri
 	switch status {
 	case orderdomain.ConfirmedOrderStatus:
 		return fmt.Sprintf("Order #%d confirmed for processing", orderID)
+	case orderdomain.ReadyToShipOrderStatus:
+		return fmt.Sprintf("Order #%d marked ready to ship", orderID)
+	case orderdomain.ShippedOrderStatus:
+		return fmt.Sprintf("Order #%d shipped", orderID)
 	case orderdomain.CancelledOrderStatus:
 		return fmt.Sprintf("Order #%d cancelled", orderID)
 	case orderdomain.CompletedOrderStatus:
@@ -1617,6 +1842,10 @@ func adminOrderStatusIntro(status orderdomain.OrderStatus) string {
 	switch status {
 	case orderdomain.ConfirmedOrderStatus:
 		return "Order confirmed for processing."
+	case orderdomain.ReadyToShipOrderStatus:
+		return "Order marked ready to ship. Final payment request email sent to customer."
+	case orderdomain.ShippedOrderStatus:
+		return "Order shipped. Advance and final payment are both verified."
 	case orderdomain.CancelledOrderStatus:
 		return "Order cancelled."
 	case orderdomain.CompletedOrderStatus:

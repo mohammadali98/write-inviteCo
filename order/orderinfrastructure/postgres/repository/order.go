@@ -26,19 +26,58 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id int64) (*orderdom
 		return nil, err
 	}
 	return &orderdomain.Order{
-		ID:           row.ID,
-		CustomerID:   derefInt64(row.CustomerID),
-		CardID:       derefInt64(row.CardID),
-		CardName:     row.CardName,
-		CardImage:    row.CardImage,
-		CardCategory: row.CardCategory,
-		Quantity:     row.Quantity,
-		TotalPrice:   row.TotalPrice,
-		Status:       toOrderStatus(row.Status),
-		Currency:     row.Currency,
-		PublicToken:  row.PublicToken,
-		CreatedAt:    toTimePtr(row.CreatedAt),
-		UpdatedAt:    toTimePtr(row.UpdatedAt),
+		ID:                      row.ID,
+		CustomerID:              derefInt64(row.CustomerID),
+		CardID:                  derefInt64(row.CardID),
+		CardName:                row.CardName,
+		CardImage:               row.CardImage,
+		CardCategory:            row.CardCategory,
+		Quantity:                row.Quantity,
+		TotalPrice:              row.TotalPrice,
+		Status:                  toOrderStatus(row.Status),
+		Currency:                row.Currency,
+		PublicToken:             row.PublicToken,
+		FinalPaymentStatus:      orderdomain.PaymentStatus(row.FinalPaymentStatus),
+		FinalPaymentProofURL:    row.FinalPaymentProofUrl,
+		FinalPaymentSenderName:  row.FinalPaymentSenderName,
+		FinalPaymentSubmittedAt: toTimePtr(row.FinalPaymentSubmittedAt),
+		FinalPaymentVerifiedAt:  toTimePtr(row.FinalPaymentVerifiedAt),
+		FinalPaymentRejectedAt:  toTimePtr(row.FinalPaymentRejectedAt),
+		FinalPaymentAdminNote:   row.FinalPaymentAdminNote,
+		CreatedAt:               toTimePtr(row.CreatedAt),
+		UpdatedAt:               toTimePtr(row.UpdatedAt),
+	}, nil
+}
+
+func (r *OrderRepository) GetOrderByIDAndPhone(ctx context.Context, orderID int64, phone string) (*orderdomain.Order, error) {
+	row, err := r.reader.GetOrderByIDAndPhone(ctx, orderreader.GetOrderByIDAndPhoneParams{
+		ID:    orderID,
+		Phone: &phone,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &orderdomain.Order{
+		ID:                      row.ID,
+		CustomerID:              derefInt64(row.CustomerID),
+		CardID:                  derefInt64(row.CardID),
+		CardName:                row.CardName,
+		CardImage:               row.CardImage,
+		CardCategory:            row.CardCategory,
+		Quantity:                row.Quantity,
+		TotalPrice:              row.TotalPrice,
+		Status:                  toOrderStatus(row.Status),
+		Currency:                row.Currency,
+		PublicToken:             row.PublicToken,
+		FinalPaymentStatus:      orderdomain.PaymentStatus(row.FinalPaymentStatus),
+		FinalPaymentProofURL:    row.FinalPaymentProofUrl,
+		FinalPaymentSenderName:  row.FinalPaymentSenderName,
+		FinalPaymentSubmittedAt: toTimePtr(row.FinalPaymentSubmittedAt),
+		FinalPaymentVerifiedAt:  toTimePtr(row.FinalPaymentVerifiedAt),
+		FinalPaymentRejectedAt:  toTimePtr(row.FinalPaymentRejectedAt),
+		FinalPaymentAdminNote:   row.FinalPaymentAdminNote,
+		CreatedAt:               toTimePtr(row.CreatedAt),
+		UpdatedAt:               toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
@@ -48,19 +87,26 @@ func (r *OrderRepository) GetOrderByPublicToken(ctx context.Context, token strin
 		return nil, err
 	}
 	return &orderdomain.Order{
-		ID:           row.ID,
-		CustomerID:   derefInt64(row.CustomerID),
-		CardID:       derefInt64(row.CardID),
-		CardName:     row.CardName,
-		CardImage:    row.CardImage,
-		CardCategory: row.CardCategory,
-		Quantity:     row.Quantity,
-		TotalPrice:   row.TotalPrice,
-		Status:       toOrderStatus(row.Status),
-		Currency:     row.Currency,
-		PublicToken:  row.PublicToken,
-		CreatedAt:    toTimePtr(row.CreatedAt),
-		UpdatedAt:    toTimePtr(row.UpdatedAt),
+		ID:                      row.ID,
+		CustomerID:              derefInt64(row.CustomerID),
+		CardID:                  derefInt64(row.CardID),
+		CardName:                row.CardName,
+		CardImage:               row.CardImage,
+		CardCategory:            row.CardCategory,
+		Quantity:                row.Quantity,
+		TotalPrice:              row.TotalPrice,
+		Status:                  toOrderStatus(row.Status),
+		Currency:                row.Currency,
+		PublicToken:             row.PublicToken,
+		FinalPaymentStatus:      orderdomain.PaymentStatus(row.FinalPaymentStatus),
+		FinalPaymentProofURL:    row.FinalPaymentProofUrl,
+		FinalPaymentSenderName:  row.FinalPaymentSenderName,
+		FinalPaymentSubmittedAt: toTimePtr(row.FinalPaymentSubmittedAt),
+		FinalPaymentVerifiedAt:  toTimePtr(row.FinalPaymentVerifiedAt),
+		FinalPaymentRejectedAt:  toTimePtr(row.FinalPaymentRejectedAt),
+		FinalPaymentAdminNote:   row.FinalPaymentAdminNote,
+		CreatedAt:               toTimePtr(row.CreatedAt),
+		UpdatedAt:               toTimePtr(row.UpdatedAt),
 	}, nil
 }
 
@@ -86,6 +132,23 @@ func (r *OrderRepository) GetOrdersByCustomerID(ctx context.Context, customerID 
 	return orders, nil
 }
 
+func (r *OrderRepository) GetOrdersByPhone(ctx context.Context, phone string) ([]*orderdomain.Order, error) {
+	rows, err := r.reader.GetOrdersByPhone(ctx, &phone)
+	if err != nil {
+		return nil, err
+	}
+	orders := make([]*orderdomain.Order, len(rows))
+	for i, row := range rows {
+		orders[i] = &orderdomain.Order{
+			ID:          row.ID,
+			Status:      toOrderStatus(row.Status),
+			PublicToken: row.PublicToken,
+			CreatedAt:   toTimePtr(row.CreatedAt),
+		}
+	}
+	return orders, nil
+}
+
 func (r *OrderRepository) GetAdminOrders(ctx context.Context, filter orderdomain.AdminOrderFilter) ([]*orderdomain.AdminOrder, error) {
 	rows, err := r.reader.GetAdminOrders(ctx, orderreader.GetAdminOrdersParams{
 		OrderStatus:   stringPtrOrNil(filter.OrderStatus),
@@ -101,18 +164,19 @@ func (r *OrderRepository) GetAdminOrders(ctx context.Context, filter orderdomain
 	orders := make([]*orderdomain.AdminOrder, len(rows))
 	for i, row := range rows {
 		orders[i] = &orderdomain.AdminOrder{
-			ID:              row.ID,
-			CustomerName:    row.CustomerName,
-			ProductName:     row.ProductName,
-			CardCategory:    row.CardCategory,
-			Quantity:        row.Quantity,
-			TotalPrice:      row.TotalPrice,
-			Status:          toOrderStatus(row.Status),
-			PaymentStatus:   toPaymentStatus(row.PaymentStatus),
-			SubmittedAmount: row.SubmittedAmount,
-			SubmittedAt:     toTimePtr(row.SubmittedAt),
-			Currency:        row.Currency,
-			CreatedAt:       toTimePtr(row.CreatedAt),
+			ID:                 row.ID,
+			CustomerName:       row.CustomerName,
+			ProductName:        row.ProductName,
+			CardCategory:       row.CardCategory,
+			Quantity:           row.Quantity,
+			TotalPrice:         row.TotalPrice,
+			Status:             toOrderStatus(row.Status),
+			PaymentStatus:      toPaymentStatus(row.PaymentStatus),
+			FinalPaymentStatus: orderdomain.PaymentStatus(row.FinalPaymentStatus),
+			SubmittedAmount:    row.SubmittedAmount,
+			SubmittedAt:        toTimePtr(row.SubmittedAt),
+			Currency:           row.Currency,
+			CreatedAt:          toTimePtr(row.CreatedAt),
 		}
 	}
 	return orders, nil

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Status — Write&InviteCo</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
     <style>
         .menu-btn {
             display: flex !important;
@@ -79,6 +79,18 @@
             background: #e9f6ea;
             color: #2d7a39;
             border-color: #c7e8cb;
+        }
+
+        .status-ready_to_ship {
+            background: #fff1e0;
+            color: #a8620c;
+            border-color: #f5d8ad;
+        }
+
+        .status-shipped {
+            background: #e6f4fb;
+            color: #206a92;
+            border-color: #bfe2f2;
         }
 
         .status-cancelled {
@@ -212,15 +224,37 @@
 </aside>
 <div id="overlay" class="overlay" onclick="toggleMenu()"></div>
 
+<a class="whatsapp-float" href="https://wa.me/923039238299" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp">
+    <svg viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16.004 3C9.377 3 4 8.373 4 15c0 2.386.703 4.605 1.912 6.47L4 29l7.72-1.86A11.94 11.94 0 0 0 16.004 27C22.63 27 28 21.627 28 15S22.63 3 16.004 3Zm7.03 17.09c-.293.826-1.454 1.514-2.404 1.717-.64.135-1.474.243-4.29-.92-3.6-1.49-5.916-5.12-6.096-5.36-.174-.24-1.454-1.938-1.454-3.696 0-1.758.917-2.622 1.244-2.984.293-.325.71-.47 1.113-.47.156 0 .295.008.42.014.367.016.552.037.79.606.293.71.995 2.468 1.08 2.65.088.183.147.397.03.638-.11.24-.166.39-.33.6-.166.21-.348.47-.497.63-.166.18-.34.373-.146.71.196.334.87 1.427 1.87 2.312 1.286 1.14 2.34 1.5 2.68 1.667.34.166.54.14.738-.086.196-.226.85-.988 1.076-1.328.226-.34.452-.28.762-.166.31.113 1.964.926 2.3 1.093.34.168.564.253.646.393.083.14.083.81-.21 1.636Z"/>
+    </svg>
+</a>
+
 <main class="main-content">
     <div class="order-status-page">
         <section class="status-card animate-in">
             <p class="status-kicker">Order Tracking</p>
             <h1>Order #{{ .order.ID }}</h1>
-            <div class="status-badge status-{{ .order.Status }}">{{ .order.Status }}</div>
+            <div class="status-badge status-{{ .order.Status }}">{{ orderStatusLabel .order.Status }}</div>
             <p class="status-message">{{ .statusMessage }}</p>
 
             <div class="status-grid">
+                {{ if gt .order.Quantity 70 }}
+                <div>
+                    <div class="row-label">Card Total</div>
+                    <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .originalAmount }}</div>
+                </div>
+                <div>
+                    <div class="row-label">Quantity discount (5%)</div>
+                    <div class="row-value">-{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .discountAmount }}</div>
+                </div>
+                {{ end }}
+                {{ if gt .insertAmount 0 }}
+                <div>
+                    <div class="row-label">Inserts</div>
+                    <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .insertAmount }}</div>
+                </div>
+                {{ end }}
                 <div>
                     <div class="row-label">Total</div>
                     <div class="row-value">{{ if .order.Currency }}{{ .order.Currency }}{{ else }}PKR{{ end }} {{ .order.TotalPrice }}</div>
@@ -279,6 +313,9 @@
             </div>
             <p class="status-message" style="margin-top: 16px;">{{ .paymentMessage }}</p>
             <p class="empty-text" style="margin-top: 12px;"><a class="status-link" href="/order/{{ .order.PublicToken }}/payment">View bank transfer instructions and advance payment proof upload</a></p>
+            {{ if or (eq .order.Status "ready_to_ship") (eq .order.Status "shipped") }}
+            <p class="empty-text" style="margin-top: 8px;"><a class="status-link" href="/order/{{ .order.PublicToken }}/final-payment">View final payment instructions and upload proof</a></p>
+            {{ end }}
         </section>
 
         <section class="status-card">
@@ -366,9 +403,9 @@
                     <h3>Mehndi</h3>
                     <p class="event-row">Date: {{ if .details.MehndiDate }}{{ .details.MehndiDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.MehndiDay }}{{ .details.MehndiDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.MehndiTimeType }}{{ .details.MehndiTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.MehndiTime }}{{ .details.MehndiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.MehndiDinnerTime }}{{ .details.MehndiDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.MehndiTimeType }}{{ timeTypeLabel .details.MehndiTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.MehndiTime }}{{ formatTime .details.MehndiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.MehndiDinnerTime }}{{ formatTime .details.MehndiDinnerTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.MehndiVenueName }}{{ .details.MehndiVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.MehndiVenueAddress }}{{ .details.MehndiVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
@@ -377,12 +414,12 @@
                     <h3>Baraat</h3>
                     <p class="event-row">Date: {{ if .details.BaraatDate }}{{ .details.BaraatDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.BaraatDay }}{{ .details.BaraatDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.BaraatTimeType }}{{ .details.BaraatTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.BaraatTime }}{{ .details.BaraatTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.BaraatDinnerTime }}{{ .details.BaraatDinnerTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Arrival: {{ if .details.BaraatArrivalTime }}{{ .details.BaraatArrivalTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Rukhsati: {{ if .details.RukhsatiTime }}{{ .details.RukhsatiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Sehrabandi: {{ if .details.BaraatSehrabandiTime }}{{ .details.BaraatSehrabandiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.BaraatTimeType }}{{ timeTypeLabel .details.BaraatTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.BaraatTime }}{{ formatTime .details.BaraatTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.BaraatDinnerTime }}{{ formatTime .details.BaraatDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Arrival: {{ if .details.BaraatArrivalTime }}{{ formatTime .details.BaraatArrivalTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Rukhsati: {{ if .details.RukhsatiTime }}{{ formatTime .details.RukhsatiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Sehrabandi: {{ if .details.BaraatSehrabandiTime }}{{ formatTime .details.BaraatSehrabandiTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.BaraatVenueName }}{{ .details.BaraatVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.BaraatVenueAddress }}{{ .details.BaraatVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
@@ -391,9 +428,9 @@
                     <h3>Nikkah</h3>
                     <p class="event-row">Date: {{ if .details.NikkahDate }}{{ .details.NikkahDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.NikkahDay }}{{ .details.NikkahDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.NikkahTimeType }}{{ .details.NikkahTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.NikkahTime }}{{ .details.NikkahTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.NikkahDinnerTime }}{{ .details.NikkahDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.NikkahTimeType }}{{ timeTypeLabel .details.NikkahTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.NikkahTime }}{{ formatTime .details.NikkahTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.NikkahDinnerTime }}{{ formatTime .details.NikkahDinnerTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.NikkahVenueName }}{{ .details.NikkahVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.NikkahVenueAddress }}{{ .details.NikkahVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
@@ -402,10 +439,10 @@
                     <h3>Walima</h3>
                     <p class="event-row">Date: {{ if .details.WalimaDate }}{{ .details.WalimaDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.WalimaDay }}{{ .details.WalimaDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.WalimaTimeType }}{{ .details.WalimaTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.WalimaTime }}{{ .details.WalimaTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.WalimaDinnerTime }}{{ .details.WalimaDinnerTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Reception: {{ if .details.ReceptionTime }}{{ .details.ReceptionTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.WalimaTimeType }}{{ timeTypeLabel .details.WalimaTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.WalimaTime }}{{ formatTime .details.WalimaTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.WalimaDinnerTime }}{{ formatTime .details.WalimaDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Reception: {{ if .details.ReceptionTime }}{{ formatTime .details.ReceptionTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.WalimaVenueName }}{{ .details.WalimaVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.WalimaVenueAddress }}{{ .details.WalimaVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
@@ -414,12 +451,12 @@
                     <h3>Shendi</h3>
                     <p class="event-row">Date: {{ if .details.ShendiDate }}{{ .details.ShendiDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.ShendiDay }}{{ .details.ShendiDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.ShendiTimeType }}{{ .details.ShendiTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.ShendiTime }}{{ .details.ShendiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.ShendiDinnerTime }}{{ .details.ShendiDinnerTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Arrival: {{ if .details.ShendiArrivalTime }}{{ .details.ShendiArrivalTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Rukhsati: {{ if .details.ShendiRukhsatiTime }}{{ .details.ShendiRukhsatiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Sehrabandi: {{ if .details.ShendiSehrabandiTime }}{{ .details.ShendiSehrabandiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.ShendiTimeType }}{{ timeTypeLabel .details.ShendiTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.ShendiTime }}{{ formatTime .details.ShendiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.ShendiDinnerTime }}{{ formatTime .details.ShendiDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Arrival: {{ if .details.ShendiArrivalTime }}{{ formatTime .details.ShendiArrivalTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Rukhsati: {{ if .details.ShendiRukhsatiTime }}{{ formatTime .details.ShendiRukhsatiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Sehrabandi: {{ if .details.ShendiSehrabandiTime }}{{ formatTime .details.ShendiSehrabandiTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.ShendiVenueName }}{{ .details.ShendiVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.ShendiVenueAddress }}{{ .details.ShendiVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>
@@ -428,13 +465,13 @@
                     <h3>Shalima</h3>
                     <p class="event-row">Date: {{ if .details.ShalimaDate }}{{ .details.ShalimaDate }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Day: {{ if .details.ShalimaDay }}{{ .details.ShalimaDay }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Type: {{ if .details.ShalimaTimeType }}{{ .details.ShalimaTimeType }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Time: {{ if .details.ShalimaTime }}{{ .details.ShalimaTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Dinner: {{ if .details.ShalimaDinnerTime }}{{ .details.ShalimaDinnerTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Arrival: {{ if .details.ShalimaArrivalTime }}{{ .details.ShalimaArrivalTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Rukhsati: {{ if .details.ShalimaRukhsatiTime }}{{ .details.ShalimaRukhsatiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Sehrabandi: {{ if .details.ShalimaSehrabandiTime }}{{ .details.ShalimaSehrabandiTime }}{{ else }}-{{ end }}</p>
-                    <p class="event-row">Reception: {{ if .details.ShalimaReceptionTime }}{{ .details.ShalimaReceptionTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Type: {{ if .details.ShalimaTimeType }}{{ timeTypeLabel .details.ShalimaTimeType }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Time: {{ if .details.ShalimaTime }}{{ formatTime .details.ShalimaTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Dinner: {{ if .details.ShalimaDinnerTime }}{{ formatTime .details.ShalimaDinnerTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Arrival: {{ if .details.ShalimaArrivalTime }}{{ formatTime .details.ShalimaArrivalTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Rukhsati: {{ if .details.ShalimaRukhsatiTime }}{{ formatTime .details.ShalimaRukhsatiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Sehrabandi: {{ if .details.ShalimaSehrabandiTime }}{{ formatTime .details.ShalimaSehrabandiTime }}{{ else }}-{{ end }}</p>
+                    <p class="event-row">Reception: {{ if .details.ShalimaReceptionTime }}{{ formatTime .details.ShalimaReceptionTime }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Venue: {{ if .details.ShalimaVenueName }}{{ .details.ShalimaVenueName }}{{ else }}-{{ end }}</p>
                     <p class="event-row">Address: {{ if .details.ShalimaVenueAddress }}{{ .details.ShalimaVenueAddress }}{{ else }}-{{ end }}</p>
                 </article>

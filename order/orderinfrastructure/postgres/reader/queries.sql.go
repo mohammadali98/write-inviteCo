@@ -21,6 +21,7 @@ SELECT
     o.total_price,
     o.status,
     op.payment_status,
+    o.final_payment_status,
     op.submitted_amount,
     op.submitted_at,
     o.currency,
@@ -52,18 +53,19 @@ type GetAdminOrdersParams struct {
 }
 
 type GetAdminOrdersRow struct {
-	ID              int64
-	CustomerName    string
-	ProductName     string
-	CardCategory    string
-	Quantity        int64
-	TotalPrice      int64
-	Status          *string
-	PaymentStatus   *string
-	SubmittedAmount *int64
-	SubmittedAt     pgtype.Timestamptz
-	Currency        string
-	CreatedAt       pgtype.Timestamptz
+	ID                 int64
+	CustomerName       string
+	ProductName        string
+	CardCategory       string
+	Quantity           int64
+	TotalPrice         int64
+	Status             *string
+	PaymentStatus      *string
+	FinalPaymentStatus string
+	SubmittedAmount    *int64
+	SubmittedAt        pgtype.Timestamptz
+	Currency           string
+	CreatedAt          pgtype.Timestamptz
 }
 
 func (q *Queries) GetAdminOrders(ctx context.Context, arg GetAdminOrdersParams) ([]GetAdminOrdersRow, error) {
@@ -90,6 +92,7 @@ func (q *Queries) GetAdminOrders(ctx context.Context, arg GetAdminOrdersParams) 
 			&i.TotalPrice,
 			&i.Status,
 			&i.PaymentStatus,
+			&i.FinalPaymentStatus,
 			&i.SubmittedAmount,
 			&i.SubmittedAt,
 			&i.Currency,
@@ -354,6 +357,13 @@ SELECT
     o.status,
     o.currency,
     o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -365,19 +375,26 @@ WHERE o.id = $1
 `
 
 type GetOrderByIDRow struct {
-	ID           int64
-	CustomerID   *int64
-	CardID       *int64
-	Quantity     int64
-	TotalPrice   int64
-	Status       *string
-	Currency     string
-	PublicToken  string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	CardName     string
-	CardImage    string
-	CardCategory string
+	ID                      int64
+	CustomerID              *int64
+	CardID                  *int64
+	Quantity                int64
+	TotalPrice              int64
+	Status                  *string
+	Currency                string
+	PublicToken             string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	CreatedAt               pgtype.Timestamptz
+	UpdatedAt               pgtype.Timestamptz
+	CardName                string
+	CardImage               string
+	CardCategory            string
 }
 
 func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, error) {
@@ -392,6 +409,97 @@ func (q *Queries) GetOrderByID(ctx context.Context, id int64) (GetOrderByIDRow, 
 		&i.Status,
 		&i.Currency,
 		&i.PublicToken,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CardName,
+		&i.CardImage,
+		&i.CardCategory,
+	)
+	return i, err
+}
+
+const getOrderByIDAndPhone = `-- name: GetOrderByIDAndPhone :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.card_id,
+    o.quantity,
+    o.total_price,
+    o.status,
+    o.currency,
+    o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
+    o.created_at,
+    o.updated_at,
+    COALESCE(c.name, '') AS card_name,
+    COALESCE(c.image, '') AS card_image,
+    COALESCE(c.category, '') AS card_category
+FROM orders o
+LEFT JOIN cards c ON o.card_id = c.id
+JOIN customers cu ON cu.id = o.customer_id
+WHERE o.id = $1 AND cu.phone = $2
+`
+
+type GetOrderByIDAndPhoneParams struct {
+	ID    int64
+	Phone *string
+}
+
+type GetOrderByIDAndPhoneRow struct {
+	ID                      int64
+	CustomerID              *int64
+	CardID                  *int64
+	Quantity                int64
+	TotalPrice              int64
+	Status                  *string
+	Currency                string
+	PublicToken             string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	CreatedAt               pgtype.Timestamptz
+	UpdatedAt               pgtype.Timestamptz
+	CardName                string
+	CardImage               string
+	CardCategory            string
+}
+
+func (q *Queries) GetOrderByIDAndPhone(ctx context.Context, arg GetOrderByIDAndPhoneParams) (GetOrderByIDAndPhoneRow, error) {
+	row := q.db.QueryRow(ctx, getOrderByIDAndPhone, arg.ID, arg.Phone)
+	var i GetOrderByIDAndPhoneRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.CardID,
+		&i.Quantity,
+		&i.TotalPrice,
+		&i.Status,
+		&i.Currency,
+		&i.PublicToken,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CardName,
@@ -411,6 +519,13 @@ SELECT
     o.status,
     o.currency,
     o.public_token::text AS public_token,
+    o.final_payment_status,
+    o.final_payment_proof_url,
+    o.final_payment_sender_name,
+    o.final_payment_submitted_at,
+    o.final_payment_verified_at,
+    o.final_payment_rejected_at,
+    o.final_payment_admin_note,
     o.created_at,
     o.updated_at,
     COALESCE(c.name, '') AS card_name,
@@ -422,19 +537,26 @@ WHERE o.public_token::text = $1::text
 `
 
 type GetOrderByPublicTokenRow struct {
-	ID           int64
-	CustomerID   *int64
-	CardID       *int64
-	Quantity     int64
-	TotalPrice   int64
-	Status       *string
-	Currency     string
-	PublicToken  string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
-	CardName     string
-	CardImage    string
-	CardCategory string
+	ID                      int64
+	CustomerID              *int64
+	CardID                  *int64
+	Quantity                int64
+	TotalPrice              int64
+	Status                  *string
+	Currency                string
+	PublicToken             string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	CreatedAt               pgtype.Timestamptz
+	UpdatedAt               pgtype.Timestamptz
+	CardName                string
+	CardImage               string
+	CardCategory            string
 }
 
 func (q *Queries) GetOrderByPublicToken(ctx context.Context, publicToken string) (GetOrderByPublicTokenRow, error) {
@@ -449,6 +571,13 @@ func (q *Queries) GetOrderByPublicToken(ctx context.Context, publicToken string)
 		&i.Status,
 		&i.Currency,
 		&i.PublicToken,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CardName,
@@ -542,6 +671,50 @@ func (q *Queries) GetOrdersByCustomerID(ctx context.Context, customerID *int64) 
 			&i.Currency,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrdersByPhone = `-- name: GetOrdersByPhone :many
+SELECT
+    o.id,
+    o.created_at,
+    o.status,
+    o.public_token::text AS public_token
+FROM orders o
+JOIN customers cu ON cu.id = o.customer_id
+WHERE cu.phone = $1
+ORDER BY o.created_at DESC
+`
+
+type GetOrdersByPhoneRow struct {
+	ID          int64
+	CreatedAt   pgtype.Timestamptz
+	Status      *string
+	PublicToken string
+}
+
+func (q *Queries) GetOrdersByPhone(ctx context.Context, phone *string) ([]GetOrdersByPhoneRow, error) {
+	rows, err := q.db.Query(ctx, getOrdersByPhone, phone)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrdersByPhoneRow
+	for rows.Next() {
+		var i GetOrdersByPhoneRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Status,
+			&i.PublicToken,
 		); err != nil {
 			return nil, err
 		}

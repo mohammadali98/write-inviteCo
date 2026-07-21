@@ -762,6 +762,98 @@ func TestBuildCustomerOrderStatusEmailBodyForConfirmedOrderShowsAdvanceBreakdown
 	}
 }
 
+func TestBuildCustomerOrderStatusEmailBodyForShippedIsSimpleAndWarm(t *testing.T) {
+	t.Parallel()
+
+	body := buildCustomerOrderStatusEmailBody(orderEmailPayload{
+		OrderID:      88,
+		CustomerName: "Aimen",
+		ProductName:  "Floral Invite",
+		Status:       orderdomain.ShippedOrderStatus,
+		StatusLink:   "https://example.com/order/token123",
+	})
+
+	for _, want := range []string{
+		"Your order has been shipped!",
+		"Thank you for choosing Write & InviteCo",
+		"we hope your special day is everything you dreamed of",
+		"We'd love to see you again for future celebrations",
+		"https://example.com/order/token123",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected shipped customer email to contain %q\nbody:\n%s", want, body)
+		}
+	}
+
+	for _, unwanted := range []string{
+		"Remaining Balance",
+		"Advance Payment",
+		"Order Total",
+	} {
+		if strings.Contains(body, unwanted) {
+			t.Fatalf("expected shipped customer email to avoid payment breakdown %q\nbody:\n%s", unwanted, body)
+		}
+	}
+}
+
+func TestOrderStatusSubjectForShipped(t *testing.T) {
+	t.Parallel()
+
+	if got := orderStatusSubject(88, orderdomain.ShippedOrderStatus); !strings.Contains(got, "shipped") {
+		t.Fatalf("expected customer subject to mention shipped, got %q", got)
+	}
+	if got := adminOrderStatusSubject(88, orderdomain.ShippedOrderStatus); !strings.Contains(got, "shipped") {
+		t.Fatalf("expected admin subject to mention shipped, got %q", got)
+	}
+}
+
+func TestBuildCustomerOrderStatusEmailBodyForReadyToShipShowsFinalPaymentLink(t *testing.T) {
+	t.Parallel()
+
+	body := buildCustomerOrderStatusEmailBody(orderEmailPayload{
+		OrderID:          88,
+		CustomerName:     "Aimen",
+		ProductName:      "Floral Invite",
+		Quantity:         100,
+		TotalPrice:       32500,
+		AdvanceAmount:    16250,
+		Remaining:        16250,
+		Currency:         "PKR",
+		PaymentStatus:    orderdomain.VerifiedPaymentStatus,
+		Status:           orderdomain.ReadyToShipOrderStatus,
+		FinalPaymentLink: "https://example.com/order/token123/final-payment",
+		StatusLink:       "https://example.com/order/token123",
+	})
+
+	for _, want := range []string{
+		"your order is ready to ship",
+		"Order Total: PKR 32500",
+		"Advance Payment Received: PKR 16250",
+		"Remaining Balance Due: PKR 16250",
+		"please pay the remaining balance of PKR 16250",
+		"Pay your remaining balance here:\nhttps://example.com/order/token123/final-payment",
+		"https://example.com/order/token123",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected ready-to-ship customer email to contain %q\nbody:\n%s", want, body)
+		}
+	}
+}
+
+func TestOrderStatusSubjectAndAdminIntroForReadyToShip(t *testing.T) {
+	t.Parallel()
+
+	if got := orderStatusSubject(88, orderdomain.ReadyToShipOrderStatus); !strings.Contains(got, "ready to ship") {
+		t.Fatalf("expected customer subject to mention ready to ship, got %q", got)
+	}
+	if got := adminOrderStatusSubject(88, orderdomain.ReadyToShipOrderStatus); !strings.Contains(got, "ready to ship") {
+		t.Fatalf("expected admin subject to mention ready to ship, got %q", got)
+	}
+	if got := adminOrderStatusIntro(orderdomain.ReadyToShipOrderStatus); !strings.Contains(got, "ready to ship") {
+		t.Fatalf("expected admin intro to mention ready to ship, got %q", got)
+	}
+}
+
 func TestBuildAdminOrderStatusEmailBodyForConfirmedOrderShowsAdvanceBreakdown(t *testing.T) {
 	t.Parallel()
 

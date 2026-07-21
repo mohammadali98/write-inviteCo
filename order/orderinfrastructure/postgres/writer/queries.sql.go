@@ -625,6 +625,64 @@ func (q *Queries) CreateOrderPayment(ctx context.Context, arg CreateOrderPayment
 	return i, err
 }
 
+const rejectOrderFinalPayment = `-- name: RejectOrderFinalPayment :one
+UPDATE orders
+SET
+    final_payment_status = 'payment_rejected',
+    final_payment_admin_note = $2,
+    final_payment_rejected_at = CURRENT_TIMESTAMP,
+    final_payment_verified_at = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at
+`
+
+type RejectOrderFinalPaymentParams struct {
+	ID                    int64
+	FinalPaymentAdminNote *string
+}
+
+type RejectOrderFinalPaymentRow struct {
+	ID                      int64
+	Status                  *string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	UpdatedAt               pgtype.Timestamptz
+}
+
+func (q *Queries) RejectOrderFinalPayment(ctx context.Context, arg RejectOrderFinalPaymentParams) (RejectOrderFinalPaymentRow, error) {
+	row := q.db.QueryRow(ctx, rejectOrderFinalPayment, arg.ID, arg.FinalPaymentAdminNote)
+	var i RejectOrderFinalPaymentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const rejectOrderPayment = `-- name: RejectOrderPayment :one
 UPDATE order_payments
 SET
@@ -677,6 +735,74 @@ func (q *Queries) RejectOrderPayment(ctx context.Context, arg RejectOrderPayment
 		&i.RejectedAt,
 		&i.AdminNote,
 		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const submitOrderFinalPaymentProof = `-- name: SubmitOrderFinalPaymentProof :one
+UPDATE orders
+SET
+    final_payment_status = $2,
+    final_payment_proof_url = $3,
+    final_payment_sender_name = $4,
+    final_payment_submitted_at = CURRENT_TIMESTAMP,
+    final_payment_verified_at = NULL,
+    final_payment_rejected_at = NULL,
+    final_payment_admin_note = NULL,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at
+`
+
+type SubmitOrderFinalPaymentProofParams struct {
+	ID                     int64
+	FinalPaymentStatus     string
+	FinalPaymentProofUrl   *string
+	FinalPaymentSenderName *string
+}
+
+type SubmitOrderFinalPaymentProofRow struct {
+	ID                      int64
+	Status                  *string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	UpdatedAt               pgtype.Timestamptz
+}
+
+func (q *Queries) SubmitOrderFinalPaymentProof(ctx context.Context, arg SubmitOrderFinalPaymentProofParams) (SubmitOrderFinalPaymentProofRow, error) {
+	row := q.db.QueryRow(ctx, submitOrderFinalPaymentProof,
+		arg.ID,
+		arg.FinalPaymentStatus,
+		arg.FinalPaymentProofUrl,
+		arg.FinalPaymentSenderName,
+	)
+	var i SubmitOrderFinalPaymentProofRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
 		&i.UpdatedAt,
 	)
 	return i, err
@@ -772,6 +898,65 @@ type UpdateOrderStatusParams struct {
 func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) error {
 	_, err := q.db.Exec(ctx, updateOrderStatus, arg.ID, arg.Status)
 	return err
+}
+
+const verifyOrderFinalPayment = `-- name: VerifyOrderFinalPayment :one
+UPDATE orders
+SET
+    final_payment_status = 'payment_verified',
+    final_payment_admin_note = $2,
+    final_payment_verified_at = CURRENT_TIMESTAMP,
+    final_payment_rejected_at = NULL,
+    status = 'shipped',
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING
+    id,
+    status,
+    final_payment_status,
+    final_payment_proof_url,
+    final_payment_sender_name,
+    final_payment_submitted_at,
+    final_payment_verified_at,
+    final_payment_rejected_at,
+    final_payment_admin_note,
+    updated_at
+`
+
+type VerifyOrderFinalPaymentParams struct {
+	ID                    int64
+	FinalPaymentAdminNote *string
+}
+
+type VerifyOrderFinalPaymentRow struct {
+	ID                      int64
+	Status                  *string
+	FinalPaymentStatus      string
+	FinalPaymentProofUrl    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt pgtype.Timestamptz
+	FinalPaymentVerifiedAt  pgtype.Timestamptz
+	FinalPaymentRejectedAt  pgtype.Timestamptz
+	FinalPaymentAdminNote   *string
+	UpdatedAt               pgtype.Timestamptz
+}
+
+func (q *Queries) VerifyOrderFinalPayment(ctx context.Context, arg VerifyOrderFinalPaymentParams) (VerifyOrderFinalPaymentRow, error) {
+	row := q.db.QueryRow(ctx, verifyOrderFinalPayment, arg.ID, arg.FinalPaymentAdminNote)
+	var i VerifyOrderFinalPaymentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.FinalPaymentStatus,
+		&i.FinalPaymentProofUrl,
+		&i.FinalPaymentSenderName,
+		&i.FinalPaymentSubmittedAt,
+		&i.FinalPaymentVerifiedAt,
+		&i.FinalPaymentRejectedAt,
+		&i.FinalPaymentAdminNote,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const verifyOrderPayment = `-- name: VerifyOrderPayment :one

@@ -127,6 +127,8 @@ func (s *Service) SubmitBankTransferProof(ctx context.Context, orderID int64, in
 		return err
 	}
 
+	s.sendPaymentProofSubmittedEmailsAsync(orderID)
+
 	return nil
 }
 
@@ -245,6 +247,167 @@ func validatePaymentProofInput(input PaymentProofInput) error {
 		return ErrInvalidInput
 	}
 	return nil
+}
+
+type FinalPaymentProofInput struct {
+	SenderName    string
+	ProofFilePath string
+}
+
+func (s *Service) SubmitFinalPaymentProof(ctx context.Context, orderID int64, input FinalPaymentProofInput) error {
+	if orderID <= 0 {
+		return ErrInvalidInput
+	}
+
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	if !canSubmitFinalPaymentProof(order) {
+		return ErrPaymentActionNotAllowed
+	}
+
+	input = sanitizeFinalPaymentProofInput(input)
+	if err := validateFinalPaymentProofInput(input); err != nil {
+		return err
+	}
+
+	status := string(orderdomain.AwaitingVerificationPaymentStatus)
+	if _, err := s.orderWriter.SubmitOrderFinalPaymentProof(ctx, orderwriter.SubmitOrderFinalPaymentProofParams{
+		ID:                     orderID,
+		FinalPaymentStatus:     status,
+		FinalPaymentProofUrl:   &input.ProofFilePath,
+		FinalPaymentSenderName: &input.SenderName,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) AdminProcessFinalPayment(ctx context.Context, orderID int64, action string, adminNote string) error {
+	if orderID <= 0 {
+		return ErrInvalidInput
+	}
+
+	action = strings.ToLower(strings.TrimSpace(action))
+	if action != "verify" && action != "reject" && action != "request_reupload" {
+		return ErrInvalidInput
+	}
+
+	adminNote = sanitizeMultiline(adminNote)
+	if action == "request_reupload" && adminNote == "" {
+		adminNote = "Please upload your final payment proof again."
+	}
+	if utf8.RuneCountInString(adminNote) > maxAdminPaymentNoteLength {
+		return ErrInvalidInput
+	}
+
+	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	if order.FinalPaymentStatus != orderdomain.AwaitingVerificationPaymentStatus {
+		return ErrPaymentActionNotAllowed
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	writer := s.orderWriter.WithTx(tx)
+
+	switch action {
+	case "verify":
+		if order.FinalPaymentProofURL == nil || strings.TrimSpace(*order.FinalPaymentProofURL) == "" {
+			return ErrPaymentActionNotAllowed
+		}
+
+		if _, err := writer.VerifyOrderFinalPayment(ctx, orderwriter.VerifyOrderFinalPaymentParams{
+			ID:                    orderID,
+			FinalPaymentAdminNote: nullableString(adminNote),
+		}); err != nil {
+			return err
+		}
+
+	case "reject", "request_reupload":
+		if _, err := writer.RejectOrderFinalPayment(ctx, orderwriter.RejectOrderFinalPaymentParams{
+			ID:                    orderID,
+			FinalPaymentAdminNote: nullableString(adminNote),
+		}); err != nil {
+			return err
+		}
+
+	default:
+		return ErrInvalidInput
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	if action == "verify" {
+		s.sendOrderStatusEmailAsync(order, orderdomain.ShippedOrderStatus)
+	}
+
+	return nil
+}
+
+func canSubmitFinalPaymentProof(order *orderdomain.Order) bool {
+	if order == nil || order.Status != orderdomain.ReadyToShipOrderStatus {
+		return false
+	}
+	switch order.FinalPaymentStatus {
+	case orderdomain.PendingPaymentStatus, orderdomain.RejectedPaymentStatus:
+		return true
+	default:
+		return false
+	}
+}
+
+func sanitizeFinalPaymentProofInput(input FinalPaymentProofInput) FinalPaymentProofInput {
+	input.SenderName = sanitizeSingleLine(input.SenderName)
+	input.ProofFilePath = strings.TrimSpace(input.ProofFilePath)
+	return input
+}
+
+func validateFinalPaymentProofInput(input FinalPaymentProofInput) error {
+	if input.SenderName == "" || input.ProofFilePath == "" {
+		return ErrInvalidInput
+	}
+	if utf8.RuneCountInString(input.SenderName) > maxCustomerNameLength {
+		return ErrInvalidInput
+	}
+	if !containsLetterOrDigit(input.SenderName) {
+		return ErrInvalidInput
+	}
+	if utf8.RuneCountInString(input.ProofFilePath) > maxProofFilePathLength {
+		return ErrInvalidInput
+	}
+	if !strings.HasPrefix(input.ProofFilePath, "https://res.cloudinary.com/") {
+		return ErrInvalidInput
+	}
+	return nil
+}
+
+func FinalPaymentStatusDisplay(status orderdomain.PaymentStatus) string {
+	switch status {
+	case orderdomain.PendingPaymentStatus:
+		return "Final Payment Pending"
+	case orderdomain.AwaitingVerificationPaymentStatus:
+		return "Final Payment Awaiting Verification"
+	case orderdomain.VerifiedPaymentStatus:
+		return "Final Payment Verified"
+	case orderdomain.RejectedPaymentStatus:
+		return "Final Payment Rejected"
+	default:
+		return "Not Recorded"
+	}
 }
 
 func canVerifySubmittedAdvance(payment *orderdomain.OrderPayment) bool {

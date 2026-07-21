@@ -392,6 +392,8 @@ func (h *CardHandler) Checkout(c *gin.Context) {
 		"unitPrice":              unitPrice,
 		"extraInsertCostPerCard": extraInsertCostPerCard,
 		"perCardTotal":           perCardTotal,
+		"cardSubtotal":           cardSubtotal,
+		"insertSubtotal":         insertSubtotal,
 		"discountApplied":        discountApplied,
 		"discountAmount":         discountAmount,
 		"totalPrice":             total,

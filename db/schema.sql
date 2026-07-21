@@ -1,4 +1,4 @@
-\restrict 5fYhItLLbyodAJHXqj8FmReoIQy0BASl35tX4589ZmMPf35EOaoVym5cGGIbClH
+\restrict odJTFv5HAvS5hsKX8I3gvIQwmSeHoL63dAtLW99GOfoemOtCyDKv4xfNOM42yFi
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -354,7 +354,14 @@ CREATE TABLE public.orders (
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     currency text DEFAULT 'PKR'::text NOT NULL,
-    public_token uuid DEFAULT gen_random_uuid() NOT NULL
+    public_token uuid DEFAULT gen_random_uuid() NOT NULL,
+    final_payment_status text DEFAULT 'pending_payment'::text NOT NULL,
+    final_payment_proof_url text,
+    final_payment_sender_name text,
+    final_payment_submitted_at timestamp with time zone,
+    final_payment_verified_at timestamp with time zone,
+    final_payment_rejected_at timestamp with time zone,
+    final_payment_admin_note text
 );
 
 
@@ -681,6 +688,13 @@ CREATE INDEX idx_orders_customer_id ON public.orders USING btree (customer_id);
 
 
 --
+-- Name: idx_orders_final_payment_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_orders_final_payment_status ON public.orders USING btree (final_payment_status);
+
+
+--
 -- Name: idx_orders_public_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -761,7 +775,7 @@ ALTER TABLE ONLY public.product_images
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5fYhItLLbyodAJHXqj8FmReoIQy0BASl35tX4589ZmMPf35EOaoVym5cGGIbClH
+\unrestrict odJTFv5HAvS5hsKX8I3gvIQwmSeHoL63dAtLW99GOfoemOtCyDKv4xfNOM42yFi
 
 
 --
@@ -793,4 +807,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260712000002'),
     ('20260716113800'),
     ('20260716153410'),
-    ('20260719000000');
+    ('20260719000000'),
+    ('20260721000001');

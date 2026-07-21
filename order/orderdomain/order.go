@@ -8,41 +8,51 @@ import (
 type OrderStatus string
 
 const (
-	PendingOrderStatus   OrderStatus = "pending"
-	ConfirmedOrderStatus OrderStatus = "confirmed"
-	CancelledOrderStatus OrderStatus = "cancelled"
-	CompletedOrderStatus OrderStatus = "completed"
+	PendingOrderStatus     OrderStatus = "pending"
+	ConfirmedOrderStatus   OrderStatus = "confirmed"
+	ReadyToShipOrderStatus OrderStatus = "ready_to_ship"
+	ShippedOrderStatus     OrderStatus = "shipped"
+	CancelledOrderStatus   OrderStatus = "cancelled"
+	CompletedOrderStatus   OrderStatus = "completed"
 )
 
 type Order struct {
-	ID           int64
-	CustomerID   int64
-	CardID       int64
-	CardName     string
-	CardImage    string
-	CardCategory string
-	Quantity     int64
-	TotalPrice   int64
-	Status       OrderStatus
-	Currency     string
-	PublicToken  string
-	CreatedAt    *time.Time
-	UpdatedAt    *time.Time
+	ID                      int64
+	CustomerID              int64
+	CardID                  int64
+	CardName                string
+	CardImage               string
+	CardCategory            string
+	Quantity                int64
+	TotalPrice              int64
+	Status                  OrderStatus
+	Currency                string
+	PublicToken             string
+	FinalPaymentStatus      PaymentStatus
+	FinalPaymentProofURL    *string
+	FinalPaymentSenderName  *string
+	FinalPaymentSubmittedAt *time.Time
+	FinalPaymentVerifiedAt  *time.Time
+	FinalPaymentRejectedAt  *time.Time
+	FinalPaymentAdminNote   *string
+	CreatedAt               *time.Time
+	UpdatedAt               *time.Time
 }
 
 type AdminOrder struct {
-	ID              int64
-	CustomerName    string
-	ProductName     string
-	CardCategory    string
-	Quantity        int64
-	TotalPrice      int64
-	Status          OrderStatus
-	PaymentStatus   PaymentStatus
-	SubmittedAmount *int64
-	SubmittedAt     *time.Time
-	Currency        string
-	CreatedAt       *time.Time
+	ID                 int64
+	CustomerName       string
+	ProductName        string
+	CardCategory       string
+	Quantity           int64
+	TotalPrice         int64
+	Status             OrderStatus
+	PaymentStatus      PaymentStatus
+	FinalPaymentStatus PaymentStatus
+	SubmittedAmount    *int64
+	SubmittedAt        *time.Time
+	Currency           string
+	CreatedAt          *time.Time
 }
 
 type OrderDetail struct {
@@ -141,8 +151,10 @@ type AdminOrderFilter struct {
 
 type OrderReader interface {
 	GetOrderByID(ctx context.Context, id int64) (*Order, error)
+	GetOrderByIDAndPhone(ctx context.Context, orderID int64, phone string) (*Order, error)
 	GetOrderByPublicToken(ctx context.Context, token string) (*Order, error)
 	GetOrdersByCustomerID(ctx context.Context, customerID int64) ([]*Order, error)
+	GetOrdersByPhone(ctx context.Context, phone string) ([]*Order, error)
 	GetAdminOrders(ctx context.Context, filter AdminOrderFilter) ([]*AdminOrder, error)
 	GetOrderDetailByOrderID(ctx context.Context, orderID int64) (*OrderDetail, error)
 	GetOrderPaymentByOrderID(ctx context.Context, orderID int64) (*OrderPayment, error)

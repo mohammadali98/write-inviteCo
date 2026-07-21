@@ -125,6 +125,16 @@ func main() {
 		"isPDFPath": func(raw string) bool {
 			return strings.HasSuffix(strings.ToLower(strings.TrimSpace(raw)), ".pdf")
 		},
+		"proofURL": func(raw string) string {
+			clean := strings.TrimSpace(raw)
+			if strings.HasPrefix(clean, "https://") || strings.HasPrefix(clean, "http://") {
+				return clean
+			}
+			return safeStaticPath(clean)
+		},
+		"orderStatusLabel": orderpresentation.OrderStatusLabel,
+		"formatTime":       orderpresentation.FormatEventTime,
+		"timeTypeLabel":    orderpresentation.TimeTypeLabel,
 	})
 	router.LoadHTMLGlob(filepath.Join(appRoot, "templates", "*"))
 	router.Static("/static", filepath.Join(appRoot, "static"))
@@ -156,6 +166,8 @@ func main() {
 	router.GET("/order/:token", orderHandler.OrderStatus)
 	router.GET("/order/:token/payment", orderHandler.BankTransferPage)
 	router.POST("/order/:token/payment-proof", orderHandler.SubmitPaymentProof)
+	router.GET("/order/:token/final-payment", orderHandler.FinalPaymentPage)
+	router.POST("/order/:token/final-payment-proof", orderHandler.SubmitFinalPaymentProof)
 	router.GET("/track-order", orderHandler.TrackOrderPage)
 	router.GET("/collections/wedding-accessories", cardHandler.ListAccessories)
 	router.GET("/collections/:category", cardHandler.ListCardsByCategory)
@@ -174,6 +186,8 @@ func main() {
 	admin.POST("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
 	admin.POST("/orders/:id/payment", orderHandler.AdminPaymentAction)
 	admin.GET("/payment-proof/:orderID", orderHandler.AdminServePaymentProof)
+	admin.POST("/orders/:id/final-payment", orderHandler.AdminFinalPaymentAction)
+	admin.GET("/final-payment-proof/:orderID", orderHandler.AdminServeFinalPaymentProof)
 	admin.GET("/products", productHandler.List)
 	admin.GET("/products/new", productHandler.NewForm)
 	admin.POST("/products", productHandler.Create)
