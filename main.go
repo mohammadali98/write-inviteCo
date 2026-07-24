@@ -146,6 +146,7 @@ func main() {
 	})
 
 	// routes
+	router.GET("/sitemap.xml", newSitemapHandler(cardRepo, productService, cfg.PublicBaseURL))
 	router.GET("/", cardHandler.ListCards)
 	router.GET("/about", customerHandler.AboutPage)
 	router.GET("/contact", customerHandler.ContactPage)
